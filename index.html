@@ -194,6 +194,25 @@ details.keys summary { cursor: pointer; color: var(--fg); }
 .plist .del:hover { color: var(--tally); border-color: var(--tally); }
 .empty { color: var(--muted); font-size: 13px; margin: 0; }
 
+#hint {
+  position: absolute; left: 50%; bottom: 96px; translate: -50% 0; z-index: 2;
+  width: max-content; max-width: calc(100% - 32px);
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 16px;
+  padding: 10px 18px; border-radius: 10px; background: rgba(15, 17, 21, .92); border: 1px solid var(--line);
+  font-size: 15px; color: var(--fg); pointer-events: none;
+}
+#hint strong { color: var(--accent); }
+#hint kbd { font: 12px var(--num); padding: 2px 6px; margin-right: 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--raise); }
+#cam {
+  position: absolute; z-index: 2; top: 76px; right: max(12px, env(safe-area-inset-right, 0px));
+  width: 200px; border-radius: 10px; overflow: hidden; border: 2px solid var(--line); background: #000; cursor: pointer;
+}
+#cam.mini { width: 84px; }
+#cam.rec { border-color: var(--tally); }
+#cam video { display: block; width: 100%; transform: scaleX(-1); }
+.recbadge { color: var(--tally); font-weight: 700; }
+.heard { max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--ui); color: var(--muted); }
+#lang { width: 132px; height: 34px; padding: 0 8px; border-radius: 6px; background: var(--raise); border: 1px solid var(--line); }
 #toast {
   position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 4;
   padding: 10px 18px; border-radius: 10px; background: rgba(15, 17, 21, .92); border: 1px solid var(--line);
@@ -233,6 +252,10 @@ details.keys summary { cursor: pointer; color: var(--fg); }
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol>
   <symbol id="i-fs" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-retake" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v5h5"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3z"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
 </svg>
 
 <!-- ============ 编辑页 ============ -->
@@ -303,6 +326,22 @@ details.keys summary { cursor: pointer; color: var(--fg); }
       </div>
 
       <div class="group">
+        <h3>分段录制</h3>
+        <label class="check"><input type="checkbox" id="secStop">每节读完自动暂停</label>
+        <label class="check"><input type="checkbox" id="autoSave">录像每录完一条自动下载</label>
+        <div class="row">
+          <label for="lang">语音跟随语言</label>
+          <select id="lang">
+            <option value="zh-CN">普通话</option>
+            <option value="zh-TW">國語（台灣）</option>
+            <option value="yue-Hant-HK">粤语</option>
+            <option value="en-US">English</option>
+          </select>
+        </div>
+        <p class="tip">语音跟随用的是浏览器自带的语音识别，需要联网。推荐用 Safari 或 Edge；Chrome 的识别服务在国内可能连不上。</p>
+      </div>
+
+      <div class="group">
         <h3>阅读线</h3>
         <div class="row"><label for="gd">位置（离顶部）</label><output id="gdVal" for="gd"></output></div>
         <input type="range" id="gd" min="10" max="70" step="1">
@@ -327,7 +366,10 @@ details.keys summary { cursor: pointer; color: var(--fg); }
             <dt>↑ ↓ / 滚轮</dt><dd>微调位置</dd>
             <dt>A D</dt><dd>上一段 / 下一段</dd>
             <dt>Q E</dt><dd>上一节 / 下一节</dd>
-            <dt>R</dt><dd>停止，回到开头</dd>
+            <dt>R</dt><dd>重录本节（回到本节开头重新开始）</dd>
+            <dt>Home</dt><dd>回到开头</dd>
+            <dt>G</dt><dd>语音跟随 开 / 关</dd>
+            <dt>C</dt><dd>录像 开 / 关</dd>
             <dt>+ −</dt><dd>加速 / 减速</dd>
             <dt>[ ]</dt><dd>字号小 / 大</dd>
             <dt>M V</dt><dd>水平 / 垂直镜像</dd>
@@ -351,13 +393,21 @@ details.keys summary { cursor: pointer; color: var(--fg); }
     <div id="guide"></div>
     <div id="cd" hidden></div>
   </div>
+  <div id="hint" hidden></div>
+  <div id="cam" hidden title="点一下切换大小"><video id="camVideo" muted playsinline autoplay></video></div>
 
   <div class="bar topbar">
     <button class="ib" id="pBack" type="button" title="返回编辑 (Esc)"><svg class="i"><use href="#i-back"/></svg><span class="lbl-t">编辑</span></button>
     <span class="sep"></span>
     <div class="grp">
-      <button class="ib" id="pStop" type="button" title="停止并回到开头 (R)" aria-label="停止"><svg class="i"><use href="#i-stop"/></svg></button>
+      <button class="ib" id="pStop" type="button" title="停止并回到开头 (Home)" aria-label="停止"><svg class="i"><use href="#i-stop"/></svg></button>
       <button class="ib play" id="pPlay" type="button" title="播放 / 暂停 (空格)" aria-label="播放"><svg class="i"><use href="#i-play"/></svg></button>
+      <button class="ib" id="pRetake" type="button" title="重录本节 (R)"><svg class="i"><use href="#i-retake"/></svg><span class="lbl-t">重录本节</span></button>
+    </div>
+    <span class="sep"></span>
+    <div class="grp">
+      <button class="ib" id="pVoice" type="button" title="语音跟随 (G)" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg><span class="lbl-t">语音跟随</span></button>
+      <button class="ib" id="pCam" type="button" title="录像 (C)" aria-pressed="false"><svg class="i"><use href="#i-cam"/></svg><span class="lbl-t">录像</span></button>
     </div>
     <span class="sep"></span>
     <div class="grp stepper">
@@ -403,6 +453,8 @@ details.keys summary { cursor: pointer; color: var(--fg); }
     </div>
     <div class="times">
       <span class="tally"></span>
+      <span class="recbadge" id="recBadge" hidden></span>
+      <span class="heard" id="heard" hidden></span>
       <span class="where" id="where"></span>
       <span>已用 <b id="tEl">00:00</b></span>
       <span>剩余 <b id="tRem">00:00</b></span>
@@ -419,6 +471,8 @@ details.keys summary { cursor: pointer; color: var(--fg); }
     <ul class="plist" id="secList"></ul>
     <h3>书签</h3>
     <ul class="plist" id="markList"></ul>
+    <h3>录好的片段</h3>
+    <ul class="plist" id="takeList"></ul>
   </aside>
 
   <div id="toast" role="status"></div>
@@ -461,7 +515,9 @@ const DEFAULTS = {
   cpm: 220, fontSize: clamp(Math.round(innerWidth / 18 / 2) * 2, 32, 72), lineHeight: 1.5, margin: 8,
   align: 'left', theme: 'dark', dimRead: true, guide: 35, showGuide: true,
   mirrorX: false, mirrorY: false, countdown: 3,
+  secStop: true, autoSave: !matchMedia('(pointer: coarse)').matches, lang: 'zh-CN',
 };
+const isTouch = matchMedia('(pointer: coarse)').matches;
 const S = Object.assign({}, DEFAULTS, store.get('settings', {}));
 const save = () => store.set('settings', S);
 
@@ -577,6 +633,11 @@ function syncControls() {
   document.querySelectorAll('input[name="theme"]').forEach((r) => { r.checked = r.value === S.theme; });
   for (const [ids, key] of [[['#mx', '#pMx'], 'mirrorX'], [['#my', '#pMy'], 'mirrorY']])
     ids.forEach((id) => $(id).setAttribute('aria-pressed', String(S[key])));
+  $('#secStop').checked = S.secStop;
+  $('#autoSave').checked = S.autoSave;
+  $('#lang').value = S.lang;
+  $('#pVoice').setAttribute('aria-pressed', String(voice.on));
+  $('#pCam').setAttribute('aria-pressed', String(cam.on));
   $('#spOut').textContent = S.cpm;
   $('#fsOut').textContent = S.fontSize;
   refreshStats();
@@ -595,6 +656,9 @@ $('#mg').addEventListener('input', (e) => { S.margin = +e.target.value; save(); 
 $('#gd').addEventListener('input', (e) => { S.guide = +e.target.value; save(); syncControls(); });
 $('#dim').addEventListener('change', (e) => { S.dimRead = e.target.checked; save(); });
 $('#showGuide').addEventListener('change', (e) => { S.showGuide = e.target.checked; save(); });
+$('#secStop').addEventListener('change', (e) => { S.secStop = e.target.checked; save(); });
+$('#autoSave').addEventListener('change', (e) => { S.autoSave = e.target.checked; save(); });
+$('#lang').addEventListener('change', (e) => { S.lang = e.target.value; save(); });
 document.querySelectorAll('input[name="align"]').forEach((r) => r.addEventListener('change', () => { S.align = r.value; save(); }));
 document.querySelectorAll('input[name="theme"]').forEach((r) => r.addEventListener('change', () => { S.theme = r.value; save(); }));
 $('#mx').addEventListener('click', () => setMirror('mirrorX', !S.mirrorX));
@@ -627,7 +691,7 @@ function build() {
       h.className = 'sec s';
       h.textContent = b.title;
       h.dataset.i = sents.length;
-      sents.push({ el: h, start: b.start, top: 0 });
+      sents.push({ el: h, start: b.start, top: 0, sec: true });
       secs.push({ el: h, title: b.title, top: 0, idx: sents.length - 1 });
       content.append(h);
       blockEls.push(h);
@@ -677,7 +741,35 @@ function layout(keepRatio) {
   guide.style.top = (guideY - lhPx / 2) + 'px';
   guide.style.height = lhPx + 'px';
   computeSpeed();
+  buildTokens();
   renderTicks();
+  placeOverlays();
+}
+
+// 语音跟随用的逐字位置表：每个字（英文按单词）对应它在画面里的纵向位置
+const TOK = new RegExp(CJK.source + "|[A-Za-z0-9]+(?:['’][A-Za-z]+)*", 'g');
+const tokenize = (s) => (s.match(TOK) || []).map((t) => t.toLowerCase());
+let T = [];
+function buildTokens() {
+  T = [];
+  for (let i = 0; i < sents.length; i++) {
+    const s = sents[i];
+    if (s.sec) continue;
+    const toks = tokenize(s.el.textContent);
+    const next = i + 1 < sents.length ? sents[i + 1].top : s.top + lhPx;
+    const span = Math.max(0, next - s.top);
+    toks.forEach((t, k) => T.push({ t, px: s.top + span * k / toks.length }));
+  }
+}
+function lowerBound(p) {
+  let lo = 0, hi = T.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (T[mid].px < p) lo = mid + 1; else hi = mid; }
+  return lo;
+}
+
+function placeOverlays() {
+  $('#cam').style.top = ($('.topbar').offsetHeight + 12) + 'px';
+  $('#hint').style.bottom = ($('.bottombar').offsetHeight + 14) + 'px';
 }
 
 function computeSpeed() {
@@ -686,8 +778,10 @@ function computeSpeed() {
 
 const posOf = (i) => clamp(sents[clamp(i, 0, sents.length - 1)]?.top ?? 0, 0, maxPos);
 
-function jumpTo(target, smooth = true) {
+// manual：用户主动跳转（翻页、点句子等），需要重新确定"本节"和语音跟随的位置
+function jumpTo(target, smooth = true, manual = true) {
   target = clamp(target, 0, maxPos);
+  if (manual) relocate(target);
   if (!smooth || reduceMotion) { anim = null; pos = target; return; }
   anim = { from: pos, to: target, t0: performance.now(), dur: 320 };
 }
@@ -727,6 +821,38 @@ function updateCur() {
   curIdx = ans;
 }
 
+// ---------- 播放 / 分段 ----------
+let takeStart = 0;      // "重录本节"要回到的位置
+let takeSec = null;     // 当前这一条属于哪一节
+let stopAt = null;      // 本节结束的位置（下一个小节标题），读到这里自动暂停
+let stopTok = 0;        // 同上，换算成语音跟随的字序号
+let pauseReason = 'ready';
+let played = false;
+
+const secAt = (p) => { let c = null; for (const s of secs) { if (s.top <= p + tol()) c = s; else break; } return c; };
+function arm(base) {
+  takeSec = secAt(base);
+  takeStart = takeSec ? takeSec.top : base;
+  stopAt = S.secStop ? (secs.find((s) => s.top > base + tol())?.top ?? null) : null;
+  stopTok = stopAt != null ? lowerBound(stopAt) : T.length;
+}
+function relocate(p) {
+  if (state === 'playing') arm(p);
+  else { takeSec = secAt(p); takeStart = takeSec ? takeSec.top : p; renderHint(); }
+  if (voice.on) voiceSync(p);
+}
+
+function begin() {
+  const base = anim ? anim.to : pos;
+  arm(base);
+  state = 'playing';
+  played = true;
+  if (voice.on) { voiceSync(base); voiceStart(); }
+  if (cam.on) camStartTake();
+  syncPlay();
+  renderHint();
+  poke();
+}
 function play() {
   if (state !== 'paused' || !maxPos) return;
   if (pos >= maxPos - 1) jumpTo(0, false);
@@ -737,21 +863,261 @@ function play() {
     cd.hidden = false;
     cdTimer = setInterval(() => {
       n--;
-      if (n <= 0) { clearInterval(cdTimer); cd.hidden = true; state = 'playing'; syncPlay(); poke(); }
+      if (n <= 0) { clearInterval(cdTimer); cd.hidden = true; begin(); }
       else cd.textContent = n;
     }, 1000);
-  } else state = 'playing';
+  } else begin();
   syncPlay();
+  renderHint();
   poke();
 }
-function pause() {
+function pause(reason = 'paused') {
   if (state === 'countdown') { clearInterval(cdTimer); cd.hidden = true; }
+  const was = state;
   state = 'paused';
+  pauseReason = reason;
+  clearTimeout(voice.endT);
+  voice.endT = null;
+  if (was === 'playing') { voiceStop(); camStopTake(); }
   syncPlay();
+  renderHint();
   poke();
 }
 const toggle = () => (state === 'paused' ? play() : pause());
-function stop() { pause(); elapsed = 0; jumpTo(0); }
+function stop() { pause('ready'); elapsed = 0; jumpTo(0); }
+function retake() {
+  const sec = played ? takeSec : secAt(pos);
+  const target = played ? takeStart : (sec ? sec.top : 0);
+  if (state !== 'paused') pause();
+  jumpTo(target, true, false);
+  takeSec = sec;
+  elapsed = 0;
+  toast(sec ? `重录「${sec.title}」` : '从头重录');
+  play();
+}
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function renderHint() {
+  const h = $('#hint');
+  if (state !== 'paused') { h.hidden = true; return; }
+  const k = (key, txt, touchTxt) => (isTouch ? `<span>${touchTxt || txt}</span>` : `<span><kbd>${key}</kbd>${txt}</span>`);
+  const t = takeSec ? `「${esc(takeSec.title)}」` : '';
+  const html = {
+    ready: `<strong>准备好了</strong>${k('空格', '开始', '点 ▶ 开始')}<span>点任意一句，就从那一句开始</span>`,
+    paused: `<strong>已暂停</strong>${k('空格', '继续', '点 ▶ 继续')}${k('R', '重录' + (t || '本节'), '点「重录本节」重来')}`,
+    secEnd: `<strong>${t || '本节'}读完了</strong>${k('空格', '继续下一节', '点 ▶ 继续下一节')}${k('R', '重录这一节', '点「重录本节」重来')}`,
+    end: `<strong>全文读完了</strong>${k('R', '重录' + (t || '最后一节'), '点「重录本节」重来')}${k('Home', '回到开头', '点 ■ 回到开头')}`,
+  }[pauseReason] || '';
+  h.innerHTML = html;
+  h.hidden = !html;
+}
+
+// ---------- 语音跟随 ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const voice = { on: false, rec: null, want: false, idx: 0, target: null, endT: null, fails: 0 };
+const heardEl = $('#heard');
+
+function voiceToggle() {
+  if (!SR) return toast('这个浏览器不支持语音识别，请用 Safari、Edge 或 Chrome');
+  voice.on = !voice.on;
+  if (voice.on) {
+    voice.fails = 0;
+    if (state === 'playing') { voiceSync(pos); voiceStart(); }
+    toast('语音跟随已开启：字幕会跟着你说话的进度走');
+  } else {
+    voiceStop();
+    voice.target = null;
+    toast('语音跟随已关闭，恢复匀速滚动');
+  }
+  heardEl.hidden = !voice.on;
+  heardEl.textContent = '';
+  syncControls();
+}
+function voiceSync(p) {
+  voice.idx = lowerBound(p - 1);
+  voice.target = p;
+  clearTimeout(voice.endT);
+  voice.endT = null;
+}
+function voiceStart() {
+  voice.want = true;
+  if (voice.rec) return;
+  const r = new SR();
+  r.lang = S.lang;
+  r.continuous = true;
+  r.interimResults = true;
+  r.onresult = (e) => {
+    voice.fails = 0;
+    let s = '';
+    for (let i = 0; i < e.results.length; i++) s += e.results[i][0].transcript;
+    heardEl.textContent = '听到：' + s.slice(-12);
+    voiceMatch(tokenize(s));
+  };
+  r.onerror = (e) => {
+    if (e.error === 'no-speech' || e.error === 'aborted') return;
+    voice.fails++;
+    const fatal = {
+      'not-allowed': '没有麦克风权限，语音跟随已关闭',
+      'service-not-allowed': '浏览器不允许语音识别，语音跟随已关闭',
+      'network': '连不上语音识别服务，换 Safari 或 Edge 试试',
+      'language-not-supported': '浏览器不支持这个识别语言',
+    }[e.error];
+    if (fatal || voice.fails > 3) {
+      voice.on = false;
+      voiceStop();
+      heardEl.hidden = true;
+      syncControls();
+      toast(fatal || '语音识别出错，已切回匀速滚动');
+    }
+  };
+  // 浏览器听一会儿没声音会自己停，播放中就自动重新开始听
+  r.onend = () => {
+    if (voice.rec === r) voice.rec = null;
+    if (voice.want && state === 'playing') setTimeout(() => { if (voice.want && state === 'playing' && !voice.rec) voiceStart(); }, 200);
+  };
+  try { r.start(); voice.rec = r; } catch (err) {}
+}
+function voiceStop() {
+  voice.want = false;
+  const r = voice.rec;
+  voice.rec = null;
+  if (r) { try { r.abort(); } catch (e) {} }
+}
+function lcs(a, b) {
+  let prev = new Array(b.length + 1).fill(0);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = new Array(b.length + 1).fill(0);
+    for (let j = 1; j <= b.length; j++) cur[j] = a[i - 1] === b[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], cur[j - 1]);
+    prev = cur;
+  }
+  return prev[b.length];
+}
+// 拿最近听到的几个字，在当前位置附近的稿子里找最像的一段，容忍识别错一两个字
+function voiceMatch(heard) {
+  if (state !== 'playing' || !T.length) return;
+  const L = Math.min(8, heard.length);
+  if (L < 2) return;
+  const tail = heard.slice(-L);
+  const lo = Math.max(0, voice.idx - 25), hi = Math.min(T.length - 1, voice.idx + 120);
+  let best = -1, bestScore = -Infinity;
+  for (let j = lo; j <= hi; j++) {
+    const tj = T[j].t;
+    if (tj !== tail[L - 1] && tj !== tail[L - 2]) continue;
+    const seg = [];
+    for (let q = Math.max(0, j - L - 2); q <= j; q++) seg.push(T[q].t);
+    let sc = lcs(tail, seg);
+    if (sc < Math.max(2, Math.ceil(L * 0.6))) continue;
+    sc -= Math.abs(j - voice.idx) * 0.004 + (j < voice.idx - 2 ? 1.5 : 0);
+    if (sc > bestScore) { bestScore = sc; best = j; }
+  }
+  if (best < 0) return;
+  voice.idx = best + 1;
+  voice.target = stopAt != null ? Math.min(T[best].px, stopAt) : T[best].px;
+  if (voice.idx >= stopTok - 1 && !voice.endT) {
+    voice.endT = setTimeout(() => {
+      voice.endT = null;
+      if (state !== 'playing') return;
+      if (stopAt != null) { anim = null; pos = stopAt; pause('secEnd'); } else pause('end');
+    }, 900);
+  }
+}
+
+// ---------- 录像 ----------
+const cam = { on: false, stream: null, rec: null, chunks: [], t0: 0, sec: null, dur: 0 };
+const takes = [];
+const camBox = $('#cam');
+const recBadge = $('#recBadge');
+
+async function camToggle() {
+  if (cam.on) { camOff(); toast('录像已关闭'); return; }
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) return toast('这个浏览器不支持网页录像');
+  try {
+    cam.stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: true },
+    });
+  } catch (e) {
+    return toast(e.name === 'NotAllowedError' ? '没有摄像头或麦克风权限' : '打不开摄像头');
+  }
+  cam.on = true;
+  $('#camVideo').srcObject = cam.stream;
+  camBox.hidden = false;
+  syncControls();
+  placeOverlays();
+  toast('录像已开启：每次开始到暂停，存成一条视频');
+}
+function camOff() {
+  camStopTake();
+  cam.stream?.getTracks().forEach((t) => t.stop());
+  cam.stream = null;
+  cam.on = false;
+  $('#camVideo').srcObject = null;
+  camBox.hidden = true;
+  syncControls();
+}
+function pickMime() {
+  const list = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  return list.find((m) => MediaRecorder.isTypeSupported?.(m)) || '';
+}
+function camStartTake() {
+  if (!cam.stream || cam.rec) return;
+  const mime = pickMime();
+  let r;
+  try { r = new MediaRecorder(cam.stream, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : undefined); }
+  catch (e) { return toast('无法开始录像'); }
+  const chunks = [];
+  const sec = takeSec;
+  const t0 = performance.now();
+  r.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  r.onstop = () => saveTake(chunks, r.mimeType || mime, sec, (performance.now() - t0) / 1000);
+  r.start(1000);
+  cam.rec = r;
+  cam.t0 = t0;
+  camBox.classList.add('rec');
+  recBadge.hidden = false;
+}
+function camStopTake() {
+  const r = cam.rec;
+  cam.rec = null;
+  if (r && r.state !== 'inactive') r.stop();
+  camBox.classList.remove('rec');
+  recBadge.hidden = true;
+}
+function saveTake(chunks, mime, sec, dur) {
+  const type = (mime || 'video/webm').split(';')[0];
+  const blob = new Blob(chunks, { type });
+  if (!blob.size) return;
+  const secNo = sec ? secs.indexOf(sec) + 1 : 0;
+  const label = sec ? `第${secNo}节` : (secs.length ? '开头' : '全文');
+  const n = takes.filter((t) => t.label === label).length + 1;
+  const safe = sec ? '-' + sec.title.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 20) : '';
+  const t = { label, n, dur, blob, url: URL.createObjectURL(blob), name: `${label}${safe}-第${n}条.${type.includes('mp4') ? 'mp4' : 'webm'}`, saved: false };
+  takes.push(t);
+  toast(`已录好 ${label} 第${n}条（${fmt(dur)}）`);
+  if (S.autoSave) downloadTake(t);
+  renderPanel();
+}
+function downloadTake(t) {
+  const a = document.createElement('a');
+  a.href = t.url;
+  a.download = t.name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  t.saved = true;
+}
+async function saveTakeManually(t) {
+  const file = new File([t.blob], t.name, { type: t.blob.type });
+  // 手机上用系统分享面板，可以直接"存储视频"到相册
+  if (isTouch && navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); t.saved = true; } catch (e) {}
+  } else downloadTake(t);
+  renderPanel();
+}
+camBox.addEventListener('click', () => camBox.classList.toggle('mini'));
+window.addEventListener('beforeunload', (e) => {
+  if (takes.some((t) => !t.saved)) { e.preventDefault(); e.returnValue = ''; }
+});
 
 function syncPlay() {
   const playing = state !== 'paused';
@@ -833,6 +1199,27 @@ function renderPanel() {
     li.append(b, del);
     ml.append(li);
   });
+  const tl = $('#takeList');
+  tl.textContent = '';
+  if (!takes.length) tl.innerHTML = '<p class="empty">打开「录像」后，每次从开始到暂停会存成一条视频，在这里保存。</p>';
+  takes.forEach((t, i) => {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'go';
+    b.title = '保存到本机';
+    b.innerHTML = `<svg class="i"><use href="#i-save"/></svg><span class="t"></span><span class="tm">${fmt(t.dur)}</span>`;
+    b.querySelector('.t').textContent = `${t.label} 第${t.n}条${t.saved ? ' · 已保存' : ''}`;
+    b.addEventListener('click', () => saveTakeManually(t));
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'del';
+    del.setAttribute('aria-label', `删除 ${t.label} 第${t.n}条`);
+    del.innerHTML = '<svg class="i"><use href="#i-x"/></svg>';
+    del.addEventListener('click', () => { URL.revokeObjectURL(t.url); takes.splice(i, 1); renderPanel(); });
+    li.append(b, del);
+    tl.append(li);
+  });
 }
 function openPanel() { renderPanel(); panel.hidden = false; poke(); }
 function closePanel() { panel.hidden = true; poke(); }
@@ -874,10 +1261,13 @@ function frame(now) {
       pos = anim.from + (anim.to - anim.from) * (1 - Math.pow(1 - k, 3));
       if (k >= 1) anim = null;
     } else if (state === 'playing' && !(drag && drag.moved)) {
-      pos += speedPx * dt;
       elapsed += dt;
-      if (pos >= maxPos) { pos = maxPos; pause(); toast('已到结尾'); }
+      if (voice.on) { if (voice.target != null) pos += (voice.target - pos) * Math.min(1, dt * 6); }
+      else pos += speedPx * dt;
+      if (stopAt != null && pos >= stopAt - 0.5) { pos = stopAt; pause('secEnd'); }
+      else if (pos >= maxPos) { pos = maxPos; pause('end'); }
     }
+    if (cam.rec) setText(recBadge, 'REC ' + fmt((now - cam.t0) / 1000));
     content.style.transform = `translate3d(0, ${guideY - pos - S.fontSize * 0.6}px, 0)`;
     updateCur();
     const r = maxPos ? pos / maxPos : 0;
@@ -918,13 +1308,20 @@ function enter(fromCaret) {
   pos = fromCaret ? posOf(idx) : 0;
   elapsed = 0;
   state = 'paused';
+  pauseReason = 'ready';
+  played = false;
+  relocate(pos);
+  heardEl.hidden = !voice.on;
   syncControls();
   syncPlay();
+  renderHint();
   lockScreen();
-  play();
+  poke();
 }
 function exit() {
   pause();
+  voiceStop();
+  if (cam.on) camOff();
   prompter.hidden = true;
   $('#editor').hidden = false;
   if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
@@ -945,6 +1342,9 @@ const bind = (id, fn) => $(id).addEventListener('click', fn);
 bind('#pBack', exit);
 bind('#pPlay', toggle);
 bind('#pStop', stop);
+bind('#pRetake', retake);
+bind('#pVoice', voiceToggle);
+bind('#pCam', camToggle);
 bind('#spDn', () => setSpeed(S.cpm - 10));
 bind('#spUp', () => setSpeed(S.cpm + 10));
 bind('#fsDn', () => setFont(S.fontSize - 4));
@@ -981,7 +1381,7 @@ window.addEventListener('pointerup', (e) => {
   if (!drag) return;
   const d = drag;
   drag = null;
-  if (d.moved) return;
+  if (d.moved) { relocate(pos); return; }
   const s = e.target.closest?.('.s');
   if (s && content.contains(s)) jumpTo(posOf(+s.dataset.i));
 });
@@ -990,6 +1390,7 @@ stage.addEventListener('wheel', (e) => {
   e.preventDefault();
   anim = null;
   pos = clamp(pos + e.deltaY * (e.deltaMode === 1 ? lhPx / 3 : 1), 0, maxPos);
+  relocate(pos);
   poke();
 }, { passive: false });
 
@@ -1000,6 +1401,7 @@ function seek(e) {
   const r = track.getBoundingClientRect();
   anim = null;
   pos = clamp((e.clientX - r.left) / r.width, 0, 1) * maxPos;
+  relocate(pos);
 }
 track.addEventListener('pointerdown', (e) => { seeking = true; try { track.setPointerCapture(e.pointerId); } catch (err) {} seek(e); poke(); });
 track.addEventListener('pointermove', (e) => { if (seeking) seek(e); });
@@ -1029,7 +1431,9 @@ document.addEventListener('keydown', (e) => {
     case 'd': nav.paraDown(); break;
     case 'q': nav.secUp(); break;
     case 'e': nav.secDown(); break;
-    case 'r': stop(); break;
+    case 'r': retake(); break;
+    case 'g': voiceToggle(); break;
+    case 'c': camToggle(); break;
     case '+': case '=': setSpeed(S.cpm + 10); toast('语速 ' + S.cpm + ' 字/分'); break;
     case '-': case '_': setSpeed(S.cpm - 10); toast('语速 ' + S.cpm + ' 字/分'); break;
     case ']': setFont(S.fontSize + 4); break;

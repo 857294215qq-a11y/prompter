@@ -1,0 +1,12 @@
+{
+  "appId": "com.tcq.prompter",
+  "appName": "提词器",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

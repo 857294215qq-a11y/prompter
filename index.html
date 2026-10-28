@@ -242,9 +242,9 @@ details.keys summary { cursor: pointer; color: var(--fg); }
 #lang { width: 132px; height: 34px; padding: 0 8px; border-radius: 6px; background: var(--raise); border: 1px solid var(--line); }
 #pipNote { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; color: var(--muted); font-size: 16px; background: var(--bg); }
 
-.modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .6); }
+.modal { position: fixed; inset: 0; z-index: 30; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; padding: 16px; background: rgba(0, 0, 0, .6); }
 .modal .card {
-  width: min(420px, 100%); max-height: 100%; overflow: auto; display: grid; gap: 12px;
+  width: 100%; max-width: 420px; min-width: 0; max-height: 100%; overflow: auto; display: grid; gap: 12px;
   padding: 16px 18px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line);
 }
 .qr { justify-self: center; width: min(240px, 100%); padding: 12px; border-radius: 10px; background: #fff; }
@@ -288,6 +288,15 @@ details.more summary { cursor: pointer; color: var(--fg); margin-bottom: 8px; }
 details.more > div { display: grid; gap: 8px; }
 #rpair { display: grid; gap: 12px; padding: 14px 16px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
 #rpair .qr { width: min(300px, 100%); }
+.codebox { display: grid; justify-items: center; gap: 2px; padding: 14px; border-radius: 12px; background: var(--raise); }
+.bigcode { font: 700 40px/1.2 var(--num); letter-spacing: .14em; color: var(--accent); font-variant-numeric: tabular-nums; }
+#codeIn, #manIp, #nearAlias { height: 44px; padding: 0 12px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); min-width: 0; }
+#codeIn { flex: 1; font: 600 24px var(--num); letter-spacing: .3em; text-align: center; }
+#manIp, #nearAlias { flex: 1; font-size: 15px; }
+#nearAlias { height: 38px; }
+#codeAsk { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--raise); }
+.modal .row { min-width: 0; }
+.modal .row > button { flex: none; }
 #rAnsCode { width: 100%; min-height: 56px; padding: 8px 10px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); font: 11px var(--num); resize: none; }
 .rbtn.big { grid-column: 1 / -1; min-height: 88px; font-size: 22px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .rbtn.big.on { background: var(--tally); color: #fff; }
@@ -369,8 +378,9 @@ details.more > div { display: grid; gap: 8px; }
         <label class="btn" for="file">导入 .txt</label>
         <input id="file" type="file" accept=".txt,text/plain" hidden>
         <button class="btn" id="sample" type="button">载入示例稿</button>
-        <button class="btn" id="install" type="button" hidden>安装到桌面</button>
+        <button class="btn web-only" id="install" type="button" hidden>安装到桌面</button>
         <button class="btn" id="remoteBtn" type="button"><svg class="i"><use href="#i-remote"/></svg>手机遥控</button>
+        <button class="btn app-only" id="ctrlBtn" type="button" hidden>当遥控器</button>
         <span class="grow"></span>
         <button class="btn" id="startCaret" type="button">从光标处开始</button>
         <button class="btn primary" id="start" type="button"><svg class="i"><use href="#i-play"/></svg>开始提词</button>
@@ -583,8 +593,23 @@ details.more > div { display: grid; gap: 8px; }
       <button class="ib" id="rdlgClose" type="button" aria-label="关闭"><svg class="i"><use href="#i-x"/></svg></button>
     </div>
     <div class="seg" role="radiogroup" aria-label="连接方式">
+      <label class="app-only" hidden><input type="radio" name="rtab" value="near"><span>附近设备</span></label>
       <label><input type="radio" name="rtab" value="lan"><span>同一网络 / 热点直连</span></label>
       <label><input type="radio" name="rtab" value="net"><span>通过互联网</span></label>
+    </div>
+
+    <div id="tabNear" hidden>
+      <p class="tip">两台设备都装了这个 App，连同一个 Wi-Fi，或者一台开热点、另一台连上去。在另一台设备上点「当遥控器」，就会在列表里看到这台。</p>
+      <div class="codebox"><span class="tip">验证码（遥控器第一次连要输入）</span><strong class="bigcode" id="nearCode">--- ---</strong></div>
+      <div class="row"><label for="nearAlias">本机名称</label><input id="nearAlias" maxlength="20" autocomplete="off"></div>
+      <p class="dot" id="nearStat">正在启动…</p>
+      <p class="tip" id="nearIps"></p>
+      <div class="actions">
+        <button class="btn" id="nearNew" type="button">换验证码</button>
+        <button class="btn" id="nearForget" type="button">忘记已配对设备</button>
+        <span class="grow"></span>
+        <button class="btn" id="nearOff" type="button">不再被发现</button>
+      </div>
     </div>
 
     <div id="tabLan">
@@ -626,11 +651,36 @@ details.more > div { display: grid; gap: 8px; }
   </div>
 </div>
 
+<!-- ============ 选择要遥控的设备（App） ============ -->
+<div id="cdlg" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="cdlgTitle">
+  <div class="card">
+    <div class="phead">
+      <strong id="cdlgTitle">选择要遥控的设备</strong>
+      <button class="ib" id="cdlgClose" type="button" aria-label="关闭"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <p class="tip">在提词设备上点「手机遥控」，选「附近设备」，它就会出现在这里。</p>
+    <ul class="plist" id="peerList"></ul>
+    <p class="empty" id="peerEmpty">正在搜索附近的设备…</p>
+    <div id="codeAsk" hidden>
+      <label for="codeIn" class="tip" id="codeLbl">输入对方屏幕上的 6 位验证码</label>
+      <div class="row"><input id="codeIn" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••"><button class="btn primary" id="codeGo" type="button">连接</button></div>
+    </div>
+    <details class="more">
+      <summary>找不到设备？手动输入地址</summary>
+      <div>
+        <p class="tip">遥控手机连着提词设备的热点时，一般是 192.168.43.1（安卓热点的默认地址）。提词设备的「附近设备」页面会显示它的地址。</p>
+        <div class="row"><input id="manIp" inputmode="decimal" placeholder="例如 192.168.43.1" autocomplete="off"><button class="btn" id="manGo" type="button">连接</button></div>
+      </div>
+    </details>
+  </div>
+</div>
+
 <!-- ============ 遥控器（另一台手机） ============ -->
 <div id="remote" hidden>
   <header class="rtop">
     <h1 class="brand">提词遥控器</h1>
     <p class="dot" id="rconn">正在连接…</p>
+    <button class="btn app-only" id="rLeave" type="button" hidden>断开</button>
   </header>
   <section id="rpair" hidden>
     <strong>最后一步</strong>
@@ -699,11 +749,17 @@ const store = {
   set(k, v) { try { localStorage.setItem('prompter:' + k, JSON.stringify(v)); } catch (e) {} },
 };
 
+// 在安卓 App 里运行时，Capacitor 会注入原生插件 Link；在普通浏览器里是 null
+const NP = (window.Capacitor?.isNativePlatform?.() ? window.Capacitor.Plugins?.Link : null) || null;
+const IS_NATIVE = !!NP;
+document.querySelectorAll('.app-only').forEach((el) => { el.hidden = !IS_NATIVE; });
+document.querySelectorAll('.web-only').forEach((el) => { if (IS_NATIVE) el.remove(); });
+
 const DEFAULTS = {
   cpm: 220, fontSize: clamp(Math.round(innerWidth / 18 / 2) * 2, 32, 72), lineHeight: 1.5, margin: 8,
   align: 'left', theme: 'dark', dimRead: true, guide: 35, showGuide: true,
   mirrorX: false, mirrorY: false, countdown: 3,
-  secStop: true, autoSave: !matchMedia('(pointer: coarse)').matches, lang: 'zh-CN',
+  secStop: true, autoSave: IS_NATIVE || !matchMedia('(pointer: coarse)').matches, lang: 'zh-CN',
 };
 const isTouch = matchMedia('(pointer: coarse)').matches;
 const S = Object.assign({}, DEFAULTS, store.get('settings', {}));
@@ -1241,7 +1297,7 @@ const voice = { on: false, rec: null, want: false, idx: 0, target: null, endT: n
 const heardEl = $('#heard');
 
 function voiceToggle() {
-  if (!SR) return toast('这个浏览器不支持语音识别，请用 Safari、Edge 或 Chrome');
+  if (!SR) return toast(IS_NATIVE ? '安卓 App 里暂时用不了语音跟随，之后会加离线识别' : '这个浏览器不支持语音识别，请用 Safari、Edge 或 Chrome');
   voice.on = !voice.on;
   if (voice.on) {
     loadPinyin().catch(() => {});
@@ -1421,7 +1477,29 @@ function saveTake(chunks, mime, sec, dur) {
   if (S.autoSave) downloadTake(t);
   renderPanel();
 }
+// 安卓 App 里没有"下载"，分块交给原生写进相册（Movies/提词器）
+async function nativeSave(t) {
+  let id = null;
+  try {
+    id = (await NP.saveBegin({ name: t.name, mime: t.blob.type || 'video/mp4' })).id;
+    const CH = 768 * 1024;
+    for (let off = 0; off < t.blob.size; off += CH) {
+      const u8 = new Uint8Array(await t.blob.slice(off, off + CH).arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+      await NP.saveChunk({ id, data: btoa(bin) });
+    }
+    await NP.saveEnd({ id });
+    t.saved = true;
+    toast('已保存到相册：视频 / 提词器');
+  } catch (e) {
+    if (id) NP.saveAbort({ id }).catch(() => {});
+    toast('保存失败，可以在「目录」里再点一次保存');
+  }
+  renderPanel();
+}
 function downloadTake(t) {
+  if (NP) { nativeSave(t); return; }
   const a = document.createElement('a');
   a.href = t.url;
   a.download = t.name;
@@ -1431,6 +1509,7 @@ function downloadTake(t) {
   t.saved = true;
 }
 async function saveTakeManually(t) {
+  if (NP) { await nativeSave(t); return; }
   const file = new File([t.blob], t.name, { type: t.blob.type });
   // 手机上用系统分享面板，可以直接"存储视频"到相册
   if (isTouch && navigator.canShare?.({ files: [file] })) {
@@ -1676,6 +1755,7 @@ function commitEdit(cancel) {
 // ---------- 进入 / 退出 ----------
 let wakeLock = null;
 async function lockScreen() {
+  if (NP) { NP.keepAwake({ on: true }).catch(() => {}); return; }
   try { wakeLock = await navigator.wakeLock?.request('screen'); } catch (e) { wakeLock = null; }
 }
 document.addEventListener('visibilitychange', () => {
@@ -1720,12 +1800,15 @@ function exit() {
   if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   wakeLock?.release?.().catch(() => {});
   wakeLock = null;
+  if (NP) { NP.keepAwake({ on: false }).catch(() => {}); if (nativeFs) { nativeFs = false; NP.setFullscreen({ on: false }).catch(() => {}); } }
   // 把光标放回刚才读到的位置，方便改稿
   const s = sents[Math.max(0, curIdx)];
   if (s) { try { ta.setSelectionRange(s.start, s.start); } catch (e) {} }
   syncControls();
 }
+let nativeFs = false;
 function toggleFullscreen() {
+  if (NP) { nativeFs = !nativeFs; NP.setFullscreen({ on: nativeFs }).catch(() => {}); return; }
   if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   else document.documentElement.requestFullscreen?.().catch(() => toast('当前环境不支持全屏'));
 }
@@ -2236,16 +2319,19 @@ function renderRemoteStatus() {
     : n ? `已连接 ${n} 台遥控器` : '等待遥控器扫码…';
   if (el.textContent !== text) el.textContent = text;
   el.classList.toggle('ok', host.on && host.net === 'online');
-  $('#pRemote').setAttribute('aria-pressed', String((host.on && n > 0) || nLan > 0));
+  const nNear = IS_NATIVE ? [...app.clients.values()].filter((c) => c.authed).length : 0;
+  $('#pRemote').setAttribute('aria-pressed', String((host.on && n > 0) || nLan > 0 || nNear > 0));
 }
 function showTab(t) {
+  if (t === 'near' && !IS_NATIVE) t = 'lan';
   S.remoteTab = t;
   save();
   document.querySelectorAll('input[name="rtab"]').forEach((r) => { r.checked = r.value === t; });
+  $('#tabNear').hidden = t !== 'near';
   $('#tabLan').hidden = t !== 'lan';
   $('#tabNet').hidden = t !== 'net';
 }
-document.querySelectorAll('input[name="rtab"]').forEach((r) => r.addEventListener('change', () => { showTab(r.value); if (r.value === 'net') openRemoteDlg(false, true); else lanStopScan(); }));
+document.querySelectorAll('input[name="rtab"]').forEach((r) => r.addEventListener('change', () => { showTab(r.value); if (r.value === 'net') openRemoteDlg(false, true); else if (r.value === 'near') nearHostStart(); else lanStopScan(); }));
 $('#lanStart').addEventListener('click', lanBegin);
 $('#lanScan').addEventListener('click', lanScanStart);
 $('#lanConnect').addEventListener('click', () => lanAccept($('#lanPaste').value));
@@ -2256,7 +2342,8 @@ $('#lanCopy').addEventListener('click', async (e) => {
 async function openRemoteDlg(fresh, keepTab) {
   rdlg.hidden = false;
   poke();
-  if (!keepTab) showTab(S.remoteTab || 'lan');
+  if (!keepTab) showTab(S.remoteTab || (IS_NATIVE ? 'near' : 'lan'));
+  if (S.remoteTab === 'near') { nearHostStart(); return; }
   if (S.remoteTab !== 'net') { renderRemoteStatus(); return; }
   if (fresh || !host.on) { if (!(await hostStart(fresh))) { rdlg.hidden = true; return; } }
   const url = remoteUrl();
@@ -2387,15 +2474,276 @@ function renderRemote(m) {
   document.querySelectorAll('.rbtn:not(.big)').forEach((b) => { b.disabled = !inP; });
 }
 
+// ---------- 附近设备（只在安卓 App 里）：设备发现 + 6 位验证码配对 ----------
+const app = {
+  id: store.get('devId', null) || (() => { const v = newId() + newId(); store.set('devId', v); return v; })(),
+  alias: '', code: '', port: 0, ips: [], hostOn: false, timer: null, fails: 0,
+  clients: new Map(), trusted: store.get('trusted', {}),
+};
+const randHex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, '0')).join('');
+const gen6 = () => String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
+async function hmacHex(secret, msg) {
+  const enc = new TextEncoder();
+  const k = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return [...new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(msg)))].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+let linkReady = false;
+const ctrl = { peers: new Map(), ws: null, peer: null, code: '', nonce: '', want: false, retry: null, rid: 0, searching: false, lastMsg: 0 };
+function linkInit() {
+  if (linkReady || !NP) return;
+  linkReady = true;
+  NP.addListener('clientOpen', (e) => app.clients.set(e.cid, { authed: false, nonce: '', devId: '', alias: '', addr: e.addr }));
+  NP.addListener('clientClose', (e) => { app.clients.delete(e.cid); renderNear(); });
+  NP.addListener('clientMessage', (e) => onNearMsg(e.cid, e.text));
+  NP.addListener('peerFound', (e) => {
+    ctrl.peers.set(e.id, e);
+    if (ctrl.peer && ctrl.peer.id === e.id) ctrl.peer = e; // 对方换了地址，重连时用新的
+    renderPeers();
+  });
+  NP.addListener('peerLost', (e) => { ctrl.peers.delete(e.id); renderPeers(); });
+}
+
+// ----- 被遥控的这一端 -----
+function renderNear() {
+  const c = app.code;
+  $('#nearCode').textContent = c ? c.slice(0, 3) + ' ' + c.slice(3) : '--- ---';
+  if (document.activeElement !== $('#nearAlias')) $('#nearAlias').value = app.alias;
+  const n = [...app.clients.values()].filter((x) => x.authed);
+  const st = $('#nearStat');
+  st.textContent = !app.hostOn ? '没有被发现（遥控器看不到这台设备）' : n.length ? `已连接 ${n.map((x) => x.alias).join('、')}` : '正在被附近的设备发现，等待遥控器连接…';
+  st.classList.toggle('ok', app.hostOn);
+  $('#nearIps').textContent = app.hostOn && app.ips.length ? '本机地址：' + app.ips.map((ip) => `${ip}:${app.port}`).join('  ') : '';
+  $('#nearOff').textContent = app.hostOn ? '不再被发现' : '开始被发现';
+}
+async function nearHostStart() {
+  if (!NP) return false;
+  linkInit();
+  if (!app.hostOn) {
+    try {
+      const info = await NP.getInfo();
+      app.alias = store.get('alias', null) || info.model || '提词器';
+      app.ips = info.ips || [];
+      if (!app.code) app.code = gen6();
+      app.port = (await NP.startServer({ port: 53321 })).port;
+      await NP.startAnnounce({ id: app.id, alias: app.alias, port: app.port });
+      app.hostOn = true;
+      S.nearOn = true;
+      save();
+      clearInterval(app.timer);
+      app.timer = setInterval(() => {
+        const snap = JSON.stringify(snapshot());
+        for (const [cid, c] of app.clients) if (c.authed) NP.sendTo({ cid, text: snap });
+        renderRemoteStatus();
+      }, 300);
+    } catch (e) {
+      $('#nearStat').textContent = '启动失败：' + (e.message || e);
+      return false;
+    }
+  }
+  renderNear();
+  return true;
+}
+function nearHostStop() {
+  clearInterval(app.timer);
+  app.hostOn = false;
+  S.nearOn = false;
+  save();
+  NP.stopAnnounce().catch(() => {});
+  NP.stopServer().catch(() => {});
+  app.clients.clear();
+  renderNear();
+  renderRemoteStatus();
+}
+async function onNearMsg(cid, text) {
+  let m;
+  try { m = JSON.parse(text); } catch (e) { return; }
+  let c = app.clients.get(cid);
+  if (!c) { c = { authed: false, nonce: '', devId: '', alias: '' }; app.clients.set(cid, c); }
+  const send = (o) => NP.sendTo({ cid, text: JSON.stringify(o) });
+  if (m.t === 'hello') {
+    c.devId = String(m.id || '').slice(0, 40);
+    c.alias = String(m.alias || '遥控器').slice(0, 24);
+    if (m.tok && c.devId && app.trusted[c.devId] === m.tok) { c.authed = true; send({ t: 'ok', alias: app.alias }); renderNear(); }
+    else { c.nonce = randHex(16); send({ t: 'chal', n: c.nonce }); }
+  } else if (m.t === 'auth') {
+    if (c.authed || !c.nonce) return;
+    if (m.mac && m.mac === await hmacHex(app.code, c.nonce)) {
+      const tok = randHex(16);
+      app.trusted[c.devId] = tok;
+      store.set('trusted', app.trusted);
+      c.authed = true;
+      app.fails = 0;
+      send({ t: 'ok', tok, alias: app.alias });
+      renderNear();
+      toast(`${c.alias} 已连上`);
+    } else {
+      app.fails++;
+      c.nonce = randHex(16); // 每次猜错都换一个挑战
+      if (app.fails >= 5) { app.fails = 0; app.code = gen6(); renderNear(); send({ t: 'locked' }); NP.closeClient({ cid }); }
+      else send({ t: 'bad', n: c.nonce });
+    }
+  } else if (m.t === 'cmd' && c.authed) {
+    runRemote(m.c);
+  }
+}
+$('#nearNew').addEventListener('click', () => { app.code = gen6(); app.fails = 0; renderNear(); });
+$('#nearForget').addEventListener('click', () => {
+  app.trusted = {};
+  store.set('trusted', app.trusted);
+  for (const [cid] of app.clients) NP.closeClient({ cid });
+  toast('已忘记所有配对过的设备，下次连接要重新输入验证码');
+});
+$('#nearOff').addEventListener('click', () => { if (app.hostOn) nearHostStop(); else nearHostStart(); });
+$('#nearAlias').addEventListener('change', (e) => {
+  app.alias = e.target.value.trim().slice(0, 20) || app.alias;
+  store.set('alias', app.alias);
+  if (app.hostOn) NP.startAnnounce({ id: app.id, alias: app.alias, port: app.port }).catch(() => {});
+});
+
+// ----- 当遥控器的这一端 -----
+const cdlg = $('#cdlg');
+const setCtrlConn = (t, ok) => { $('#rconn').textContent = t; $('#rconn').classList.toggle('ok', !!ok); };
+const knownPeers = () => store.get('peers', {});
+function renderPeers() {
+  const ul = $('#peerList');
+  ul.textContent = '';
+  const list = [...ctrl.peers.values()].sort((a, b) => a.alias.localeCompare(b.alias));
+  $('#peerEmpty').hidden = list.length > 0;
+  for (const p of list) {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'go' + (ctrl.peer && ctrl.peer.id === p.id && ctrl.ws ? ' on' : '');
+    b.innerHTML = '<span class="t"></span><span class="tm"></span>';
+    b.querySelector('.t').textContent = p.alias;
+    b.querySelector('.tm').textContent = knownPeers()[p.id] ? '已配对 · ' + p.ip : p.ip;
+    b.addEventListener('click', () => ctrlConnect(p));
+    li.append(b);
+    ul.append(li);
+  }
+}
+async function ctrlOpen() {
+  if (!NP) return;
+  linkInit();
+  cdlg.hidden = false;
+  $('#codeAsk').hidden = true;
+  try {
+    const info = await NP.getInfo();
+    app.alias = store.get('alias', null) || info.model || '遥控器';
+    if (!ctrl.searching) { await NP.startDiscovery({ id: app.id }); ctrl.searching = true; }
+  } catch (e) { toast('搜索失败：' + (e.message || e)); }
+  renderPeers();
+}
+function ctrlCloseDlg() {
+  cdlg.hidden = true;
+  if (!ctrl.want && ctrl.searching) { NP.stopDiscovery().catch(() => {}); ctrl.searching = false; ctrl.peers.clear(); }
+}
+function askCode(msg) {
+  $('#codeLbl').textContent = msg || '输入对方屏幕上的 6 位验证码';
+  $('#codeAsk').hidden = false;
+  $('#codeIn').value = '';
+  $('#codeIn').focus();
+}
+function ctrlConnect(peer) {
+  ctrl.want = true;
+  ctrl.peer = peer;
+  ctrl.code = '';
+  ctrlSocket();
+}
+function ctrlSocket() {
+  clearTimeout(ctrl.retry);
+  if (ctrl.ws) { try { ctrl.ws.close(); } catch (e) {} }
+  const peer = ctrl.peer;
+  const rid = ++ctrl.rid;
+  let authed = false;
+  let ws;
+  try { ws = new WebSocket(`ws://${peer.ip}:${peer.port}`); } catch (e) { toast('地址不对'); ctrl.want = false; return; }
+  ctrl.ws = ws;
+  setCtrlConn(`正在连接 ${peer.alias}…`);
+  ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', id: app.id, alias: app.alias, tok: knownPeers()[peer.id]?.tok || '' }));
+  ws.onmessage = (ev) => {
+    if (rid !== ctrl.rid) return;
+    let m;
+    try { m = JSON.parse(ev.data); } catch (e) { return; }
+    if (m.t === 'chal' || m.t === 'bad') {
+      ctrl.nonce = m.n;
+      if (m.t === 'bad') { toast('验证码不对'); askCode('验证码不对，请再看一下对方屏幕'); }
+      else askCode(`输入「${peer.alias}」屏幕上的 6 位验证码`);
+    } else if (m.t === 'locked') {
+      toast('错误次数太多，请看对方屏幕上换了的新验证码');
+      ctrl.want = false;
+      ws.close();
+    } else if (m.t === 'ok') {
+      authed = true;
+      $('#codeAsk').hidden = true;
+      if (m.tok) { const k = knownPeers(); k[peer.id] = { tok: m.tok, alias: peer.alias }; store.set('peers', k); }
+      cdlg.hidden = true;
+      showRemoteScreen(true);
+      setCtrlConn(`已连接 ${peer.alias}`, true);
+      renderPeers();
+    } else if (m.t === 'state') {
+      ctrl.lastMsg = Date.now();
+      renderRemote(m);
+      setCtrlConn(`已连接 ${peer.alias}`, true);
+    }
+  };
+  ws.onclose = () => {
+    if (rid !== ctrl.rid) return;
+    ctrl.ws = null;
+    if (!ctrl.want) return;
+    if (authed) { setCtrlConn('连接断开，正在重连…'); ctrl.retry = setTimeout(ctrlSocket, 1500); }
+    else { toast(`连不上 ${peer.alias}，请确认两台设备在同一个网络`); ctrl.want = false; }
+    renderPeers();
+  };
+  ws.onerror = () => {};
+}
+$('#codeGo').addEventListener('click', async () => {
+  const code = $('#codeIn').value.replace(/\D/g, '');
+  if (code.length !== 6 || !ctrl.ws || ctrl.ws.readyState !== 1) return;
+  ctrl.ws.send(JSON.stringify({ t: 'auth', mac: await hmacHex(code, ctrl.nonce) }));
+});
+$('#codeIn').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); if (e.target.value.length === 6) $('#codeGo').click(); });
+$('#manGo').addEventListener('click', () => {
+  const ip = $('#manIp').value.trim();
+  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return toast('地址要像 192.168.43.1 这样');
+  ctrlConnect({ id: 'ip:' + ip, alias: ip, ip, port: 53321 });
+});
+function showRemoteScreen(on) {
+  $('#remote').hidden = !on;
+  $('#editor').hidden = on;
+  if (on) history.pushState({ r: 1 }, '');
+}
+function ctrlLeave() {
+  ctrl.want = false;
+  ctrl.rid++;
+  clearTimeout(ctrl.retry);
+  try { ctrl.ws?.close(); } catch (e) {}
+  ctrl.ws = null;
+  if (ctrl.searching) { NP.stopDiscovery().catch(() => {}); ctrl.searching = false; ctrl.peers.clear(); }
+  showRemoteScreen(false);
+}
+window.addEventListener('popstate', () => { if (!$('#remote').hidden && ctrl.want) ctrlLeave(); });
+$('#rLeave').addEventListener('click', () => { if (history.state?.r) history.back(); else ctrlLeave(); });
+$('#ctrlBtn').addEventListener('click', ctrlOpen);
+$('#cdlgClose').addEventListener('click', ctrlCloseDlg);
+cdlg.addEventListener('click', (e) => { if (e.target === cdlg) ctrlCloseDlg(); });
+// 遥控器的按钮：走 WebSocket（网页版遥控页各自有自己的发送方式，这里 ws 为空时不会动作）
+$('#remote').addEventListener('click', (e) => {
+  const b = e.target.closest('.rbtn');
+  if (!b || !ctrl.ws || ctrl.ws.readyState !== 1) return;
+  ctrl.ws.send(JSON.stringify({ t: 'cmd', c: b.dataset.c }));
+  navigator.vibrate?.(15);
+});
+
 // ---------- 安装成 App ----------
 let installEvt = null;
 const installBtn = $('#install');
 const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; installBtn.hidden = false; });
-window.addEventListener('appinstalled', () => { installBtn.hidden = true; installEvt = null; });
-if (isIOS && !isStandalone) installBtn.hidden = false;
-installBtn.addEventListener('click', async () => {
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (installBtn) installBtn.hidden = false; });
+window.addEventListener('appinstalled', () => { if (installBtn) installBtn.hidden = true; installEvt = null; });
+if (installBtn && isIOS && !isStandalone) installBtn.hidden = false;
+installBtn?.addEventListener('click', async () => {
   if (installEvt) {
     installEvt.prompt();
     await installEvt.userChoice.catch(() => {});
@@ -2405,7 +2753,7 @@ installBtn.addEventListener('click', async () => {
     installBtn.textContent = '在 Safari 点「分享」→「添加到主屏幕」';
   }
 });
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !IS_NATIVE) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
@@ -2413,6 +2761,7 @@ syncControls();
 if (location.hash.startsWith('#d=')) directRemote(location.hash.slice(3));
 else if (qs.get('r') && location.hash.length > 1) remoteMode(qs.get('r'), location.hash.slice(1));
 else if (S.remoteOn) hostStart(false);
+if (IS_NATIVE && S.nearOn) nearHostStart();
 })();
 </script>
 </body>

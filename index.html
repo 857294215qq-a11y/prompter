@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>提词器</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1115">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="提词器">
 <style>
 /* 布局：编辑页是"稿子 + 设置栏"两栏；提词页是全屏舞台，上下两条可自动隐藏的控制条 */
 :root {
@@ -115,9 +123,9 @@ details.keys summary { cursor: pointer; color: var(--fg); }
 #content .sec { margin: 1.4em 0 .5em; font-size: .5em; line-height: 1.4; font-weight: 700; letter-spacing: .08em; color: var(--hl); }
 #content > :first-child { margin-top: 0; }
 #content .s { cursor: pointer; transition: opacity .25s; border-radius: .12em; }
-@media (hover: hover) { #content .s:hover { background: color-mix(in srgb, currentColor 10%, transparent); } }
+@media (hover: hover) { #prompter:not(.playing) #content .s:hover { text-decoration: underline 2px; text-decoration-color: color-mix(in srgb, var(--hl) 70%, transparent); text-underline-offset: .18em; } }
 #content.dim .past { opacity: .32; }
-#guide { position: absolute; left: 0; right: 0; pointer-events: none; background: color-mix(in srgb, var(--hl) 9%, transparent); }
+#guide { position: absolute; left: 0; right: 0; pointer-events: none; }
 #guide::before, #guide::after { content: ""; position: absolute; top: 50%; translate: 0 -50%; border: 12px solid transparent; }
 #guide::before { left: 0; border-left: 16px solid var(--hl); }
 #guide::after { right: 0; border-right: 16px solid var(--hl); }
@@ -278,6 +286,7 @@ details.keys summary { cursor: pointer; color: var(--fg); }
         <label class="btn" for="file">导入 .txt</label>
         <input id="file" type="file" accept=".txt,text/plain" hidden>
         <button class="btn" id="sample" type="button">载入示例稿</button>
+        <button class="btn" id="install" type="button" hidden>安装到桌面</button>
         <span class="grow"></span>
         <button class="btn" id="startCaret" type="button">从光标处开始</button>
         <button class="btn primary" id="start" type="button"><svg class="i"><use href="#i-play"/></svg>开始提词</button>
@@ -714,6 +723,7 @@ function build() {
   }
   build.blockEls = blockEls;
   curIdx = -1;
+  pastIdx = 0;
 }
 
 function applyStyle() {
@@ -808,17 +818,24 @@ const nav = {
   nudge: (d) => jumpTo((anim ? anim.to : pos) + d * lhPx, true),
 };
 
-function updateCur() {
+// 最后一个起点在 y 之上的句子
+function sentAt(y) {
   let lo = 0, hi = sents.length - 1, ans = -1;
-  const y = pos + lhPx * 0.5;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
     if (sents[mid].top <= y) { ans = mid; lo = mid + 1; } else hi = mid - 1;
   }
-  if (ans === curIdx) return;
-  const a = Math.max(0, Math.min(ans, curIdx)), b = Math.max(ans, curIdx);
-  for (let i = a; i <= b; i++) sents[i].el.classList.toggle('past', i < ans);
-  curIdx = ans;
+  return ans;
+}
+let pastIdx = 0;
+function updateCur() {
+  curIdx = sentAt(pos + lhPx * 0.5);
+  // 只把已经整行读过去的句子变暗：下一句是从阅读线上方的行开始的
+  const p = Math.max(0, sentAt(pos - lhPx * 0.5));
+  if (p === pastIdx) return;
+  const a = Math.min(p, pastIdx), b = Math.max(p, pastIdx);
+  for (let i = a; i <= b && i < sents.length; i++) sents[i].el.classList.toggle('past', i < p);
+  pastIdx = p;
 }
 
 // ---------- 播放 / 分段 ----------
@@ -1449,6 +1466,28 @@ document.addEventListener('keydown', (e) => {
   }
   if (handled) { e.preventDefault(); poke(); }
 });
+
+// ---------- 安装成 App ----------
+let installEvt = null;
+const installBtn = $('#install');
+const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; installBtn.hidden = false; });
+window.addEventListener('appinstalled', () => { installBtn.hidden = true; installEvt = null; });
+if (isIOS && !isStandalone) installBtn.hidden = false;
+installBtn.addEventListener('click', async () => {
+  if (installEvt) {
+    installEvt.prompt();
+    await installEvt.userChoice.catch(() => {});
+    installEvt = null;
+    installBtn.hidden = true;
+  } else if (isIOS) {
+    installBtn.textContent = '在 Safari 点「分享」→「添加到主屏幕」';
+  }
+});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 
 syncControls();
 })();

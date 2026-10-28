@@ -53,6 +53,15 @@
 | Esc | 返回编辑 |
 | Ctrl/⌘ + Enter | 在编辑页开始提词 |
 
+## 安装成 App
+
+打开 https://857294215qq-a11y.github.io/prompter/ 后：
+
+- **安卓 / 电脑（Chrome、Edge）**：点编辑页的「安装到桌面」，或浏览器地址栏右侧的安装图标
+- **iPhone / iPad（Safari）**：点「分享」→「添加到主屏幕」
+
+安装后从桌面图标打开，全屏显示，没网也能用（语音跟随除外）。
+
 ## 部署
 
 在仓库 Settings → Pages 里选择从 `main` 分支根目录发布，就能用 `https://<用户名>.github.io/prompter/` 打开，手机和平板也能用。

@@ -276,6 +276,19 @@ details.keys summary { cursor: pointer; color: var(--fg); }
 }
 .rbtn:active { background: color-mix(in srgb, var(--accent) 22%, var(--raise)); }
 .rbtn.wide { grid-column: 1 / -1; }
+.scan { width: 100%; max-height: 260px; border-radius: 10px; background: #000; object-fit: cover; }
+#lanPaste { width: 100%; min-height: 64px; padding: 8px 10px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); font: 12px var(--num); resize: vertical; }
+.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+#lanQr { width: min(300px, 100%); }
+#tabLan { display: grid; gap: 12px; }
+#tabNet { display: grid; gap: 12px; }
+.steps b { color: var(--fg); font-weight: 600; }
+details.more { font-size: 13px; color: var(--muted); }
+details.more summary { cursor: pointer; color: var(--fg); margin-bottom: 8px; }
+details.more > div { display: grid; gap: 8px; }
+#rpair { display: grid; gap: 12px; padding: 14px 16px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
+#rpair .qr { width: min(300px, 100%); }
+#rAnsCode { width: 100%; min-height: 56px; padding: 8px 10px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); font: 11px var(--num); resize: none; }
 .rbtn.big { grid-column: 1 / -1; min-height: 88px; font-size: 22px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .rbtn.big.on { background: var(--tally); color: #fff; }
 .rbtn:disabled { opacity: .4; }
@@ -569,7 +582,38 @@ details.keys summary { cursor: pointer; color: var(--fg); }
       <strong id="rdlgTitle">手机遥控</strong>
       <button class="ib" id="rdlgClose" type="button" aria-label="关闭"><svg class="i"><use href="#i-x"/></svg></button>
     </div>
-    <p class="tip">用另一台手机的相机扫码，打开的页面就是遥控器：播放暂停、翻页、重录本节、调语速都能远程按。两台设备都要能上网，连同一个手机热点也可以。</p>
+    <div class="seg" role="radiogroup" aria-label="连接方式">
+      <label><input type="radio" name="rtab" value="lan"><span>同一网络 / 热点直连</span></label>
+      <label><input type="radio" name="rtab" value="net"><span>通过互联网</span></label>
+    </div>
+
+    <div id="tabLan">
+      <p class="tip">不经过互联网，两台设备在同一个 Wi-Fi 下，或者遥控手机连上提词设备开的热点，就能直接连。</p>
+      <ol class="steps">
+        <li>点「开始配对」，用<b>遥控手机的相机</b>扫出现的码，打开遥控页面。</li>
+        <li>遥控页面会显示另一个码。点「扫描遥控器的码」，用提词设备的摄像头对准它。</li>
+        <li>连上后遥控手机上就能按了。</li>
+      </ol>
+      <div class="actions">
+        <button class="btn primary" id="lanStart" type="button">开始配对</button>
+        <button class="btn" id="lanScan" type="button" hidden>扫描遥控器的码</button>
+      </div>
+      <div class="qr" id="lanQr" hidden aria-label="直连配对二维码"></div>
+      <video id="scanVideo" class="scan" muted playsinline hidden></video>
+      <p class="dot" id="lanStat">还没有遥控器连上</p>
+      <details class="more">
+        <summary>扫码不方便？手动配对</summary>
+        <div>
+          <div class="row"><input id="lanLink" readonly aria-label="配对链接"><button class="btn" id="lanCopy" type="button">复制链接</button></div>
+          <label for="lanPaste" class="tip">把遥控页面上显示的回应码粘贴到这里：</label>
+          <textarea id="lanPaste" spellcheck="false" placeholder="回应码"></textarea>
+          <button class="btn" id="lanConnect" type="button">连接</button>
+        </div>
+      </details>
+    </div>
+
+    <div id="tabNet" hidden>
+    <p class="tip">用另一台手机的相机扫码，打开的页面就是遥控器。两台设备都要能上网；如果提词设备开了热点、有流量，遥控手机连上去也行。</p>
     <div class="qr" id="qr" aria-label="遥控二维码"></div>
     <div class="row"><input id="rlink" readonly aria-label="遥控链接"><button class="btn" id="rcopy" type="button">复制链接</button></div>
     <p class="dot" id="rstat">遥控已关闭</p>
@@ -577,6 +621,7 @@ details.keys summary { cursor: pointer; color: var(--fg); }
       <button class="btn" id="rnew" type="button">换一个配对码</button>
       <span class="grow"></span>
       <button class="btn" id="roff" type="button">关闭遥控</button>
+    </div>
     </div>
   </div>
 </div>
@@ -587,6 +632,15 @@ details.keys summary { cursor: pointer; color: var(--fg); }
     <h1 class="brand">提词遥控器</h1>
     <p class="dot" id="rconn">正在连接…</p>
   </header>
+  <section id="rpair" hidden>
+    <strong>最后一步</strong>
+    <p class="tip">让提词设备点「扫描遥控器的码」，对准下面的码。连上后这里会自动消失。</p>
+    <div class="qr" id="rQr"></div>
+    <details class="more">
+      <summary>没法扫码？复制回应码</summary>
+      <div><textarea id="rAnsCode" readonly spellcheck="false" aria-label="回应码"></textarea><button class="btn" id="rAnsCopy" type="button">复制回应码</button></div>
+    </details>
+  </section>
   <section class="rstatus" aria-live="polite">
     <div class="rsec" id="rSec">等待提词设备</div>
     <p class="rsent" id="rSent">在提词设备上保持页面打开，这里会显示它正在读的句子。</p>
@@ -1933,6 +1987,43 @@ function loadScript(src) {
   return new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = res; sc.onerror = rej; document.head.append(sc); });
 }
 
+// ----- 同一网络直连（WebRTC，扫两次码配对，之后不经过任何服务器） -----
+const RTC_CFG = { iceServers: [] };
+const packOf = async (obj) => {
+  const raw = new TextEncoder().encode(JSON.stringify(obj));
+  if (!window.CompressionStream) return 'r' + b64u.enc(raw);
+  const cs = new CompressionStream('deflate-raw');
+  const w = cs.writable.getWriter();
+  w.write(raw); w.close();
+  return 'z' + b64u.enc(new Uint8Array(await new Response(cs.readable).arrayBuffer()));
+};
+const unpackOf = async (str) => {
+  str = str.trim();
+  const bin = b64u.dec(str.slice(1));
+  if (str[0] === 'r') return JSON.parse(new TextDecoder().decode(bin));
+  const ds = new DecompressionStream('deflate-raw');
+  const w = ds.writable.getWriter();
+  w.write(bin); w.close();
+  return JSON.parse(new TextDecoder().decode(await new Response(ds.readable).arrayBuffer()));
+};
+function iceDone(pc, ms = 3000) {
+  return new Promise((res) => {
+    if (pc.iceGatheringState === 'complete') return res();
+    const done = () => { pc.removeEventListener('icegatheringstatechange', chk); clearTimeout(t); res(); };
+    const chk = () => { if (pc.iceGatheringState === 'complete') done(); };
+    const t = setTimeout(done, ms);
+    pc.addEventListener('icegatheringstatechange', chk);
+  });
+}
+async function drawQr(box, text) {
+  if (!window.qrcode) await loadScript('vendor/qrcode.js');
+  const q = window.qrcode(0, 'L');
+  q.addData(text);
+  q.make();
+  box.innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+}
+const pageBase = () => { const u = new URL(location.href); u.search = ''; u.hash = ''; return u.toString(); };
+
 // ----- 提词设备（主机）这一端 -----
 const rdlg = $('#rdlg');
 const host = { on: false, cli: null, key: null, pair: null, net: 'offline', remotes: new Map(), lastSent: '', lastSentAt: 0, timer: null };
@@ -2008,6 +2099,118 @@ async function sendState(force) {
   host.lastSentAt = now;
   host.cli.publish(TOPIC(host.pair.room) + '/p', await seal(host.key, snap));
 }
+// 直连的遥控器：每台一个 RTCPeerConnection
+const lan = { peers: [], pending: null, timer: null, scanStream: null, scanning: false };
+const lanOpen = () => lan.peers.filter((x) => x.ch?.readyState === 'open' && Date.now() - x.last < 8000);
+function lanSend(x, obj) { try { x.ch.send(JSON.stringify(obj)); } catch (e) {} }
+function lanTick() {
+  for (const x of lan.peers.slice()) if (Date.now() - x.last > 40000) lanDrop(x);
+  const open = lanOpen();
+  if (open.length) { const snap = snapshot(); for (const x of open) lanSend(x, snap); }
+  renderRemoteStatus();
+}
+function lanDrop(x) {
+  lan.peers = lan.peers.filter((y) => y !== x);
+  try { x.pc.close(); } catch (e) {}
+  if (!lan.peers.length) { clearInterval(lan.timer); lan.timer = null; }
+  renderRemoteStatus();
+}
+async function lanBegin() {
+  lanStopScan();
+  if (lan.pending) { try { lan.pending.pc.close(); } catch (e) {} lan.pending = null; }
+  $('#lanStart').disabled = true;
+  // 先申请摄像头：浏览器这样才会在配对信息里带上真实的局域网地址，也是后面扫码要用的
+  try { lan.scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } }); } catch (e) { lan.scanStream = null; }
+  const pc = new RTCPeerConnection(RTC_CFG);
+  const ch = pc.createDataChannel('c');
+  const x = { pc, ch, id: newId(), last: Date.now() };
+  lan.pending = x;
+  ch.onopen = () => {
+    x.last = Date.now();
+    lan.pending = null;
+    lan.peers.push(x);
+    lanSend(x, snapshot());
+    if (!lan.timer) lan.timer = setInterval(lanTick, 300);
+    lanStopScan();
+    $('#lanScan').hidden = true;
+    $('#lanQr').hidden = true;
+    $('#lanStart').textContent = '再连一台遥控器';
+    $('#lanStart').disabled = false;
+    renderRemoteStatus();
+    toast('遥控器已连上');
+  };
+  ch.onmessage = (e) => {
+    let m; try { m = JSON.parse(e.data); } catch (err) { return; }
+    x.last = Date.now();
+    if (m.t === 'cmd') runRemote(m.c);
+    else if (m.t === 'hello') lanSend(x, snapshot());
+  };
+  pc.onconnectionstatechange = () => { if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) { if (lan.peers.includes(x)) { lanDrop(x); toast('一台遥控器断开了'); } } };
+  await pc.setLocalDescription(await pc.createOffer());
+  await iceDone(pc);
+  const code = await packOf({ k: 'o', sdp: pc.localDescription.sdp });
+  const url = pageBase() + '#d=' + code;
+  $('#lanLink').value = url;
+  try { await drawQr($('#lanQr'), url); $('#lanQr').hidden = false; } catch (e) { $('#lanQr').hidden = true; }
+  $('#lanScan').hidden = false;
+  $('#lanStart').disabled = false;
+  $('#lanStart').textContent = '重新生成配对码';
+  $('#lanStat').textContent = '等待遥控器扫码…';
+  $('#lanStat').classList.remove('ok');
+}
+async function lanAccept(text) {
+  const x = lan.pending;
+  if (!x) return toast('先点「开始配对」');
+  let m;
+  try { m = await unpackOf(text); } catch (e) { return toast('这个码不对，请重新扫'); }
+  if (m.k !== 'a' || !m.sdp) return toast('这个码不是遥控器的回应码');
+  lanStopScan();
+  try { await x.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }); }
+  catch (e) { return toast('配对失败，请重新开始配对'); }
+  $('#lanStat').textContent = '正在连接…';
+}
+async function lanScanStart() {
+  if (lan.scanning) return;
+  const v = $('#scanVideo');
+  if (!lan.scanStream) {
+    try { lan.scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } }); }
+    catch (e) { return toast('没有摄像头权限，请用下面的「手动配对」'); }
+  }
+  v.srcObject = lan.scanStream;
+  v.hidden = false;
+  await v.play().catch(() => {});
+  lan.scanning = true;
+  const det = 'BarcodeDetector' in window ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
+  if (!det && !window.jsQR) { try { await loadScript('vendor/jsqr.js'); } catch (e) { lanStopScan(); return toast('扫码组件加载失败，请用「手动配对」'); } }
+  const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently: true });
+  $('#lanStat').textContent = '把摄像头对准遥控器上的码…';
+  const loop = async () => {
+    if (!lan.scanning) return;
+    if (v.videoWidth) {
+      let text = null;
+      try {
+        if (det) { const r = await det.detect(v); text = r[0]?.rawValue || null; }
+        else {
+          const sc = Math.min(1, 720 / v.videoWidth);
+          cv.width = v.videoWidth * sc; cv.height = v.videoHeight * sc;
+          cx.drawImage(v, 0, 0, cv.width, cv.height);
+          text = window.jsQR(cx.getImageData(0, 0, cv.width, cv.height).data, cv.width, cv.height)?.data || null;
+        }
+      } catch (e) {}
+      if (text) { await lanAccept(text); return; }
+    }
+    setTimeout(loop, 150);
+  };
+  loop();
+}
+function lanStopScan() {
+  lan.scanning = false;
+  $('#scanVideo').hidden = true;
+  $('#scanVideo').srcObject = null;
+  if (lan.scanStream) lan.scanStream.getTracks().forEach((t) => t.stop());
+  lan.scanStream = null;
+}
+
 function runRemote(c) {
   if (prompter.hidden) { if (c === 'toggle') enter(false); return; }
   if (editing) commitEdit();
@@ -2022,6 +2225,10 @@ function runRemote(c) {
   poke();
 }
 function renderRemoteStatus() {
+  const nLan = lanOpen().length;
+  const lanEl = $('#lanStat');
+  if (nLan) { lanEl.textContent = `已直连 ${nLan} 台遥控器`; lanEl.classList.add('ok'); }
+  else if (lanEl.classList.contains('ok')) { lanEl.textContent = '遥控器已断开，需要重新配对'; lanEl.classList.remove('ok'); }
   const n = [...host.remotes.values()].filter((t) => Date.now() - t < 12000).length;
   const el = $('#rstat');
   const text = !host.on ? '遥控已关闭'
@@ -2029,11 +2236,28 @@ function renderRemoteStatus() {
     : n ? `已连接 ${n} 台遥控器` : '等待遥控器扫码…';
   if (el.textContent !== text) el.textContent = text;
   el.classList.toggle('ok', host.on && host.net === 'online');
-  $('#pRemote').setAttribute('aria-pressed', String(host.on && n > 0));
+  $('#pRemote').setAttribute('aria-pressed', String((host.on && n > 0) || nLan > 0));
 }
-async function openRemoteDlg(fresh) {
+function showTab(t) {
+  S.remoteTab = t;
+  save();
+  document.querySelectorAll('input[name="rtab"]').forEach((r) => { r.checked = r.value === t; });
+  $('#tabLan').hidden = t !== 'lan';
+  $('#tabNet').hidden = t !== 'net';
+}
+document.querySelectorAll('input[name="rtab"]').forEach((r) => r.addEventListener('change', () => { showTab(r.value); if (r.value === 'net') openRemoteDlg(false, true); else lanStopScan(); }));
+$('#lanStart').addEventListener('click', lanBegin);
+$('#lanScan').addEventListener('click', lanScanStart);
+$('#lanConnect').addEventListener('click', () => lanAccept($('#lanPaste').value));
+$('#lanCopy').addEventListener('click', async (e) => {
+  const inp = $('#lanLink');
+  try { await navigator.clipboard.writeText(inp.value); e.currentTarget.textContent = '已复制'; } catch (err) { inp.select(); }
+});
+async function openRemoteDlg(fresh, keepTab) {
   rdlg.hidden = false;
   poke();
+  if (!keepTab) showTab(S.remoteTab || 'lan');
+  if (S.remoteTab !== 'net') { renderRemoteStatus(); return; }
   if (fresh || !host.on) { if (!(await hostStart(fresh))) { rdlg.hidden = true; return; } }
   const url = remoteUrl();
   $('#rlink').value = url;
@@ -2046,7 +2270,7 @@ async function openRemoteDlg(fresh) {
   } catch (e) { $('#qr').textContent = '二维码加载失败，请复制下面的链接'; }
   $('#rdlgClose').focus();
 }
-function closeRemoteDlg() { rdlg.hidden = true; }
+function closeRemoteDlg() { rdlg.hidden = true; lanStopScan(); }
 $('#remoteBtn').addEventListener('click', () => openRemoteDlg(false));
 bind('#pRemote', () => openRemoteDlg(false));
 $('#rdlgClose').addEventListener('click', closeRemoteDlg);
@@ -2096,6 +2320,56 @@ async function remoteMode(room, keyStr) {
   lockScreen();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') lockScreen(); });
 }
+async function directRemote(code) {
+  $('#editor').hidden = true;
+  prompter.hidden = true;
+  $('#remote').hidden = false;
+  document.title = '提词遥控器';
+  const conn = $('#rconn');
+  const setConn = (t, ok) => { conn.textContent = t; conn.classList.toggle('ok', !!ok); };
+  setConn('正在配对…');
+  let offer;
+  try { offer = await unpackOf(code); } catch (e) { return setConn('配对码不完整，请重新扫码'); }
+  if (offer.k !== 'o') return setConn('这不是提词设备的配对码');
+  const pc = new RTCPeerConnection(RTC_CFG);
+  let ch = null, lastMsg = 0;
+  const upd = () => {
+    if (ch?.readyState === 'open' && Date.now() - lastMsg < 3000) setConn('已连接提词设备（直连）', true);
+    else if (ch?.readyState === 'open') setConn('已连上，等待提词设备…', true);
+    else if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) { setConn('连接断开了，请重新扫码配对'); $('#rpair').hidden = true; }
+  };
+  pc.ondatachannel = (e) => {
+    ch = e.channel;
+    ch.onopen = () => {
+      $('#rpair').hidden = true; upd(); ch.send(JSON.stringify({ t: 'hello' }));
+      setInterval(() => { if (ch.readyState === 'open') ch.send(JSON.stringify({ t: 'ping' })); }, 2000);
+    };
+    ch.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (err) { return; } if (m.t === 'state') { lastMsg = Date.now(); renderRemote(m); upd(); } };
+    ch.onclose = upd;
+  };
+  pc.onconnectionstatechange = upd;
+  setInterval(upd, 1000);
+  try {
+    await pc.setRemoteDescription({ type: 'offer', sdp: offer.sdp });
+    await pc.setLocalDescription(await pc.createAnswer());
+    await iceDone(pc);
+    const ans = await packOf({ k: 'a', sdp: pc.localDescription.sdp });
+    $('#rAnsCode').value = ans;
+    await drawQr($('#rQr'), ans);
+    $('#rpair').hidden = false;
+    setConn('等待提词设备扫码…');
+  } catch (e) { return setConn('配对失败，请重新扫码'); }
+  $('#rAnsCopy').addEventListener('click', async (e) => {
+    try { await navigator.clipboard.writeText($('#rAnsCode').value); e.currentTarget.textContent = '已复制'; } catch (err) { $('#rAnsCode').select(); }
+  });
+  document.querySelectorAll('.rbtn').forEach((b) => b.addEventListener('click', () => {
+    if (ch?.readyState !== 'open') return setConn('还没连上，稍等一下再按');
+    ch.send(JSON.stringify({ t: 'cmd', c: b.dataset.c }));
+    navigator.vibrate?.(15);
+  }));
+  lockScreen();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') lockScreen(); });
+}
 function renderRemote(m) {
   const inP = m.mode === 'prompter';
   $('#rSec').textContent = m.sec || (inP ? '' : '提词设备在编辑页');
@@ -2136,7 +2410,8 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 }
 
 syncControls();
-if (qs.get('r') && location.hash.length > 1) remoteMode(qs.get('r'), location.hash.slice(1));
+if (location.hash.startsWith('#d=')) directRemote(location.hash.slice(3));
+else if (qs.get('r') && location.hash.length > 1) remoteMode(qs.get('r'), location.hash.slice(1));
 else if (S.remoteOn) hostStart(false);
 })();
 </script>

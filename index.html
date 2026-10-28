@@ -25,6 +25,7 @@
   --accent: #f0b43c;
   --accent-ink: #1d1503;
   --tally: #e5484d;
+  --ok: #3fb950;
   --ui: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
   --num: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
@@ -67,6 +68,12 @@ svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor;
 .tip code { font-family: var(--num); color: var(--accent); }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .actions .grow { flex: 1; }
+.lib { display: flex; gap: 8px; align-items: center; }
+#scriptSel {
+  flex: 1; min-width: 0; height: 40px; padding: 0 10px; border-radius: 8px;
+  background: var(--raise); border: 1px solid var(--line); font-size: 15px;
+}
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -125,6 +132,18 @@ details.keys summary { cursor: pointer; color: var(--fg); }
 #content .s { cursor: pointer; transition: opacity .25s; border-radius: .12em; }
 @media (hover: hover) { #prompter:not(.playing) #content .s:hover { text-decoration: underline 2px; text-decoration-color: color-mix(in srgb, var(--hl) 70%, transparent); text-underline-offset: .18em; } }
 #content.dim .past { opacity: .32; }
+#content .em { color: var(--hl); }
+#content .cue {
+  display: inline-block; vertical-align: .25em; margin: 0 .25em; padding: .1em .55em;
+  font-size: .42em; line-height: 1.3; font-weight: 700; letter-spacing: .06em; white-space: nowrap;
+  border: 2px solid currentColor; border-radius: 99px; opacity: .65;
+}
+#content .s.editing {
+  user-select: text; -webkit-user-select: text; cursor: text; opacity: 1;
+  outline: 2px dashed var(--hl); outline-offset: 6px; border-radius: 2px;
+}
+#prompter.editmode #content .s { cursor: text; }
+@media (hover: hover) { #prompter.editmode #content .s:hover { text-decoration: underline dashed 2px; text-decoration-color: var(--hl); } }
 #guide { position: absolute; left: 0; right: 0; pointer-events: none; }
 #guide::before, #guide::after { content: ""; position: absolute; top: 50%; translate: 0 -50%; border: 12px solid transparent; }
 #guide::before { left: 0; border-left: 16px solid var(--hl); }
@@ -221,6 +240,45 @@ details.keys summary { cursor: pointer; color: var(--fg); }
 .recbadge { color: var(--tally); font-weight: 700; }
 .heard { max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--ui); color: var(--muted); }
 #lang { width: 132px; height: 34px; padding: 0 8px; border-radius: 6px; background: var(--raise); border: 1px solid var(--line); }
+#pipNote { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; color: var(--muted); font-size: 16px; background: var(--bg); }
+
+.modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .6); }
+.modal .card {
+  width: min(420px, 100%); max-height: 100%; overflow: auto; display: grid; gap: 12px;
+  padding: 16px 18px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line);
+}
+.qr { justify-self: center; width: min(240px, 100%); padding: 12px; border-radius: 10px; background: #fff; }
+.qr svg { display: block; width: 100%; height: auto; }
+#rlink { flex: 1; min-width: 0; height: 40px; padding: 0 10px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); font: 12px var(--num); }
+.dot { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; color: var(--muted); }
+.dot::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.ok { color: var(--fg); }
+.dot.ok::before { background: var(--ok); }
+
+#remote {
+  min-height: 100%; max-width: 560px; margin: 0 auto; display: grid; gap: 14px; align-content: start;
+  padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.rtop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.rstatus { display: grid; gap: 8px; padding: 14px 16px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
+.rsec { font-size: 12px; font-weight: 600; letter-spacing: .1em; color: var(--accent); }
+.rsent { margin: 0; min-height: 3em; font-size: 20px; line-height: 1.5; font-weight: 600; }
+.rbar { position: relative; height: 10px; }
+.rbar::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 6px; translate: 0 -50%; border-radius: 3px; background: var(--raise); }
+.rtimes { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 13px var(--num); font-variant-numeric: tabular-nums; color: var(--muted); }
+.rtimes b { color: var(--fg); font-weight: 600; }
+.rpad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rbtn {
+  min-height: 64px; border-radius: 12px; border: 1px solid var(--line); background: var(--raise);
+  font-size: 17px; font-weight: 600; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.rbtn:active { background: color-mix(in srgb, var(--accent) 22%, var(--raise)); }
+.rbtn.wide { grid-column: 1 / -1; }
+.rbtn.big { grid-column: 1 / -1; min-height: 88px; font-size: 22px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.rbtn.big.on { background: var(--tally); color: #fff; }
+.rbtn:disabled { opacity: .4; }
 #toast {
   position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 4;
   padding: 10px 18px; border-radius: 10px; background: rgba(15, 17, 21, .92); border: 1px solid var(--line);
@@ -228,6 +286,9 @@ details.keys summary { cursor: pointer; color: var(--fg); }
 }
 #toast.show { opacity: 1; }
 
+@media (max-width: 1500px) {
+  .ib .lbl-t.opt { display: none; }
+}
 @media (max-width: 760px) {
   .ib .lbl-t { display: none; }
   .bar.topbar { flex-wrap: wrap; justify-content: center; gap: 4px 6px; }
@@ -264,6 +325,9 @@ details.keys summary { cursor: pointer; color: var(--fg); }
   <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
   <symbol id="i-cam" viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3z"/></symbol>
   <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></symbol>
+  <symbol id="i-pip" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M10 14h4M10 17h4"/></symbol>
 </svg>
 
 <!-- ============ 编辑页 ============ -->
@@ -280,13 +344,20 @@ details.keys summary { cursor: pointer; color: var(--fg); }
 
   <main class="work">
     <section class="script">
+      <div class="lib">
+        <label for="scriptSel" class="vh">当前稿子</label>
+        <select id="scriptSel"></select>
+        <button class="btn" id="newScript" type="button">新建稿子</button>
+        <button class="btn" id="delScript" type="button">删除</button>
+      </div>
       <textarea id="ta" spellcheck="false" placeholder="把稿子粘贴到这里。&#10;&#10;空一行就是新的一段。&#10;用 # 开头的一行是小节标题，例如：# 第二部分"></textarea>
-      <p class="tip">以 <code>#</code> 开头的一行会变成小节标题，提词时可以一键跳到这一节。把光标放在稿子里任意位置，再点「从光标处开始」，就能只录这一段。</p>
+      <p class="tip">以 <code>#</code> 开头的一行会变成小节标题，提词时可以一键跳到这一节。<code>**重点**</code> 会高亮显示，<code>[停顿]</code>、<code>[微笑]</code> 这样的方括号会变成小提示标签（不计入字数）。把光标放在稿子里任意位置，再点「从光标处开始」，就能只录这一段。</p>
       <div class="actions">
         <label class="btn" for="file">导入 .txt</label>
         <input id="file" type="file" accept=".txt,text/plain" hidden>
         <button class="btn" id="sample" type="button">载入示例稿</button>
         <button class="btn" id="install" type="button" hidden>安装到桌面</button>
+        <button class="btn" id="remoteBtn" type="button"><svg class="i"><use href="#i-remote"/></svg>手机遥控</button>
         <span class="grow"></span>
         <button class="btn" id="startCaret" type="button">从光标处开始</button>
         <button class="btn primary" id="start" type="button"><svg class="i"><use href="#i-play"/></svg>开始提词</button>
@@ -433,14 +504,17 @@ details.keys summary { cursor: pointer; color: var(--fg); }
     </div>
     <span class="sep"></span>
     <div class="grp">
-      <button class="ib" id="pMx" type="button" title="水平镜像 (M)" aria-pressed="false"><svg class="i"><use href="#i-fliph"/></svg><span class="lbl-t">水平镜像</span></button>
-      <button class="ib" id="pMy" type="button" title="垂直镜像 (V)" aria-pressed="false"><svg class="i"><use href="#i-flipv"/></svg><span class="lbl-t">垂直镜像</span></button>
+      <button class="ib" id="pMx" type="button" title="水平镜像 (M)" aria-pressed="false"><svg class="i"><use href="#i-fliph"/></svg><span class="lbl-t opt">水平镜像</span></button>
+      <button class="ib" id="pMy" type="button" title="垂直镜像 (V)" aria-pressed="false"><svg class="i"><use href="#i-flipv"/></svg><span class="lbl-t opt">垂直镜像</span></button>
     </div>
     <span class="sep"></span>
     <div class="grp">
-      <button class="ib" id="pMark" type="button" title="在当前句加书签 (B)"><svg class="i"><use href="#i-mark"/></svg><span class="lbl-t">书签</span></button>
-      <button class="ib" id="pList" type="button" title="目录与书签 (L)"><svg class="i"><use href="#i-list"/></svg><span class="lbl-t">目录</span></button>
-      <button class="ib" id="pFs" type="button" title="全屏 (F)"><svg class="i"><use href="#i-fs"/></svg><span class="lbl-t">全屏</span></button>
+      <button class="ib" id="pMark" type="button" title="在当前句加书签 (B)"><svg class="i"><use href="#i-mark"/></svg><span class="lbl-t opt">书签</span></button>
+      <button class="ib" id="pList" type="button" title="目录与书签 (L)"><svg class="i"><use href="#i-list"/></svg><span class="lbl-t opt">目录</span></button>
+      <button class="ib" id="pEdit" type="button" title="改字：点句子直接修改（也可以双击句子）" aria-pressed="false"><svg class="i"><use href="#i-edit"/></svg><span class="lbl-t opt">改字</span></button>
+      <button class="ib" id="pPip" type="button" title="置顶小窗" hidden><svg class="i"><use href="#i-pip"/></svg><span class="lbl-t opt">小窗</span></button>
+      <button class="ib" id="pRemote" type="button" title="手机遥控"><svg class="i"><use href="#i-remote"/></svg><span class="lbl-t opt">遥控</span></button>
+      <button class="ib" id="pFs" type="button" title="全屏 (F)"><svg class="i"><use href="#i-fs"/></svg><span class="lbl-t opt">全屏</span></button>
     </div>
   </div>
 
@@ -484,7 +558,58 @@ details.keys summary { cursor: pointer; color: var(--fg); }
     <ul class="plist" id="takeList"></ul>
   </aside>
 
+  <div id="pipNote" hidden>提词正在置顶小窗里显示。<br>关掉小窗，就回到这里。</div>
   <div id="toast" role="status"></div>
+</div>
+
+<!-- ============ 遥控配对 ============ -->
+<div id="rdlg" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="rdlgTitle">
+  <div class="card">
+    <div class="phead">
+      <strong id="rdlgTitle">手机遥控</strong>
+      <button class="ib" id="rdlgClose" type="button" aria-label="关闭"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <p class="tip">用另一台手机的相机扫码，打开的页面就是遥控器：播放暂停、翻页、重录本节、调语速都能远程按。两台设备都要能上网，连同一个手机热点也可以。</p>
+    <div class="qr" id="qr" aria-label="遥控二维码"></div>
+    <div class="row"><input id="rlink" readonly aria-label="遥控链接"><button class="btn" id="rcopy" type="button">复制链接</button></div>
+    <p class="dot" id="rstat">遥控已关闭</p>
+    <div class="actions">
+      <button class="btn" id="rnew" type="button">换一个配对码</button>
+      <span class="grow"></span>
+      <button class="btn" id="roff" type="button">关闭遥控</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 遥控器（另一台手机） ============ -->
+<div id="remote" hidden>
+  <header class="rtop">
+    <h1 class="brand">提词遥控器</h1>
+    <p class="dot" id="rconn">正在连接…</p>
+  </header>
+  <section class="rstatus" aria-live="polite">
+    <div class="rsec" id="rSec">等待提词设备</div>
+    <p class="rsent" id="rSent">在提词设备上保持页面打开，这里会显示它正在读的句子。</p>
+    <div class="rbar"><div class="fill" id="rFill" style="width:0"></div></div>
+    <div class="rtimes"><span id="rState">—</span><span>已用 <b id="rEl">00:00</b></span><span>剩余 <b id="rRem">00:00</b></span><span id="rInfo"></span></div>
+  </section>
+  <div class="rpad">
+    <button class="rbtn big" type="button" data-c="toggle" id="rPlay">▶ 开始</button>
+    <button class="rbtn" type="button" data-c="retake">重录本节</button>
+    <button class="rbtn" type="button" data-c="home">回到开头</button>
+    <button class="rbtn" type="button" data-c="pageUp">上一页</button>
+    <button class="rbtn" type="button" data-c="pageDown">下一页</button>
+    <button class="rbtn" type="button" data-c="paraUp">上一段</button>
+    <button class="rbtn" type="button" data-c="paraDown">下一段</button>
+    <button class="rbtn" type="button" data-c="secUp">上一节</button>
+    <button class="rbtn" type="button" data-c="secDown">下一节</button>
+    <button class="rbtn" type="button" data-c="slower">语速 −</button>
+    <button class="rbtn" type="button" data-c="faster">语速 +</button>
+    <button class="rbtn" type="button" data-c="smaller">字号 −</button>
+    <button class="rbtn" type="button" data-c="bigger">字号 +</button>
+    <button class="rbtn wide" type="button" data-c="mark">在当前句加书签</button>
+  </div>
+  <p class="tip">这台手机只当遥控器用。保持这个页面开着，别锁屏。</p>
 </div>
 
 <script>
@@ -549,6 +674,25 @@ function parseDur(str) {
 }
 
 const SENT = /[^。！？!?…]+[。！？!?…]*[”’"'」』）)]*/g;
+// **重点**、[停顿] / 【停顿】
+const MARK = /\*\*|\[[^\]\n]{1,12}\]|【[^】\n]{1,12}】/g;
+const plain = (s) => s.replace(MARK, '');
+function renderInline(el, text, st) {
+  let last = 0, m;
+  const push = (str) => {
+    if (!str) return;
+    if (st.em) { const b = document.createElement('strong'); b.className = 'em'; b.textContent = str; el.append(b); }
+    else el.append(str);
+  };
+  MARK.lastIndex = 0;
+  while ((m = MARK.exec(text))) {
+    push(text.slice(last, m.index));
+    if (m[0] === '**') st.em = !st.em;
+    else { const c = document.createElement('span'); c.className = 'cue'; c.textContent = m[0].slice(1, -1); el.append(c); }
+    last = m.index + m[0].length;
+  }
+  push(text.slice(last));
+}
 function parse(src) {
   const blocks = [];
   let para = null, off = 0, units = 0, paras = 0, secs = 0;
@@ -565,14 +709,33 @@ function parse(src) {
     SENT.lastIndex = 0;
     while ((m = SENT.exec(line))) if (m[0].trim()) sents.push({ text: m[0], start: start + m.index });
     para.lines.push(sents);
-    units += countUnits(t);
+    units += countUnits(plain(t));
   }
   return { blocks, units, paras, secs };
 }
 
 // ---------- 编辑页 ----------
 const ta = $('#ta');
-ta.value = store.get('text', null) ?? SAMPLE;
+const scriptSel = $('#scriptSel');
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+let library = store.get('library', null);
+if (!Array.isArray(library) || !library.length) library = [{ id: newId(), text: store.get('text', null) ?? SAMPLE, updated: Date.now() }];
+let currentId = store.get('current', library[0].id);
+if (!library.some((x) => x.id === currentId)) currentId = library[0].id;
+const curScript = () => library.find((x) => x.id === currentId);
+const titleOf = (txt) => (txt.split('\n').map((l) => plain(l.replace(/^#+\s*/, '')).trim()).find(Boolean) || '空白稿子').slice(0, 24);
+const saveLibrary = () => { store.set('library', library); store.set('current', currentId); };
+function renderLibrary() {
+  scriptSel.textContent = '';
+  for (const x of library) {
+    const o = document.createElement('option');
+    o.value = x.id;
+    o.textContent = titleOf(x.text);
+    scriptSel.append(o);
+  }
+  scriptSel.value = currentId;
+}
+ta.value = curScript().text;
 let doc = parse(ta.value);
 let dirty = true;
 let marks = store.get('marks', []);
@@ -590,10 +753,45 @@ function onTextChange() {
   dirty = true;
   if (marks.length) { marks = []; store.set('marks', marks); }
   refreshStats();
+  const cur = curScript();
+  cur.text = ta.value;
+  cur.updated = Date.now();
+  const opt = scriptSel.querySelector(`option[value="${cur.id}"]`);
+  if (opt) opt.textContent = titleOf(cur.text);
   clearTimeout(saveT);
-  saveT = setTimeout(() => store.set('text', ta.value), 300);
+  saveT = setTimeout(saveLibrary, 300);
 }
 ta.addEventListener('input', onTextChange);
+
+function openScript(id) {
+  currentId = id;
+  ta.value = curScript().text;
+  onTextChange();
+  saveLibrary();
+  renderLibrary();
+}
+scriptSel.addEventListener('change', () => openScript(scriptSel.value));
+$('#newScript').addEventListener('click', () => {
+  library.unshift({ id: newId(), text: '', updated: Date.now() });
+  openScript(library[0].id);
+  ta.focus();
+});
+let delArmed = null;
+$('#delScript').addEventListener('click', (e) => {
+  const btn = e.currentTarget;
+  if (!delArmed) {
+    btn.textContent = '再点一次删除';
+    delArmed = setTimeout(() => { btn.textContent = '删除'; delArmed = null; }, 3000);
+    return;
+  }
+  clearTimeout(delArmed);
+  delArmed = null;
+  btn.textContent = '删除';
+  library = library.filter((x) => x.id !== currentId);
+  if (!library.length) library = [{ id: newId(), text: '', updated: Date.now() }];
+  openScript(library[0].id);
+});
+renderLibrary();
 
 $('#file').addEventListener('change', (e) => {
   const f = e.target.files[0];
@@ -689,6 +887,9 @@ let secs = [];         // { el, title, top }
 let pos = 0, maxPos = 0, speedPx = 40, lhPx = 60, guideY = 200;
 let state = 'paused';  // paused | countdown | playing
 let elapsed = 0, anim = null, drag = null, curIdx = -1, cdTimer = null;
+let pipWin = null;     // 置顶小窗（Document Picture-in-Picture）
+const pipScale = () => (pipWin ? clamp(pipWin.innerWidth / Math.max(1, window.innerWidth), 0.3, 1) : 1);
+function fsEff() { return S.fontSize * pipScale(); }
 
 function build() {
   content.textContent = '';
@@ -698,22 +899,23 @@ function build() {
     if (b.type === 'sec') {
       const h = document.createElement('h2');
       h.className = 'sec s';
-      h.textContent = b.title;
+      h.textContent = plain(b.title);
       h.dataset.i = sents.length;
-      sents.push({ el: h, start: b.start, top: 0, sec: true });
+      sents.push({ el: h, start: b.start, top: 0, sec: true, raw: b.title, plain: plain(b.title) });
       secs.push({ el: h, title: b.title, top: 0, idx: sents.length - 1 });
       content.append(h);
       blockEls.push(h);
     } else {
       const p = document.createElement('p');
+      const st = { em: false };
       b.lines.forEach((ln, i) => {
         if (i) p.append(document.createElement('br'));
         for (const s of ln) {
           const sp = document.createElement('span');
           sp.className = 's';
-          sp.textContent = s.text;
+          renderInline(sp, s.text, st);
           sp.dataset.i = sents.length;
-          sents.push({ el: sp, start: s.start, top: 0 });
+          sents.push({ el: sp, start: s.start, top: 0, raw: s.text, plain: plain(s.text) });
           p.append(sp);
         }
       });
@@ -727,7 +929,7 @@ function build() {
 }
 
 function applyStyle() {
-  content.style.fontSize = S.fontSize + 'px';
+  content.style.fontSize = fsEff() + 'px';
   content.style.lineHeight = S.lineHeight;
   content.style.paddingInline = S.margin + 'vw';
   content.style.textAlign = S.align;
@@ -740,7 +942,7 @@ function applyStyle() {
 function layout(keepRatio) {
   const ratio = maxPos ? pos / maxPos : 0;
   applyStyle();
-  lhPx = S.fontSize * S.lineHeight;
+  lhPx = fsEff() * S.lineHeight;
   guideY = stage.clientHeight * S.guide / 100;
   for (const s of sents) s.top = s.el.offsetTop;
   for (const s of secs) s.top = s.el.offsetTop;
@@ -759,16 +961,66 @@ function layout(keepRatio) {
 // 语音跟随用的逐字位置表：每个字（英文按单词）对应它在画面里的纵向位置
 const TOK = new RegExp(CJK.source + "|[A-Za-z0-9]+(?:['’][A-Za-z]+)*", 'g');
 const tokenize = (s) => (s.match(TOK) || []).map((t) => t.toLowerCase());
+// 把阿拉伯数字换成中文读法，稿子写"3"、识别出"三"也能对上
+const ZD = '零一二三四五六七八九';
+function numZh(str) {
+  const n = str.replace(/^0+(?=\d)/, '');
+  if (n.length > 8) return [...n].map((d) => ZD[d]).join('');
+  const num = +n;
+  if (num === 0) return '零';
+  const U = ['', '十', '百', '千'];
+  const four = (x) => {
+    let out = '', zero = false;
+    for (let i = 3; i >= 0; i--) {
+      const d = Math.floor(x / 10 ** i) % 10;
+      if (d === 0) { zero = out !== ''; continue; }
+      if (zero) { out += '零'; zero = false; }
+      out += ZD[d] + U[i];
+    }
+    return out;
+  };
+  const hi = Math.floor(num / 10000), lo = num % 10000;
+  let out = hi ? four(hi) + '万' + (lo && lo < 1000 ? '零' : '') : '';
+  out += four(lo);
+  return out.replace(/^一十/, '十');
+}
+const spoken = (s) => s
+  .replace(/(\d+(?:\.\d+)?)%/g, '百分之$1')
+  .replace(/\d+(?:\.\d+)?/g, (m) => { const [a, b] = m.split('.'); return numZh(a) + (b ? '点' + [...b].map((d) => ZD[d]).join('') : ''); });
+const speakTokens = (s) => tokenize(spoken(s));
+// 同音字也算对上：识别成"再"、稿子写"在"，拼音都是 zai
+const pyCache = new Map();
+const HAN = /^[\u3400-\u9fff]$/;
+function keyOf(t) {
+  if (!window.pinyinPro || !HAN.test(t)) return t;
+  let v = pyCache.get(t);
+  if (v == null) { v = window.pinyinPro.pinyin(t, { toneType: 'none' }) || t; pyCache.set(t, v); }
+  return v;
+}
+let pinyinLoading = null;
+function loadPinyin() {
+  if (window.pinyinPro) return Promise.resolve();
+  if (!pinyinLoading) {
+    pinyinLoading = new Promise((res, rej) => {
+      const sc = document.createElement('script');
+      sc.src = 'vendor/pinyin-pro.js';
+      sc.onload = () => { buildTokens(); res(); };
+      sc.onerror = () => { pinyinLoading = null; rej(); };
+      document.head.append(sc);
+    });
+  }
+  return pinyinLoading;
+}
 let T = [];
 function buildTokens() {
   T = [];
   for (let i = 0; i < sents.length; i++) {
     const s = sents[i];
     if (s.sec) continue;
-    const toks = tokenize(s.el.textContent);
+    const toks = speakTokens(s.plain);
     const next = i + 1 < sents.length ? sents[i + 1].top : s.top + lhPx;
     const span = Math.max(0, next - s.top);
-    toks.forEach((t, k) => T.push({ t, px: s.top + span * k / toks.length }));
+    toks.forEach((t, k) => T.push({ k: keyOf(t), px: s.top + span * k / toks.length }));
   }
 }
 function lowerBound(p) {
@@ -938,6 +1190,7 @@ function voiceToggle() {
   if (!SR) return toast('这个浏览器不支持语音识别，请用 Safari、Edge 或 Chrome');
   voice.on = !voice.on;
   if (voice.on) {
+    loadPinyin().catch(() => {});
     voice.fails = 0;
     if (state === 'playing') { voiceSync(pos); voiceStart(); }
     toast('语音跟随已开启：字幕会跟着你说话的进度走');
@@ -968,7 +1221,7 @@ function voiceStart() {
     let s = '';
     for (let i = 0; i < e.results.length; i++) s += e.results[i][0].transcript;
     heardEl.textContent = '听到：' + s.slice(-12);
-    voiceMatch(tokenize(s));
+    voiceMatch(speakTokens(s).map(keyOf));
   };
   r.onerror = (e) => {
     if (e.error === 'no-speech' || e.error === 'aborted') return;
@@ -1018,10 +1271,10 @@ function voiceMatch(heard) {
   const lo = Math.max(0, voice.idx - 25), hi = Math.min(T.length - 1, voice.idx + 120);
   let best = -1, bestScore = -Infinity;
   for (let j = lo; j <= hi; j++) {
-    const tj = T[j].t;
+    const tj = T[j].k;
     if (tj !== tail[L - 1] && tj !== tail[L - 2]) continue;
     const seg = [];
-    for (let q = Math.max(0, j - L - 2); q <= j; q++) seg.push(T[q].t);
+    for (let q = Math.max(0, j - L - 2); q <= j; q++) seg.push(T[q].k);
     let sc = lcs(tail, seg);
     if (sc < Math.max(2, Math.ceil(L * 0.6))) continue;
     sc -= Math.abs(j - voice.idx) * 0.004 + (j < voice.idx - 2 ? 1.5 : 0);
@@ -1269,8 +1522,9 @@ function currentSec() {
 const hud = { el: $('#tEl'), rem: $('#tRem'), pct: $('#tPct'), where: $('#where'), fill: $('#fill'), knob: $('#knob') };
 const setText = (el, v) => { if (el.textContent !== v) el.textContent = v; };
 let last = performance.now();
-function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000);
+function frame() {
+  const now = performance.now();
+  const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
   last = now;
   if (!prompter.hidden) {
     if (anim) {
@@ -1285,7 +1539,7 @@ function frame(now) {
       else if (pos >= maxPos) { pos = maxPos; pause('end'); }
     }
     if (cam.rec) setText(recBadge, 'REC ' + fmt((now - cam.t0) / 1000));
-    content.style.transform = `translate3d(0, ${guideY - pos - S.fontSize * 0.6}px, 0)`;
+    content.style.transform = `translate3d(0, ${guideY - pos - fsEff() * 0.6}px, 0)`;
     updateCur();
     const r = maxPos ? pos / maxPos : 0;
     setText(hud.el, fmt(elapsed));
@@ -1295,9 +1549,75 @@ function frame(now) {
     hud.fill.style.width = (r * 100) + '%';
     hud.knob.style.left = (r * 100) + '%';
   }
-  requestAnimationFrame(frame);
+  (pipWin || window).requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+// ---------- 提词画面里改字 ----------
+let editMode = false, editing = null, lastDragMoved = false;
+function setEditMode(on) {
+  editMode = on;
+  if (!on) commitEdit();
+  prompter.classList.toggle('editmode', on);
+  $('#pEdit').setAttribute('aria-pressed', String(on));
+  if (on) { if (state !== 'paused') pause(); toast('改字模式：点要改的句子'); }
+}
+function startEdit(i) {
+  if (editing) commitEdit();
+  const s = sents[i];
+  if (!s) return;
+  if (state !== 'paused') pause();
+  editing = { i, el: s.el };
+  s.el.textContent = s.raw;
+  s.el.classList.add('editing');
+  s.el.contentEditable = 'plaintext-only';
+  if (s.el.contentEditable !== 'plaintext-only') s.el.contentEditable = 'true';
+  s.el.focus();
+  const r = document.createRange();
+  r.selectNodeContents(s.el);
+  r.collapse(false);
+  const sel = s.el.ownerDocument.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(r);
+  toast('改完按回车保存，Esc 取消');
+}
+function rerender() {
+  const p = pos;
+  build();
+  layout(false);
+  pos = clamp(p, 0, maxPos);
+}
+function applyText(v, keepIdx) {
+  const n = sents.length;
+  const keepMarks = marks.slice();
+  ta.value = v;
+  onTextChange();
+  build();
+  dirty = false;
+  if (sents.length === n && keepMarks.length) { marks = keepMarks; store.set('marks', marks); }
+  layout(false);
+  jumpTo(posOf(Math.min(keepIdx, sents.length - 1)), false);
+}
+function commitEdit(cancel) {
+  if (!editing) return;
+  const { i, el } = editing;
+  editing = null;
+  el.contentEditable = 'false';
+  el.classList.remove('editing');
+  const s = sents[i];
+  const txt = el.textContent.replace(/[\r\n]+/g, '');
+  if (cancel || txt === s.raw) { rerender(); return; }
+  const v = ta.value;
+  let nv;
+  if (s.sec) {
+    const end = v.indexOf('\n', s.start);
+    nv = v.slice(0, s.start) + '# ' + txt.replace(/^#+\s*/, '') + v.slice(end < 0 ? v.length : end);
+  } else {
+    nv = v.slice(0, s.start) + txt + v.slice(s.start + s.raw.length);
+  }
+  applyText(nv, i);
+  toast('已保存修改');
+}
 
 // ---------- 进入 / 退出 ----------
 let wakeLock = null;
@@ -1336,6 +1656,8 @@ function enter(fromCaret) {
   poke();
 }
 function exit() {
+  commitEdit();
+  setEditMode(false);
   pause();
   voiceStop();
   if (cam.on) camOff();
@@ -1372,6 +1694,7 @@ bind('#pMark', addMark);
 bind('#pList', () => (panel.hidden ? openPanel() : closePanel()));
 bind('#panelClose', closePanel);
 bind('#pFs', toggleFullscreen);
+bind('#pEdit', () => setEditMode(!editMode));
 bind('#nPageUp', nav.pageUp);
 bind('#nPageDn', nav.pageDown);
 bind('#nParaUp', nav.paraUp);
@@ -1385,22 +1708,35 @@ stage.addEventListener('pointerdown', (e) => {
   poke();
   if (e.button) return;
   if (!panel.hidden) { closePanel(); return; }
+  if (editing) { if (!editing.el.contains(e.target)) commitEdit(); return; }
   drag = { y: e.clientY, pos, moved: false, id: e.pointerId };
 });
-window.addEventListener('pointermove', (e) => {
+function onMove(e) {
   if (!prompter.hidden && e.pointerType === 'mouse') poke();
   if (!drag) return;
   const dy = e.clientY - drag.y;
   if (!drag.moved && Math.abs(dy) > 6) { drag.moved = true; anim = null; try { stage.setPointerCapture(drag.id); } catch (err) {} }
   if (drag.moved) pos = clamp(drag.pos + (S.mirrorY ? dy : -dy), 0, maxPos);
-});
-window.addEventListener('pointerup', (e) => {
+}
+function onUp(e) {
   if (!drag) return;
   const d = drag;
   drag = null;
+  lastDragMoved = d.moved;
   if (d.moved) { relocate(pos); return; }
   const s = e.target.closest?.('.s');
-  if (s && content.contains(s)) jumpTo(posOf(+s.dataset.i));
+  if (s && content.contains(s) && !editMode) jumpTo(posOf(+s.dataset.i));
+}
+window.addEventListener('pointermove', onMove);
+window.addEventListener('pointerup', onUp);
+stage.addEventListener('click', (e) => {
+  if (!editMode || lastDragMoved || editing) return;
+  const s = e.target.closest('.s');
+  if (s && content.contains(s)) startEdit(+s.dataset.i);
+});
+stage.addEventListener('dblclick', (e) => {
+  const s = e.target.closest('.s');
+  if (s && content.contains(s) && !editing) startEdit(+s.dataset.i);
 });
 window.addEventListener('pointercancel', () => { drag = null; });
 stage.addEventListener('wheel', (e) => {
@@ -1427,11 +1763,19 @@ track.addEventListener('pointercancel', () => { seeking = false; });
 
 window.addEventListener('resize', () => { if (!prompter.hidden) layout(true); });
 
-document.addEventListener('keydown', (e) => {
+function onKey(e) {
+  if (!rdlg.hidden) { if (e.key === 'Escape') closeRemoteDlg(); return; }
   if (prompter.hidden) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); enter(false); }
     return;
   }
+  if (editing) {
+    if (e.isComposing || e.keyCode === 229) return; // 中文输入法正在选字
+    if (e.key === 'Enter') { e.preventDefault(); commitEdit(); }
+    else if (e.key === 'Escape') { e.preventDefault(); commitEdit(true); }
+    return;
+  }
+  if (e.target.closest?.('input, select, textarea')) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   let handled = true;
@@ -1465,7 +1809,309 @@ document.addEventListener('keydown', (e) => {
       else handled = false;
   }
   if (handled) { e.preventDefault(); poke(); }
+}
+document.addEventListener('keydown', onKey);
+
+// ---------- 置顶小窗（电脑上的 Chrome / Edge） ----------
+const pipBtn = $('#pPip');
+if ('documentPictureInPicture' in window) pipBtn.hidden = false;
+async function togglePip() {
+  if (pipWin) { pipWin.close(); return; }
+  let w;
+  try { w = await window.documentPictureInPicture.requestWindow({ width: 560, height: 340 }); }
+  catch (e) { return toast('打不开小窗'); }
+  pipWin = w;
+  const d = w.document;
+  document.querySelectorAll('style').forEach((st) => d.head.append(st.cloneNode(true)));
+  d.title = '提词器';
+  d.body.style.cssText = 'margin:0;height:100vh;overflow:hidden;position:relative;background:#000';
+  d.body.append(stage);
+  $('#pipNote').hidden = false;
+  pipBtn.setAttribute('aria-pressed', 'true');
+  w.addEventListener('pagehide', () => {
+    prompter.prepend(stage);
+    pipWin = null;
+    $('#pipNote').hidden = true;
+    pipBtn.setAttribute('aria-pressed', 'false');
+    layout(true);
+    requestAnimationFrame(frame);
+  });
+  w.addEventListener('resize', () => layout(true));
+  d.addEventListener('keydown', onKey);
+  w.addEventListener('pointermove', onMove);
+  w.addEventListener('pointerup', onUp);
+  w.addEventListener('pointercancel', () => { drag = null; });
+  layout(true);
+}
+bind('#pPip', togglePip);
+
+// ---------- 遥控 ----------
+// 两台设备通过公共 MQTT 服务器中转消息；内容用配对码里的密钥加密，服务器看不到稿子和操作
+const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
+const qs = new URLSearchParams(location.search);
+const brokerList = qs.get('broker') ? [qs.get('broker')] : BROKERS;
+const TOPIC = (room) => `tcq-prompter/v1/${room}`;
+
+// 精简版 MQTT 3.1.1 客户端（只用到 QoS 0 的订阅和发布）
+function mqtt(urls, onMsg, onState) {
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const str = (x) => { const b = enc.encode(x); return [b.length >> 8, b.length & 255, ...b]; };
+  const vlen = (n) => { const o = []; do { let d = n % 128; n = Math.floor(n / 128); if (n > 0) d |= 128; o.push(d); } while (n > 0); return o; };
+  const pkt = (h, body) => new Uint8Array([h, ...vlen(body.length), ...body]);
+  const subs = new Set();
+  let ws = null, alive = false, closed = false, ping = null, ui = 0, retry = 0, buf = new Uint8Array(0);
+  function connect() {
+    if (closed) return;
+    const url = urls[ui % urls.length];
+    try { ws = new WebSocket(url, ['mqtt']); } catch (e) { ui++; setTimeout(connect, 1000); return; }
+    ws.binaryType = 'arraybuffer';
+    buf = new Uint8Array(0);
+    ws.onopen = () => {
+      const id = 'tcq' + Math.random().toString(36).slice(2, 12);
+      ws.send(pkt(0x10, [...str('MQTT'), 4, 2, 0, 60, ...str(id)]));
+    };
+    ws.onmessage = (e) => feed(new Uint8Array(e.data));
+    ws.onerror = () => {};
+    ws.onclose = () => {
+      clearInterval(ping);
+      if (!alive) ui++; // 这个服务器连不上，换下一个
+      alive = false;
+      onState('offline');
+      if (!closed) setTimeout(connect, Math.min(8000, 800 * 2 ** retry++));
+    };
+  }
+  function feed(chunk) {
+    const nb = new Uint8Array(buf.length + chunk.length);
+    nb.set(buf); nb.set(chunk, buf.length); buf = nb;
+    for (;;) {
+      if (buf.length < 2) return;
+      let len = 0, mul = 1, i = 1, b;
+      do { if (i >= buf.length) return; b = buf[i++]; len += (b & 127) * mul; mul *= 128; } while (b & 128);
+      if (buf.length < i + len) return;
+      const type = buf[0] >> 4, body = buf.slice(i, i + len);
+      const qos = (buf[0] >> 1) & 3;
+      buf = buf.slice(i + len);
+      if (type === 2) { // CONNACK
+        if (body[1] !== 0) { ws.close(); return; }
+        alive = true; retry = 0;
+        for (const t of subs) ws.send(pkt(0x82, [0, 1, ...str(t), 0]));
+        ping = setInterval(() => { try { ws.send(new Uint8Array([0xC0, 0])); } catch (e) {} }, 30000);
+        onState('online');
+      } else if (type === 3) { // PUBLISH
+        const tl = (body[0] << 8) | body[1];
+        const topic = dec.decode(body.slice(2, 2 + tl));
+        onMsg(topic, body.slice(2 + tl + (qos ? 2 : 0)));
+      }
+    }
+  }
+  connect();
+  return {
+    subscribe(t) { subs.add(t); if (alive) ws.send(pkt(0x82, [0, 1, ...str(t), 0])); },
+    publish(t, bytes) { if (!alive) return false; ws.send(pkt(0x30, [...str(t), ...bytes])); return true; },
+    close() { closed = true; clearInterval(ping); try { ws.send(new Uint8Array([0xE0, 0])); ws.close(); } catch (e) {} },
+    get online() { return alive; },
+  };
+}
+
+const b64u = {
+  enc: (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
+  dec: (x) => Uint8Array.from(atob(x.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((x.length + 3) % 4)), (c) => c.charCodeAt(0)),
+};
+const importKey = (raw) => crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
+async function seal(key, obj) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(obj))));
+  const out = new Uint8Array(12 + ct.length);
+  out.set(iv); out.set(ct, 12);
+  return out;
+}
+async function unseal(key, u8) {
+  try { return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8.slice(0, 12) }, key, u8.slice(12)))); }
+  catch (e) { return null; }
+}
+function loadScript(src) {
+  return new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = res; sc.onerror = rej; document.head.append(sc); });
+}
+
+// ----- 提词设备（主机）这一端 -----
+const rdlg = $('#rdlg');
+const host = { on: false, cli: null, key: null, pair: null, net: 'offline', remotes: new Map(), lastSent: '', lastSentAt: 0, timer: null };
+function newPair() {
+  const A = 'abcdefghjkmnpqrstuvwxyz23456789';
+  return {
+    room: [...crypto.getRandomValues(new Uint8Array(10))].map((x) => A[x % A.length]).join(''),
+    key: b64u.enc(crypto.getRandomValues(new Uint8Array(16))),
+  };
+}
+function remoteUrl() {
+  const u = new URL(location.href);
+  u.search = ''; u.hash = '';
+  u.searchParams.set('r', host.pair.room);
+  if (qs.get('broker')) u.searchParams.set('broker', qs.get('broker'));
+  return u.toString() + '#' + host.pair.key;
+}
+async function hostStart(fresh) {
+  if (!window.crypto?.subtle) { toast('遥控需要用 https 打开页面'); return false; }
+  host.pair = (!fresh && store.get('pair', null)) || newPair();
+  store.set('pair', host.pair);
+  host.key = await importKey(b64u.dec(host.pair.key));
+  host.cli?.close();
+  host.remotes.clear();
+  host.on = true;
+  S.remoteOn = true;
+  save();
+  host.cli = mqtt(brokerList, async (topic, data) => {
+    const m = await unseal(host.key, data);
+    if (!m) return;
+    host.remotes.set(m.id, Date.now());
+    if (m.t === 'cmd') runRemote(m.c);
+    sendState(true);
+    renderRemoteStatus();
+  }, (st) => { host.net = st; if (st === 'online') sendState(true); renderRemoteStatus(); });
+  host.cli.subscribe(TOPIC(host.pair.room) + '/r');
+  clearInterval(host.timer);
+  host.timer = setInterval(() => { sendState(false); renderRemoteStatus(); }, 300);
+  renderRemoteStatus();
+  return true;
+}
+function hostStop() {
+  host.on = false;
+  S.remoteOn = false;
+  save();
+  host.cli?.close();
+  host.cli = null;
+  clearInterval(host.timer);
+  host.remotes.clear();
+  host.net = 'offline';
+  renderRemoteStatus();
+}
+function snapshot() {
+  const inP = !prompter.hidden;
+  return {
+    t: 'state', mode: inP ? 'prompter' : 'editor', st: state, reason: pauseReason,
+    pct: inP && maxPos ? Math.round(pos / maxPos * 1000) / 10 : 0,
+    sec: inP ? (currentSec()?.title ? plain(currentSec().title) : '') : titleOf(ta.value),
+    sent: inP ? (sents[Math.max(0, curIdx)]?.plain || '').trim().slice(0, 80) : '',
+    el: Math.round(elapsed),
+    rem: Math.round(inP ? (maxPos - pos) / speedPx : doc.units / S.cpm * 60),
+    cpm: S.cpm, fs: S.fontSize, rec: !!cam.rec, voice: voice.on,
+  };
+}
+async function sendState(force) {
+  if (!host.on || !host.cli?.online) return;
+  const snap = snapshot();
+  const j = JSON.stringify(snap);
+  const now = Date.now();
+  const listening = [...host.remotes.values()].some((t) => now - t < 12000);
+  if (!force && now - host.lastSentAt < 3000 && (j === host.lastSent || !listening)) return;
+  host.lastSent = j;
+  host.lastSentAt = now;
+  host.cli.publish(TOPIC(host.pair.room) + '/p', await seal(host.key, snap));
+}
+function runRemote(c) {
+  if (prompter.hidden) { if (c === 'toggle') enter(false); return; }
+  if (editing) commitEdit();
+  const acts = {
+    toggle, retake, home: () => jumpTo(0),
+    pageUp: nav.pageUp, pageDown: nav.pageDown, paraUp: nav.paraUp, paraDown: nav.paraDown, secUp: nav.secUp, secDown: nav.secDown,
+    faster: () => setSpeed(S.cpm + 10), slower: () => setSpeed(S.cpm - 10),
+    bigger: () => setFont(S.fontSize + 4), smaller: () => setFont(S.fontSize - 4),
+    mark: addMark,
+  };
+  acts[c]?.();
+  poke();
+}
+function renderRemoteStatus() {
+  const n = [...host.remotes.values()].filter((t) => Date.now() - t < 12000).length;
+  const el = $('#rstat');
+  const text = !host.on ? '遥控已关闭'
+    : host.net !== 'online' ? '正在连接中转服务器…'
+    : n ? `已连接 ${n} 台遥控器` : '等待遥控器扫码…';
+  if (el.textContent !== text) el.textContent = text;
+  el.classList.toggle('ok', host.on && host.net === 'online');
+  $('#pRemote').setAttribute('aria-pressed', String(host.on && n > 0));
+}
+async function openRemoteDlg(fresh) {
+  rdlg.hidden = false;
+  poke();
+  if (fresh || !host.on) { if (!(await hostStart(fresh))) { rdlg.hidden = true; return; } }
+  const url = remoteUrl();
+  $('#rlink').value = url;
+  try {
+    if (!window.qrcode) await loadScript('vendor/qrcode.js');
+    const q = window.qrcode(0, 'M');
+    q.addData(url);
+    q.make();
+    $('#qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  } catch (e) { $('#qr').textContent = '二维码加载失败，请复制下面的链接'; }
+  $('#rdlgClose').focus();
+}
+function closeRemoteDlg() { rdlg.hidden = true; }
+$('#remoteBtn').addEventListener('click', () => openRemoteDlg(false));
+bind('#pRemote', () => openRemoteDlg(false));
+$('#rdlgClose').addEventListener('click', closeRemoteDlg);
+rdlg.addEventListener('click', (e) => { if (e.target === rdlg) closeRemoteDlg(); });
+$('#rnew').addEventListener('click', () => openRemoteDlg(true));
+$('#roff').addEventListener('click', () => { hostStop(); closeRemoteDlg(); toast('遥控已关闭'); });
+$('#rcopy').addEventListener('click', async (e) => {
+  const inp = $('#rlink');
+  try { await navigator.clipboard.writeText(inp.value); e.currentTarget.textContent = '已复制'; }
+  catch (err) { inp.select(); }
 });
+
+// ----- 遥控器（另一台手机）这一端 -----
+async function remoteMode(room, keyStr) {
+  $('#editor').hidden = true;
+  prompter.hidden = true;
+  $('#remote').hidden = false;
+  document.title = '提词遥控器';
+  const conn = $('#rconn');
+  const setConn = (t, ok) => { conn.textContent = t; conn.classList.toggle('ok', !!ok); };
+  let key;
+  try { key = await importKey(b64u.dec(keyStr)); } catch (e) { setConn('配对码不完整，请重新扫码'); return; }
+  const id = Math.random().toString(36).slice(2, 10);
+  let lastHost = 0, net = 'offline';
+  const refresh = () => {
+    if (net !== 'online') setConn('正在连接中转服务器…');
+    else if (Date.now() - lastHost < 8000) setConn('已连接提词设备', true);
+    else setConn('等待提词设备…（在提词设备上打开「手机遥控」）');
+  };
+  const cli = mqtt(brokerList, async (t, data) => {
+    const m = await unseal(key, data);
+    if (!m || m.t !== 'state') return;
+    lastHost = Date.now();
+    renderRemote(m);
+    refresh();
+  }, (st) => { net = st; if (st === 'online') send(null); refresh(); });
+  cli.subscribe(TOPIC(room) + '/p');
+  async function send(c) {
+    const ok = cli.publish(TOPIC(room) + '/r', await seal(key, { t: c ? 'cmd' : 'hello', c, id }));
+    if (c && !ok) setConn('还没连上，稍等一下再按');
+  }
+  setInterval(() => { send(null); refresh(); }, 4000);
+  document.querySelectorAll('.rbtn').forEach((b) => b.addEventListener('click', () => {
+    send(b.dataset.c);
+    navigator.vibrate?.(15);
+  }));
+  lockScreen();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') lockScreen(); });
+}
+function renderRemote(m) {
+  const inP = m.mode === 'prompter';
+  $('#rSec').textContent = m.sec || (inP ? '' : '提词设备在编辑页');
+  $('#rSent').textContent = inP ? (m.sent || '…') : '按下面的按钮开始提词。';
+  $('#rFill').style.width = m.pct + '%';
+  const stTxt = !inP ? '在编辑页' : m.st === 'playing' ? '播放中' : m.st === 'countdown' ? '倒数中' : ({ secEnd: '本节读完', end: '全文读完' }[m.reason] || '已暂停');
+  $('#rState').textContent = stTxt;
+  $('#rEl').textContent = fmt(m.el);
+  $('#rRem').textContent = fmt(m.rem);
+  $('#rInfo').textContent = `语速 ${m.cpm} · 字号 ${m.fs}` + (m.rec ? ' · 录像中' : '') + (m.voice ? ' · 语音跟随' : '');
+  const play = $('#rPlay');
+  const running = inP && m.st !== 'paused';
+  play.textContent = !inP ? '▶ 开始提词' : running ? '❚❚ 暂停' : '▶ 播放';
+  play.classList.toggle('on', running);
+  document.querySelectorAll('.rbtn:not(.big)').forEach((b) => { b.disabled = !inP; });
+}
 
 // ---------- 安装成 App ----------
 let installEvt = null;
@@ -1490,6 +2136,8 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 }
 
 syncControls();
+if (qs.get('r') && location.hash.length > 1) remoteMode(qs.get('r'), location.hash.slice(1));
+else if (S.remoteOn) hostStart(false);
 })();
 </script>
 </body>

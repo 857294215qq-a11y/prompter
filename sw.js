@@ -1,5 +1,5 @@
 // 离线缓存：页面优先走网络（拿到最新版本），断网时用缓存
-const CACHE = 'prompter-v1';
+const CACHE = 'prompter-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,8 @@ const ASSETS = [
   './icons/icon-512.png',
   './icons/maskable-512.png',
   './icons/apple-touch-icon.png',
+  './vendor/pinyin-pro.js',
+  './vendor/qrcode.js',
 ];
 
 self.addEventListener('install', (e) => {

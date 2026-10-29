@@ -1,5 +1,5 @@
 // 离线缓存：页面优先走网络（拿到最新版本），网络慢或断网时用缓存
-const CACHE = 'prompter-v3';
+const CACHE = 'prompter-v4';
 const ASSETS = [
   './',
   './index.html',

@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>提词器</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0f1115">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,339 +13,118 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="提词器">
 <style>
-/* =====================================================================
-   设计变量：沿用 BYD España / Movento / Crowdpromotion 的同一套
-   圆角规则：内层圆角 = 外层圆角 − 内边距（同心），胶囊 = 高度的一半。
-   所有嵌套的圆角都用 calc(var(--r) - var(--pad)) 算出来，曲率才对得齐。
-   ===================================================================== */
+/* 布局：编辑页是"稿子 + 设置栏"两栏；提词页是全屏舞台，上下两条可自动隐藏的控制条 */
 :root {
-  color-scheme: light;
-  --bg: #F5F5F7;
-  --side: #EFEFF2;
-  --paper: #FFFFFF;
-  --mist: #F5F5F7;
-  --ink: #1D1D1F;
-  --gr: #6E6E73;
-  --hair: rgba(0, 0, 0, .08);
-  --hair2: rgba(0, 0, 0, .14);
-  --glass: rgba(255, 255, 255, .72);
-  --glass2: rgba(255, 255, 255, .88);
-  --edge: rgba(255, 255, 255, .9);
-  --seg: #E9E9ED;
-  --segOn: #FFFFFF;
-  --ink-btn: #1D1D1F;
-  --ink-btn-text: #FFFFFF;
-  --track: #E5E5EA;
-  --orange: #FF7A1A;
-  --red: #E3263A;
-  --green: #1E9E61;
-  --blue: #1F5BFF;
-  --shadow-float: 0 1px 1px rgba(0, 0, 0, .03), 0 8px 24px rgba(0, 0, 0, .08), 0 24px 60px rgba(0, 0, 0, .06);
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, .04), 0 10px 30px -12px rgba(20, 30, 60, .14);
-  --r-xl: 36px;
-  --r-lg: 28px;
-  --r-md: 20px;
-  --r-sm: 14px;
-  --ease: cubic-bezier(.32, .72, 0, 1);
-  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "HarmonyOS Sans SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", system-ui, sans-serif;
+  color-scheme: dark;
+  --bg: #0f1115;
+  --panel: #161a20;
+  --raise: #1e232b;
+  --line: #2b313b;
+  --fg: #ebe8e2;
+  --muted: #8f97a3;
+  --accent: #f0b43c;
+  --accent-ink: #1d1503;
+  --tally: #e5484d;
+  --ok: #3fb950;
+  --ui: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
   --num: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  /* 旧名字，脚本里还有几处在用 */
-  --panel: var(--paper); --raise: var(--mist); --line: var(--hair2); --fg: var(--ink); --muted: var(--gr);
-  --accent: var(--orange); --accent-ink: #1D1D1F; --tally: var(--red); --ok: var(--green);
 }
-/* 深色：用户选“深色”，或选“自动”且系统是深色 */
-html[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #000000; --side: #111113; --paper: #1C1C1E; --mist: #2C2C2E; --ink: #F5F5F7; --gr: #A1A1A6;
-  --hair: rgba(255, 255, 255, .10); --hair2: rgba(255, 255, 255, .18);
-  --glass: rgba(44, 44, 46, .72); --glass2: rgba(44, 44, 46, .88); --edge: rgba(255, 255, 255, .14);
-  --seg: #2C2C2E; --segOn: #48484A; --ink-btn: #F5F5F7; --ink-btn-text: #1D1D1F; --track: #3A3A3C;
-  --shadow-float: 0 8px 24px rgba(0, 0, 0, .5); --shadow-card: 0 1px 2px rgba(0, 0, 0, .4);
-}
-@media (prefers-color-scheme: dark) {
-  html:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #000000; --side: #111113; --paper: #1C1C1E; --mist: #2C2C2E; --ink: #F5F5F7; --gr: #A1A1A6;
-    --hair: rgba(255, 255, 255, .10); --hair2: rgba(255, 255, 255, .18);
-    --glass: rgba(44, 44, 46, .72); --glass2: rgba(44, 44, 46, .88); --edge: rgba(255, 255, 255, .14);
-    --seg: #2C2C2E; --segOn: #48484A; --ink-btn: #F5F5F7; --ink-btn-text: #1D1D1F; --track: #3A3A3C;
-    --shadow-float: 0 8px 24px rgba(0, 0, 0, .5); --shadow-card: 0 1px 2px rgba(0, 0, 0, .4);
-  }
-}
-/* 提词画面和遥控器永远是深色 */
-.dk {
-  color-scheme: dark;
-  --bg: #000000; --paper: #1C1C1E; --mist: #2C2C2E; --ink: #F5F5F7; --gr: #A1A1A6;
-  --hair: rgba(255, 255, 255, .10); --hair2: rgba(255, 255, 255, .18);
-  --glass: rgba(44, 44, 46, .72); --glass2: rgba(44, 44, 46, .88); --edge: rgba(255, 255, 255, .14);
-  --seg: #2C2C2E; --segOn: #48484A; --ink-btn: #F5F5F7; --ink-btn-text: #1D1D1F; --track: #3A3A3C;
-  --shadow-float: 0 8px 24px rgba(0, 0, 0, .5); --shadow-card: 0 1px 2px rgba(0, 0, 0, .4);
-}
-
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--ui); -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 var(--ui); -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
-:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.num { font-variant-numeric: tabular-nums; }
-
-/* ---------- 通用组件 ---------- */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: 44px; padding: 0 20px; border-radius: 999px; white-space: nowrap;
-  border: 1px solid var(--hair2); background: var(--paper); color: var(--ink); font-weight: 600;
-  transition: background .25s var(--ease), transform .25s var(--ease);
-}
-.btn:active { transform: scale(.97); }
-.btn.primary { background: var(--ink-btn); color: var(--ink-btn-text); border-color: transparent; }
-.btn.ghost { background: transparent; border-color: transparent; color: var(--gr); font-weight: 500; }
-.btn.danger { color: var(--red); }
-.btn[aria-pressed="true"] { background: var(--ink-btn); color: var(--ink-btn-text); border-color: transparent; }
-.round {
-  width: 44px; height: 44px; flex: none; display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%; border: 1px solid var(--hair2); background: var(--paper); color: var(--ink);
-}
-.round.ink { background: var(--ink-btn); color: var(--ink-btn-text); border-color: transparent; }
-
-.card { --r: var(--r-lg); --pad: 20px; background: var(--paper); border: 1px solid var(--hair); border-radius: var(--r); padding: var(--pad); box-shadow: var(--shadow-card); }
-.card h3 { margin: 0 0 14px; font-size: 17px; font-weight: 600; }
-.inner { border-radius: max(8px, calc(var(--r) - var(--pad))); }
-.title { margin: 0; font-size: 34px; line-height: 1.08; font-weight: 700; letter-spacing: -.03em; }
-.sub { margin: 6px 0 0; font-size: 14px; color: var(--gr); }
-.tip { margin: 0; color: var(--gr); font-size: 13px; line-height: 1.5; }
-.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; }
-.row label { font-size: 15px; }
-.row output { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.row output small { font-weight: 400; color: var(--gr); font-size: 13px; }
-.stack { display: grid; gap: 14px; }
-.grow { flex: 1; }
-.empty { color: var(--gr); font-size: 14px; margin: 0; }
-.dot { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; color: var(--gr); }
-.dot::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--gr); }
-.dot.ok { color: var(--ink); }
-.dot.ok::before { background: var(--green); }
-.chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: var(--seg); color: var(--gr); font-size: 14px; }
-
-/* 分段选择：外层 4px 内边距，里面的胶囊自然同心 */
-.seg { display: flex; background: var(--seg); border-radius: 999px; padding: 4px; gap: 2px; }
-.seg label { flex: 1; text-align: center; padding: 9px 8px; border-radius: 999px; font-size: 14px; color: var(--gr); cursor: pointer; white-space: nowrap; transition: background .25s var(--ease); }
-.seg input { position: absolute; opacity: 0; pointer-events: none; }
-.seg label:has(input:checked) { background: var(--segOn); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
-.seg label:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 1px; }
-
-/* 开关 */
-input.sw {
-  appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 51px; height: 31px; margin: 0;
-  border-radius: 999px; background: var(--track); cursor: pointer; transition: background .25s var(--ease);
-}
-input.sw::after {
-  content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%;
-  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .25s var(--ease);
-}
-input.sw:checked { background: var(--ink-btn); }
-input.sw:checked::after { transform: translateX(20px); }
-html[data-theme="dark"] input.sw:checked::after { background: #1D1D1F; }
-@media (prefers-color-scheme: dark) { html:not([data-theme="light"]) input.sw:checked::after { background: #1D1D1F; } }
-.dk input.sw:checked::after { background: #1D1D1F; }
-
-/* 滑块：已填的部分用 --p 画出来 */
-input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; margin: 0; background: transparent; --p: 50%; }
-input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--ink-btn) var(--p), var(--track) var(--p)); }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .3); border: 0; }
-input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--ink-btn) var(--p), var(--track) var(--p)); }
-input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .3); border: 0; }
-
-input.field, select.field, textarea.field {
-  height: 44px; padding: 0 16px; border-radius: var(--r-sm); border: 1px solid var(--hair2); background: var(--mist); color: var(--ink); min-width: 0;
-}
-select.field { appearance: none; -webkit-appearance: none; padding-right: 34px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
-textarea.field { height: auto; padding: 10px 14px; font: 12px var(--num); resize: vertical; }
-.search { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; border-radius: 22px; background: var(--seg); color: var(--gr); }
-.search input { flex: 1; min-width: 0; border: 0; background: transparent; outline: 0; font-size: 16px; color: var(--ink); }
-.search input::placeholder { color: var(--gr); }
-
-/* ---------- 外壳：标签栏 + 页面 ---------- */
-#app { min-height: 100%; }
-#tabbar {
-  position: fixed; z-index: 20; display: flex; gap: 4px; padding: 6px; border-radius: 999px;
-  background: var(--glass); border: 1px solid var(--edge); box-shadow: var(--shadow-float);
-  backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
-}
-.tab {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  border: 0; border-radius: 999px; background: transparent; color: var(--gr); font-size: 11px; font-weight: 600;
-  transition: background .25s var(--ease), color .25s var(--ease);
-}
-.tab[aria-current="page"] { background: var(--segOn); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
-.tab svg.i { width: 22px; height: 22px; }
-@media (max-width: 899px) {
-  #tabbar { left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); height: 68px; }
-  #views { padding: max(22px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-left, 0px)) calc(110px + env(safe-area-inset-bottom, 0px)); }
-}
-.view { display: none; }
-#app[data-tab="script"][data-sub="library"] #vLibrary,
-#app[data-tab="script"][data-sub="editor"] #vEditor,
-#app[data-tab="takes"] #vTakes,
-#app[data-tab="remote"] #vRemote,
-#app[data-tab="settings"] #vSettings { display: block; }
-#views > .view { max-width: 960px; margin: 0 auto; }
-
-/* ---------- 稿子库 ---------- */
-.lib-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 16px; }
-.chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
-.chips button { border: 0; padding: 7px 14px; border-radius: 999px; background: var(--seg); color: var(--gr); font-size: 14px; }
-.chips button[aria-pressed="true"] { background: var(--ink-btn); color: var(--ink-btn-text); font-weight: 600; }
-.lib-list { display: grid; gap: 12px; }
-.swipe { position: relative; border-radius: var(--r-lg); overflow: hidden; touch-action: pan-y; }
-.swipe-actions { position: absolute; inset: 0 0 0 auto; display: flex; gap: 0; visibility: hidden; }
-.swipe.pull .swipe-actions { visibility: visible; }
-.swipe-actions button { width: 76px; border: 0; color: #fff; font-size: 13px; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
-.swipe-actions .cp { background: #5B6573; }
-.swipe-actions .rm { background: var(--red); }
-.swipe-actions svg.i { width: 20px; height: 20px; }
-.script-card {
-  --r: var(--r-lg); --pad: 16px;
-  position: relative; display: flex; gap: 14px; align-items: center; width: 100%; text-align: left;
-  padding: var(--pad) 18px; border-radius: var(--r); border: 1px solid var(--hair); background: var(--paper); box-shadow: var(--shadow-card);
-  transition: transform .35s var(--ease), background .25s var(--ease); color: var(--ink);
-}
-.script-card[aria-current="true"] { box-shadow: var(--shadow-card), 0 0 0 2px var(--ink-btn); }
-.ring { position: relative; width: 52px; height: 52px; flex: none; }
-.ring svg { display: block; }
-.ring b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.sc-body { flex: 1; min-width: 0; }
-.sc-title { font-size: 17px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sc-snip { margin-top: 2px; font-size: 14px; color: var(--gr); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sc-meta { margin-top: 8px; display: flex; align-items: baseline; gap: 10px; font-size: 13px; color: var(--gr); }
-.sc-meta b { font-size: 20px; color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
-.sc-proj { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--seg); }
-.chev { color: var(--gr); }
-@media (hover: hover) {
-  .swipe .hover-actions { position: absolute; right: 14px; top: 12px; display: none; gap: 6px; }
-  .swipe:hover .hover-actions { display: flex; }
-  .hover-actions button { width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--seg); color: var(--gr); display: inline-flex; align-items: center; justify-content: center; }
-  .hover-actions button:hover { color: var(--ink); }
-}
-@media (hover: none) { .hover-actions { display: none !important; } }
-@media (min-width: 900px) {
-  #vLibrary .title { font-size: 30px; }
-  .script-card { padding: 12px 14px; gap: 12px; }
-  .ring { width: 44px; height: 44px; }
-  .sc-meta { margin-top: 4px; }
-}
 
 /* ---------- 编辑页 ---------- */
-.ed-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
-.ed-title { flex: 1; min-width: 0; }
-.ed-title .ed-name { display: block; width: 100%; margin: 0 0 0 -8px; padding: 2px 8px; border: 0; border-radius: var(--r-sm, 10px); background: transparent; outline: 0; color: var(--ink); font: inherit; font-size: 34px; line-height: 1.12; font-weight: 700; letter-spacing: -.03em; text-overflow: ellipsis; }
-.ed-title .ed-name::placeholder { color: var(--gr); }
-.ed-title .ed-name:hover { background: var(--seg); }
-.ed-title .ed-name:focus { background: var(--seg); box-shadow: 0 0 0 2px var(--accent, #FF7A1A); }
-.back { display: inline-flex; align-items: center; gap: 2px; height: 44px; padding: 0 14px 0 8px; border: 0; border-radius: 999px; background: transparent; color: var(--blue); font-size: 16px; font-weight: 500; flex: none; }
-.proj { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; }
-.proj input { height: 32px; width: 150px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--hair2); background: var(--paper); font-size: 13px; }
-.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
-.tile { --r: var(--r-lg); --pad: 14px; background: var(--paper); border: 1px solid var(--hair); border-radius: var(--r); padding: var(--pad) 18px; box-shadow: var(--shadow-card); }
-.tile .k { font-size: 12px; color: var(--gr); }
-.tile .v { display: flex; align-items: baseline; gap: 4px; margin-top: 2px; }
-.tile .v b { font-size: 28px; line-height: 1.1; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.tile .v span { font-size: 12px; color: var(--gr); white-space: nowrap; }
-@media (max-width: 560px) { .tiles .tile.opt { display: none; } .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } .tile { --r: var(--r-md); --pad: 12px; padding: var(--pad) 14px; border-radius: var(--r-md); } .tile .v b { font-size: 24px; } }
-.ed-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
-@media (min-width: 1100px) { .ed-body { grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; } }
-@media (min-width: 820px) { #app:not([data-lib="open"]) .ed-body { grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; } }
-.script-box { --pad: 0px; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+#editor {
+  min-height: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 14px;
+  padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+.brand { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: .04em; }
+.brand::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--tally); box-shadow: 0 0 0 4px color-mix(in srgb, var(--tally) 22%, transparent); }
+.stats { display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--muted); font-size: 13px; }
+.stats b { color: var(--fg); font: 600 14px var(--num); font-variant-numeric: tabular-nums; margin-left: 4px; }
+
+.work { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; min-height: 0; }
+.script { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
 #ta {
-  display: block; width: 100%; min-height: 340px; resize: none; border: 0; background: transparent; outline: 0;
-  padding: 22px 24px; font-size: 17px; line-height: 1.9; color: var(--ink);
+  flex: 1; min-height: 420px; width: 100%; resize: none;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 18px 20px; font-size: 17px; line-height: 1.85; color: var(--fg);
 }
-@media (min-width: 900px) { #ta { height: calc(100vh - 380px); min-height: 440px; } }
-#ta::placeholder { color: var(--gr); }
-.script-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 14px 18px; border-top: 1px solid var(--hair); }
-.script-foot .btn { height: 44px; }
-.side { display: grid; gap: 16px; }
+#ta::placeholder { color: var(--muted); }
+.tip { margin: 0; color: var(--muted); font-size: 13px; }
+.tip code { font-family: var(--num); color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.actions .grow { flex: 1; }
+.lib { display: flex; gap: 8px; align-items: center; }
+#scriptSel {
+  flex: 1; min-width: 0; height: 40px; padding: 0 10px; border-radius: 8px;
+  background: var(--raise); border: 1px solid var(--line); font-size: 15px;
+}
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* ---------- 设置 / 录像 / 遥控 页 ---------- */
-.page-head { margin-bottom: 18px; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
-.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 12px 0 0; font-size: 13px; color: var(--gr); }
-.keys dt { font-family: var(--num); color: var(--ink); white-space: nowrap; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--raise);
+}
+.btn:hover { border-color: color-mix(in srgb, var(--fg) 30%, var(--line)); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 700; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--raise)); }
+
+.settings { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 18px 16px; align-self: start; }
+.group { display: grid; gap: 10px; padding-block: 14px; border-top: 1px solid var(--line); }
+.group:first-child { border-top: 0; }
+.group h3 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .12em; color: var(--muted); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.row label { font-size: 14px; }
+.row output, .val { font: 13px var(--num); font-variant-numeric: tabular-nums; color: var(--accent); }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+#dur, #cdSel {
+  width: 96px; height: 34px; padding: 0 10px; border-radius: 6px;
+  background: var(--raise); border: 1px solid var(--line);
+  font-family: var(--num); font-variant-numeric: tabular-nums;
+}
+.seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg label { flex: 1; text-align: center; padding: 7px 4px; font-size: 13px; cursor: pointer; background: var(--raise); }
+.seg label + label { border-left: 1px solid var(--line); }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg input:checked + span { color: var(--accent-ink); }
+.seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--fg); outline-offset: -2px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+details.keys { font-size: 13px; color: var(--muted); }
+details.keys summary { cursor: pointer; color: var(--fg); }
+.keys dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 10px 0 0; }
+.keys dt { font-family: var(--num); color: var(--accent); white-space: nowrap; }
 .keys dd { margin: 0; }
-details.more { font-size: 13px; color: var(--gr); }
-details.more summary { cursor: pointer; color: var(--ink); margin-bottom: 8px; font-size: 14px; }
-details.more > div { display: grid; gap: 8px; }
-.take { --r: var(--r-lg); --pad: 14px; display: flex; align-items: center; gap: 14px; padding: var(--pad) 18px; border-radius: var(--r); background: var(--paper); border: 1px solid var(--hair); box-shadow: var(--shadow-card); }
-.take .ic { --r: var(--r-lg); --pad: 18px; width: 44px; height: 44px; border-radius: var(--r-sm); background: var(--mist); display: flex; align-items: center; justify-content: center; flex: none; }
-.take .tt { flex: 1; min-width: 0; }
-.take .tt b { display: block; font-size: 16px; }
-.take .tt span { display: block; font-size: 13px; color: var(--gr); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.take .dur { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.tag-ok { font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: color-mix(in srgb, var(--green) 18%, transparent); color: var(--green); }
 
-/* ---------- 底部面板 / 弹窗 ---------- */
-.modal { position: fixed; inset: 0; z-index: 30; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; padding: 16px; background: rgba(0, 0, 0, .4); }
-.modal .card.sheet { --r: var(--r-xl); --pad: 20px; width: 100%; max-width: 440px; min-width: 0; max-height: 100%; overflow: auto; display: grid; gap: 14px; border-radius: var(--r); transition: transform .35s var(--ease); }
-.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--hair2); justify-self: center; margin-top: -8px; touch-action: none; }
-.sheet-title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
-@media (max-width: 700px) {
-  .modal { place-items: end center; padding: 0; }
-  .modal .card.sheet { max-width: none; border-radius: var(--r-xl) var(--r-xl) 0 0; padding-bottom: calc(26px + env(safe-area-inset-bottom, 0px)); border-bottom: 0; }
+@media (max-width: 860px) {
+  .work { grid-template-columns: minmax(0, 1fr); }
+  #ta { min-height: 52vh; }
 }
-.opt-row { --r: var(--r-xl); --pad: 20px; display: flex; align-items: center; gap: 14px; text-align: left; border: 0; border-radius: calc(var(--r) - var(--pad)); background: var(--mist); color: var(--ink); padding: 12px 14px; width: 100%; }
-.opt-row .ic { width: 44px; height: 44px; flex: none; border-radius: calc(var(--r) - var(--pad) - 12px + 2px); background: var(--paper); display: inline-flex; align-items: center; justify-content: center; }
-.opt-row b { display: block; font-size: 16px; font-weight: 600; }
-.opt-row span.s { display: block; font-size: 13px; color: var(--gr); }
-.qr { justify-self: center; width: min(240px, 100%); padding: 12px; border-radius: 16px; background: #fff; }
-.qr svg { display: block; width: 100%; height: auto; }
-.codebox { --r: var(--r-xl); --pad: 20px; display: grid; justify-items: center; gap: 2px; padding: 14px; border-radius: calc(var(--r) - var(--pad)); background: var(--mist); }
-.bigcode { font-size: 40px; line-height: 1.2; font-weight: 700; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
-#rlink, #lanLink { flex: 1; min-width: 0; height: 44px; padding: 0 12px; border-radius: var(--r-sm); background: var(--mist); border: 1px solid var(--hair2); font: 12px var(--num); }
-#lanQr { width: min(300px, 100%); }
-.scan { width: 100%; max-height: 260px; border-radius: 16px; background: #000; object-fit: cover; }
-#lanPaste, #rAnsCode { width: 100%; min-height: 64px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--mist); border: 1px solid var(--hair2); font: 12px var(--num); resize: vertical; }
-.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; font-size: 14px; color: var(--gr); }
-.steps b { color: var(--ink); font-weight: 600; }
-#tabLan, #tabNet, #tabNear { display: grid; gap: 12px; }
-#codeAsk { --r: var(--r-xl); --pad: 20px; display: grid; gap: 8px; padding: 14px; border-radius: calc(var(--r) - var(--pad)); background: var(--mist); }
-#codeIn { flex: 1; height: 52px; border-radius: var(--r-sm); border: 1px solid var(--hair2); background: var(--paper); font: 600 26px var(--num); letter-spacing: .3em; text-align: center; padding: 0 12px; min-width: 0; }
-#manIp, #nearAlias { flex: 1; height: 44px; padding: 0 14px; border-radius: var(--r-sm); border: 1px solid var(--hair2); background: var(--mist); min-width: 0; }
-.modal .row { min-width: 0; }
-.modal .row > button { flex: none; }
-.plist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.plist li { display: flex; gap: 6px; }
-.plist .go {
-  --r: var(--r-xl); --pad: 18px;
-  flex: 1; min-width: 0; display: flex; gap: 12px; align-items: center; text-align: left; border: 0;
-  padding: 12px 14px; border-radius: calc(var(--r) - var(--pad)); background: var(--mist); color: var(--ink);
-}
-.plist .go.on { box-shadow: 0 0 0 2px var(--orange) inset; }
-.plist .k { font-size: 13px; color: var(--gr); font-variant-numeric: tabular-nums; flex: none; }
-.plist .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
-.plist .tm { margin-left: auto; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; flex: none; }
-.plist .del { width: 44px; border: 0; border-radius: calc(var(--r-xl) - 18px); background: transparent; color: var(--gr); }
-.plist .del:hover { color: var(--red); }
 
-/* 全局小提示（带“撤销”） */
-#gtoast {
-  position: fixed; left: 50%; z-index: 40; translate: -50% 0; display: flex; align-items: center; gap: 14px;
-  padding: 10px 10px 10px 20px; border-radius: 999px; background: var(--ink-btn); color: var(--ink-btn-text);
-  box-shadow: var(--shadow-float); font-size: 15px; opacity: 0; pointer-events: none; transition: opacity .25s var(--ease), translate .35s var(--ease);
-  bottom: calc(96px + env(safe-area-inset-bottom, 0px)); translate: -50% 12px; max-width: calc(100% - 32px);
-}
-#gtoast.show { opacity: 1; pointer-events: auto; translate: -50% 0; }
-#gtoast button { border: 0; background: rgba(127, 127, 127, .3); color: inherit; font-weight: 600; padding: 6px 14px; border-radius: 999px; }
-@media (min-width: 900px) { #gtoast { bottom: 32px; } }
-
-/* ---------- 提词画面 ---------- */
+/* ---------- 提词页 ---------- */
 #prompter { position: fixed; inset: 0; z-index: 10; background: #000; overflow: hidden; }
 #stage { position: absolute; inset: 0; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
-#stage.t-dark { background: #000; color: #f5f3ee; --hl: #FF7A1A; }
+#stage.t-dark { background: #000; color: #f5f3ee; --hl: #f0b43c; }
 #stage.t-amber { background: #000; color: #ffd45c; --hl: #7fd0ff; }
-#stage.t-light { background: #f6f4ef; color: #111; --hl: #B54A00; }
+#stage.t-light { background: #f6f4ef; color: #111; --hl: #9a6200; }
 #content { position: relative; will-change: transform; font-weight: 600; word-break: break-word; }
 #content p { margin: 0 0 .7em; }
 #content .sec { margin: 1.4em 0 .5em; font-size: .5em; line-height: 1.4; font-weight: 700; letter-spacing: .08em; color: var(--hl); }
@@ -373,228 +151,176 @@ details.more > div { display: grid; gap: 8px; }
 #cd {
   position: absolute; left: 50%; top: 50%; translate: -50% -50%;
   width: 34vmin; height: 34vmin; border-radius: 50%; display: grid; place-items: center;
-  font: 700 18vmin/1 var(--ui); font-variant-numeric: tabular-nums; color: #fff; background: rgba(227, 38, 58, .88); pointer-events: none;
+  font: 700 18vmin/1 var(--num); color: #fff; background: rgba(229, 72, 77, .85); pointer-events: none;
 }
 
-/* 悬浮胶囊：代替整条工具栏 */
-.pill {
-  position: absolute; z-index: 2; display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 999px;
-  background: var(--glass); border: 1px solid var(--edge); box-shadow: var(--shadow-float); color: var(--ink);
-  backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  transition: opacity .3s var(--ease), translate .35s var(--ease);
+.bar {
+  position: absolute; left: 0; right: 0; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  background: rgba(15, 17, 21, .88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: var(--fg); transition: opacity .3s, translate .3s;
 }
-.pill.top { top: max(16px, env(safe-area-inset-top, 0px)); left: 50%; translate: -50% 0; max-width: calc(100% - 24px); overflow-x: auto; scrollbar-width: none; }
-.pill.bottom { bottom: max(16px, env(safe-area-inset-bottom, 0px)); left: 50%; translate: -50% 0; width: min(1080px, calc(100% - 24px)); padding: 6px 18px 6px 10px; gap: 8px; }
-#prompter.idle .pill { opacity: 0; pointer-events: none; }
-#prompter.idle .pill.top { translate: -50% -30%; }
-#prompter.idle .pill.bottom { translate: -50% 30%; }
+.bar.topbar { top: 0; padding-top: calc(8px + env(safe-area-inset-top, 0px)); padding-bottom: 8px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.bar.bottombar { bottom: 0; padding-top: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); flex-wrap: wrap; }
+#prompter.idle .bar { opacity: 0; pointer-events: none; }
+#prompter.idle .topbar { translate: 0 -30%; }
+#prompter.idle .bottombar { translate: 0 30%; }
 #prompter.idle #stage { cursor: none; }
-.sep { width: 1px; height: 22px; background: var(--hair2); flex: none; margin: 0 4px; }
-.grp { display: flex; align-items: center; gap: 2px; flex: none; }
+.grp { display: flex; align-items: center; gap: 4px; flex: none; }
+.sep { width: 1px; height: 26px; background: var(--line); flex: none; }
 .ib {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none;
-  min-width: 40px; height: 40px; padding: 0 10px; border-radius: 999px; border: 0; background: transparent; color: var(--ink);
-  font-size: 14px; white-space: nowrap; transition: background .25s var(--ease), transform .25s var(--ease);
+  min-width: 40px; height: 40px; padding: 0 10px; border-radius: 8px;
+  border: 1px solid transparent; background: transparent; font-size: 13px; white-space: nowrap;
 }
-.ib:hover { background: var(--mist); }
-.ib:active { transform: scale(.94); }
-.ib[aria-pressed="true"] { background: color-mix(in srgb, var(--orange) 24%, transparent); color: var(--orange); }
-.ib.play { width: 48px; height: 48px; padding: 0; background: var(--ink); color: #1D1D1F; }
-.ib.play:hover { background: var(--ink); }
-#prompter.playing .ib.play { background: var(--red); color: #fff; }
-.stepper { display: flex; align-items: center; gap: 2px; padding: 0 2px; }
-.stepper .ib { min-width: 32px; width: 32px; height: 32px; padding: 0; font-size: 20px; }
-.stepper .v { display: flex; align-items: baseline; gap: 4px; min-width: 64px; justify-content: center; }
-.stepper output { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.stepper small { font-size: 12px; color: var(--gr); }
-.track { position: relative; flex: 1; min-width: 120px; height: 40px; cursor: pointer; touch-action: none; }
-.track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 6px; translate: 0 -50%; border-radius: 3px; background: var(--hair2); }
-.fill { position: absolute; left: 0; top: 50%; height: 6px; translate: 0 -50%; border-radius: 3px; background: var(--orange); }
-.knob { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; translate: -50% -50%; background: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, .5); }
-.tick { position: absolute; top: 50%; width: 2px; height: 18px; translate: -50% -50%; background: var(--gr); pointer-events: none; }
-.tick.mark { width: 9px; height: 9px; top: 6px; translate: -50% 0; background: var(--orange); border-radius: 2px; transform: rotate(45deg); }
-.times { display: flex; align-items: center; gap: 14px; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--gr); flex: none; }
-.times b { color: var(--ink); font-weight: 700; font-size: 20px; }
-.where { color: var(--ink); max-width: 14em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tally { width: 9px; height: 9px; border-radius: 50%; background: var(--gr); flex: none; }
-#prompter.playing .tally { background: var(--red); }
-.recbadge { color: var(--red); font-weight: 700; }
-.heard { max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--gr); }
+.ib:hover { background: var(--raise); }
+.ib[aria-pressed="true"] { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.ib.play { background: var(--accent); color: var(--accent-ink); min-width: 52px; }
+.ib.play:hover { filter: brightness(1.06); background: var(--accent); }
+#prompter.playing .ib.play { background: var(--tally); color: #fff; }
+.stepper .lbl { font-size: 12px; color: var(--muted); padding-left: 4px; }
+.stepper output { min-width: 38px; text-align: center; font: 600 14px var(--num); font-variant-numeric: tabular-nums; }
+.stepper .ib { min-width: 34px; font-size: 18px; padding: 0; }
 
-.menu {
-  --r: var(--r-lg); --pad: 8px;
-  position: absolute; z-index: 5; top: calc(max(16px, env(safe-area-inset-top, 0px)) + 62px); left: 50%; translate: -50% 0;
-  width: min(300px, calc(100% - 24px)); padding: var(--pad); border-radius: var(--r);
-  background: var(--glass2); border: 1px solid var(--edge); box-shadow: var(--shadow-float);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); color: var(--ink);
-}
-.menu .mi { display: flex; align-items: center; gap: 12px; width: 100%; height: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--ink); text-align: left; font-size: 15px; font-weight: 500; border-radius: calc(var(--r) - var(--pad)); }
-.menu .mi:hover { background: var(--mist); }
-.menu .mi[aria-pressed="true"] { color: var(--orange); }
-.menu .mrow { display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 12px; font-size: 15px; }
-.menu hr { border: 0; border-top: 1px solid var(--hair); margin: 6px 4px; }
+.nav { display: flex; gap: 2px; flex: none; }
+.track { position: relative; flex: 1; min-width: 160px; height: 40px; cursor: pointer; touch-action: none; }
+.track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 6px; translate: 0 -50%; border-radius: 3px; background: var(--raise); }
+.fill { position: absolute; left: 0; top: 50%; height: 6px; translate: 0 -50%; border-radius: 3px; background: var(--accent); }
+.knob { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; translate: -50% -50%; background: var(--fg); }
+.tick { position: absolute; top: 50%; width: 2px; height: 16px; translate: -50% -50%; background: var(--muted); pointer-events: none; }
+.tick.mark { width: 8px; height: 8px; top: 8px; translate: -50% 0; background: var(--accent); border-radius: 1px; transform: rotate(45deg); }
+.times { display: flex; align-items: center; gap: 12px; font: 13px var(--num); font-variant-numeric: tabular-nums; color: var(--muted); flex: none; }
+.times b { color: var(--fg); font-weight: 600; }
+.where { font-family: var(--ui); color: var(--fg); max-width: 14em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tally { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+#prompter.playing .tally { background: var(--tally); }
 
 #panel {
-  --r: var(--r-xl); --pad: 18px;
-  position: absolute; z-index: 6; background: var(--paper); border: 1px solid var(--hair); box-shadow: var(--shadow-float);
-  padding: var(--pad); display: flex; flex-direction: column; gap: 14px; transition: transform .35s var(--ease);
+  position: absolute; top: 0; right: 0; bottom: 0; z-index: 3; width: min(360px, 88vw);
+  background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
 }
-@media (max-width: 700px) { #panel { left: 0; right: 0; bottom: 0; height: min(62vh, 520px); border-radius: var(--r) var(--r) 0 0; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); } }
-@media (min-width: 701px) { #panel { top: 12px; right: 12px; bottom: 12px; width: 380px; border-radius: var(--r); } }
+#panel h3 { margin: 18px 0 8px; font-size: 12px; letter-spacing: .12em; color: var(--muted); font-weight: 600; }
+#panel h3:first-of-type { margin-top: 6px; }
 .phead { display: flex; justify-content: space-between; align-items: center; }
-.phead strong { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
-#panel .lists { flex: 1; min-height: 0; overflow-y: auto; }
-#panel[data-ptab="sec"] #markList, #panel[data-ptab="sec"] #takeList,
-#panel[data-ptab="mark"] #secList, #panel[data-ptab="mark"] #takeList,
-#panel[data-ptab="take"] #secList, #panel[data-ptab="take"] #markList { display: none; }
+.phead strong { font-size: 16px; }
+.plist { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.plist li { display: flex; align-items: stretch; gap: 4px; }
+.plist .go {
+  flex: 1; min-width: 0; display: flex; gap: 10px; align-items: baseline; text-align: left;
+  padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--raise);
+}
+.plist .go:hover { border-color: var(--accent); }
+.plist .go.on { border-color: var(--accent); }
+.plist .k { font: 12px var(--num); color: var(--accent); flex: none; }
+.plist .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plist .tm { margin-left: auto; font: 12px var(--num); color: var(--muted); flex: none; }
+.plist .del { width: 40px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--muted); }
+.plist .del:hover { color: var(--tally); border-color: var(--tally); }
+.empty { color: var(--muted); font-size: 13px; margin: 0; }
 
 #hint {
   position: absolute; left: 50%; bottom: 96px; translate: -50% 0; z-index: 2;
   width: max-content; max-width: calc(100% - 32px);
   display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 16px;
-  padding: 10px 20px; border-radius: 999px; background: var(--glass); border: 1px solid var(--edge);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); font-size: 15px; color: var(--ink); pointer-events: none;
+  padding: 10px 18px; border-radius: 10px; background: rgba(15, 17, 21, .92); border: 1px solid var(--line);
+  font-size: 15px; color: var(--fg); pointer-events: none;
 }
-#hint strong { color: var(--orange); }
-#hint kbd { font: 600 12px var(--num); padding: 3px 8px; margin-right: 6px; border: 1px solid var(--hair2); border-radius: 8px; background: var(--mist); }
+#hint strong { color: var(--accent); }
+#hint kbd { font: 12px var(--num); padding: 2px 6px; margin-right: 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--raise); }
 #cam {
-  position: absolute; z-index: 2; top: 84px; right: max(12px, env(safe-area-inset-right, 0px));
-  width: 200px; border-radius: var(--r-md); overflow: hidden; border: 2px solid var(--hair2); background: #000; cursor: pointer;
+  position: absolute; z-index: 2; top: 76px; right: max(12px, env(safe-area-inset-right, 0px));
+  width: 200px; border-radius: 10px; overflow: hidden; border: 2px solid var(--line); background: #000; cursor: pointer;
 }
 #cam.mini { width: 84px; }
-#cam.rec { border-color: var(--red); }
+#cam.rec { border-color: var(--tally); }
 #cam video { display: block; width: 100%; transform: scaleX(-1); }
-#pipNote { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; color: var(--gr); font-size: 16px; background: var(--bg); }
+.recbadge { color: var(--tally); font-weight: 700; }
+.heard { max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--ui); color: var(--muted); }
+#lang { width: 132px; height: 34px; padding: 0 8px; border-radius: 6px; background: var(--raise); border: 1px solid var(--line); }
+#pipNote { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; color: var(--muted); font-size: 16px; background: var(--bg); }
+
+.modal { position: fixed; inset: 0; z-index: 30; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; padding: 16px; background: rgba(0, 0, 0, .6); }
+.modal .card {
+  width: 100%; max-width: 420px; min-width: 0; max-height: 100%; overflow: auto; display: grid; gap: 12px;
+  padding: 16px 18px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line);
+}
+.qr { justify-self: center; width: min(240px, 100%); padding: 12px; border-radius: 10px; background: #fff; }
+.qr svg { display: block; width: 100%; height: auto; }
+#rlink { flex: 1; min-width: 0; height: 40px; padding: 0 10px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); font: 12px var(--num); }
+.dot { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; color: var(--muted); }
+.dot::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.ok { color: var(--fg); }
+.dot.ok::before { background: var(--ok); }
+
+#remote {
+  min-height: 100%; max-width: 560px; margin: 0 auto; display: grid; gap: 14px; align-content: start;
+  padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.rtop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.rstatus { display: grid; gap: 8px; padding: 14px 16px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
+.rsec { font-size: 12px; font-weight: 600; letter-spacing: .1em; color: var(--accent); }
+.rsent { margin: 0; min-height: 3em; font-size: 20px; line-height: 1.5; font-weight: 600; }
+.rbar { position: relative; height: 10px; }
+.rbar::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 6px; translate: 0 -50%; border-radius: 3px; background: var(--raise); }
+.rtimes { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 13px var(--num); font-variant-numeric: tabular-nums; color: var(--muted); }
+.rtimes b { color: var(--fg); font-weight: 600; }
+.rpad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rbtn {
+  min-height: 64px; border-radius: 12px; border: 1px solid var(--line); background: var(--raise);
+  font-size: 17px; font-weight: 600; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.rbtn:active { background: color-mix(in srgb, var(--accent) 22%, var(--raise)); }
+.rbtn.wide { grid-column: 1 / -1; }
+.scan { width: 100%; max-height: 260px; border-radius: 10px; background: #000; object-fit: cover; }
+#lanPaste { width: 100%; min-height: 64px; padding: 8px 10px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); font: 12px var(--num); resize: vertical; }
+.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+#lanQr { width: min(300px, 100%); }
+#tabLan { display: grid; gap: 12px; }
+#tabNet { display: grid; gap: 12px; }
+.steps b { color: var(--fg); font-weight: 600; }
+details.more { font-size: 13px; color: var(--muted); }
+details.more summary { cursor: pointer; color: var(--fg); margin-bottom: 8px; }
+details.more > div { display: grid; gap: 8px; }
+#rpair { display: grid; gap: 12px; padding: 14px 16px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
+#rpair .qr { width: min(300px, 100%); }
+.codebox { display: grid; justify-items: center; gap: 2px; padding: 14px; border-radius: 12px; background: var(--raise); }
+.bigcode { font: 700 40px/1.2 var(--num); letter-spacing: .14em; color: var(--accent); font-variant-numeric: tabular-nums; }
+#codeIn, #manIp, #nearAlias { height: 44px; padding: 0 12px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); min-width: 0; }
+#codeIn { flex: 1; font: 600 24px var(--num); letter-spacing: .3em; text-align: center; }
+#manIp, #nearAlias { flex: 1; font-size: 15px; }
+#nearAlias { height: 38px; }
+#codeAsk { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--raise); }
+.modal .row { min-width: 0; }
+.modal .row > button { flex: none; }
+#rAnsCode { width: 100%; min-height: 56px; padding: 8px 10px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); font: 11px var(--num); resize: none; }
+.rbtn.big { grid-column: 1 / -1; min-height: 88px; font-size: 22px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.rbtn.big.on { background: var(--tally); color: #fff; }
+.rbtn:disabled { opacity: .4; }
 #toast {
   position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 4;
-  padding: 10px 20px; border-radius: 999px; background: var(--glass2); border: 1px solid var(--edge); color: var(--ink);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  font-size: 15px; pointer-events: none; transition: opacity .25s var(--ease); opacity: 0;
+  padding: 10px 18px; border-radius: 10px; background: rgba(15, 17, 21, .92); border: 1px solid var(--line);
+  font-size: 15px; pointer-events: none; transition: opacity .25s; opacity: 0;
 }
 #toast.show { opacity: 1; }
-.narrow-only { display: none !important; }
+
+@media (max-width: 1500px) {
+  .ib .lbl-t.opt { display: none; }
+}
 @media (max-width: 760px) {
-  .wide-only { display: none !important; }
-  .narrow-only { display: flex !important; }
   .ib .lbl-t { display: none; }
-  .where { display: none; }
-  .times .opt { display: none; }
+  .bar.topbar { flex-wrap: wrap; justify-content: center; gap: 4px 6px; }
+  .bar.topbar .sep { display: none; }
+  .track { order: -1; flex-basis: 100%; }
+  .bar.bottombar { justify-content: space-between; }
+  .where { max-width: 8em; }
 }
-@media (max-width: 1100px) { .ib .lbl-t.opt { display: none; } }
-
-/* ---------- 遥控器（另一台手机） ---------- */
-#remote {
-  position: fixed; inset: 0; z-index: 12; overflow-y: auto; background: #000; color: var(--ink);
-  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(22px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-}
-.r-wrap { max-width: 520px; margin: 0 auto; display: grid; gap: 14px; }
-.r-top { display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
-.r-top .chip { background: color-mix(in srgb, var(--green) 18%, transparent); color: #6FE0A8; font-weight: 600; }
-.r-top .chip.off { background: var(--seg); color: var(--gr); }
-.r-top .chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-.r-top .acts { display: flex; gap: 8px; }
-.r-top .round[aria-pressed="true"] { background: var(--orange); color: #1D1D1F; border-color: transparent; }
-#rpair { --r: var(--r-lg); --pad: 18px; display: grid; gap: 12px; padding: var(--pad); border-radius: var(--r); background: var(--paper); border: 1px solid var(--hair); }
-#rpair .qr { width: min(300px, 100%); }
-.r-now { display: grid; gap: 8px; }
-.r-sec { display: flex; justify-content: space-between; align-items: baseline; }
-.r-sec #rSec { font-size: 13px; font-weight: 700; letter-spacing: .08em; color: var(--orange); }
-.r-sec #rSecN { font-size: 12px; color: var(--gr); font-variant-numeric: tabular-nums; }
-.r-line { line-height: 1.4; }
-.r-line.dim { font-size: 15px; color: var(--gr); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .75; min-height: 21px; }
-.r-line.cur { font-size: 22px; font-weight: 600; min-height: 62px; }
-.r-bar { position: relative; height: 14px; margin-top: 4px; }
-.r-bar::before { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 6px; border-radius: 3px; background: var(--hair2); }
-.r-bar #rFill { position: absolute; left: 0; top: 4px; height: 6px; border-radius: 3px; background: var(--orange); }
-.r-bar .tick { top: 7px; height: 14px; }
-.r-times { display: flex; gap: 26px; align-items: flex-end; }
-.r-times .k { font-size: 12px; color: var(--gr); }
-.r-times b { display: block; font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.r-times .st { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--gr); padding-bottom: 4px; }
-.r-times .st.rec { color: #FF8A8F; }
-.r-times .st.rec::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--red); }
-.r-thumb { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px; }
-.rbtn { border: 0; background: var(--paper); color: var(--ink); touch-action: manipulation; user-select: none; -webkit-user-select: none; transition: transform .25s var(--ease), background .25s var(--ease); }
-.rbtn:active { transform: scale(.95); }
-.rbtn:disabled { opacity: .4; }
-.rbtn.side { width: 84px; height: 84px; border-radius: 50%; border: 1px solid var(--hair); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 12px; font-weight: 600; }
-.rbtn.side svg.i { width: 26px; height: 26px; }
-.rbtn.play { width: 116px; height: 116px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--ink); color: #1D1D1F; flex: none; }
-.rbtn.play svg { width: 40px; height: 40px; }
-.rbtn.play.on { background: var(--red); color: #fff; box-shadow: 0 10px 30px -8px rgba(227, 38, 58, .6); }
-.r-rest { display: grid; gap: 12px; transition: opacity .25s var(--ease); }
-.r-rest.locked { opacity: .3; pointer-events: none; }
-.rbtn.retake { height: 56px; border-radius: 28px; border: 1px solid color-mix(in srgb, var(--orange) 50%, transparent); background: color-mix(in srgb, var(--orange) 14%, transparent); color: #FFB27A; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
-.r-jump { --r: var(--r-lg); --pad: 4px; display: flex; background: var(--paper); border: 1px solid var(--hair); border-radius: var(--r); padding: var(--pad); }
-.r-jump .rbtn { flex: 1; height: 52px; border-radius: calc(var(--r) - var(--pad)); background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 12px; font-weight: 600; }
-.r-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.r-step { --r: var(--r-lg); --pad: 8px; display: flex; align-items: center; justify-content: space-between; gap: 2px; padding: 10px var(--pad); border-radius: var(--r); background: var(--paper); border: 1px solid var(--hair); }
-.r-step .rbtn { width: 44px; height: 44px; border-radius: 50%; background: var(--mist); font-size: 22px; }
-.r-step .v { text-align: center; }
-.r-step .v i { display: block; font-style: normal; font-size: 12px; color: var(--gr); }
-.r-step .v b { font-size: 26px; line-height: 1.1; font-weight: 700; font-variant-numeric: tabular-nums; }
-.r-step .v small { font-size: 11px; color: var(--gr); margin-left: 3px; }
-.r-marks { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.r-marks .rbtn { height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--hair2); background: transparent; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-.r-marks .rbtn.add { background: var(--ink); color: #1D1D1F; border-color: transparent; }
-.r-marks .rbtn small { font-size: 13px; font-weight: 500; color: var(--gr); font-variant-numeric: tabular-nums; }
-.r-note { text-align: center; font-size: 14px; color: var(--gr); }
-
 @media (prefers-reduced-motion: reduce) {
-  .pill, #content .s, #toast, .script-card, .modal .card.sheet, #panel, .tab, .btn, .ib, .rbtn, input.sw, input.sw::after, #gtoast { transition: none; }
-}
-
-/* ---------- 备忘录式布局：侧栏 + 列表 + 正文，全部常驻 ---------- */
-@media (min-width: 900px) {
-  #tabbar { top: 0; bottom: 0; left: 0; right: auto; translate: none; width: 184px; height: auto; flex-direction: column; justify-content: flex-start; gap: 2px; padding: 18px 10px; border-radius: 0; border: 0; border-right: 1px solid var(--hair); background: var(--side); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .tab { flex: none; flex-direction: row; justify-content: flex-start; gap: 10px; height: 38px; padding: 0 12px; border-radius: 10px; font-size: 15px; font-weight: 500; }
-  .tab[aria-current="page"] { background: var(--seg); box-shadow: none; font-weight: 600; }
-  #views { margin-left: 184px; padding: 0; max-width: none; }
-  #views > .view { max-width: 960px; margin: 0 auto; padding: 40px; }
-  #app[data-tab="script"] #views { display: grid; grid-template-columns: 300px minmax(0, 1fr); height: 100vh; }
-  #app[data-tab="script"][data-sub] #vLibrary { display: block; max-width: none; margin: 0; padding: 18px 10px 20px; height: 100vh; overflow: auto; border-right: 1px solid var(--hair); }
-  #app[data-tab="script"][data-sub] #vEditor { display: flex; flex-direction: column; max-width: none; margin: 0; padding: 20px 32px 24px; height: 100vh; min-height: 0; overflow: auto; }
-  #edBack { display: none; }
-  .script-box { flex: 1; min-height: 320px; }
-  #ta { flex: 1; height: auto; min-height: 0; }
-}
-.lib-list { gap: 0; }
-.lib-group { margin: 16px 6px 4px; font-size: 13px; font-weight: 600; color: var(--gr); }
-.swipe { --r: 12px; border-radius: 12px; }
-.swipe:not(:last-child)::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 1px; background: var(--hair); pointer-events: none; }
-.script-card { --r: 12px; --pad: 10px; padding: 10px 12px; gap: 0; border: 0; border-radius: 12px; background: transparent; box-shadow: none; }
-.script-card[aria-current="true"] { background: var(--seg); box-shadow: none; }
-.sc-top { display: flex; align-items: baseline; gap: 8px; }
-.sc-top .sc-title { flex: 1; min-width: 0; font-size: 15px; }
-.sc-dur { flex: none; font-size: 12px; color: var(--gr); font-variant-numeric: tabular-nums; }
-.sc-row2 { display: flex; gap: 8px; margin-top: 2px; min-width: 0; font-size: 13px; color: var(--gr); }
-.sc-row2 .when { flex: none; color: var(--ink); opacity: .75; }
-.sc-row2 .sc-snip { margin: 0; flex: 1; min-width: 0; }
-.sc-row3 { display: flex; gap: 8px; margin-top: 4px; font-size: 12px; color: var(--gr); align-items: center; }
-.sc-prog { color: var(--green); font-weight: 600; }
-.ed-head { align-items: center; margin-bottom: 2px; }
-.ed-head .ed-name { flex: 1; min-width: 0; display: block; margin: 0 0 0 -8px; padding: 2px 8px; border: 0; border-radius: 10px; background: transparent; outline: 0; color: var(--ink); font: inherit; font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -.03em; text-overflow: ellipsis; }
-.ed-head .ed-name:hover, .ed-head .ed-name:focus { background: var(--seg); }
-.ed-meta { margin: 2px 0 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-size: 13px; color: var(--gr); }
-.ed-meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
-.ed-meta .proj { margin: 0; }
-.ed-meta .proj input { height: 28px; width: 120px; }
-.ctl { --r: var(--r-md); --pad: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; padding: var(--pad) 16px; margin-bottom: 14px; background: var(--paper); border: 1px solid var(--hair); border-radius: var(--r); }
-.ctl .grp { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.ctl .grp.sp { flex: 1 1 240px; }
-.ctl .grp.sp input[type="range"] { flex: 1; min-width: 90px; }
-.ctl .k { font-size: 13px; color: var(--gr); white-space: nowrap; }
-.ctl output { min-width: 78px; text-align: right; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.ctl .field { height: 34px; padding: 0 10px; }
-.ctl .seg label span { padding: 6px 12px; }
-@media (max-width: 899px) {
-  #app[data-tab="script"][data-sub="editor"] #tabbar { display: none; }
-  #app[data-tab="script"][data-sub="editor"] #views { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
-}
-@media (max-width: 560px) {
-  .script-foot .btn.ghost { font-size: 0; gap: 0; padding: 0 14px; }
-  .script-foot { flex-wrap: nowrap; padding: 12px 14px; }
-  .script-foot .btn { padding: 0 16px; }
+  .bar, #content .s, #toast { transition: none; }
 }
 </style>
 </head>
@@ -603,9 +329,8 @@ details.more > div { display: grid; gap: 8px; }
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
-  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
   <symbol id="i-up1" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
   <symbol id="i-down1" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
   <symbol id="i-up2" viewBox="0 0 24 24"><path d="M6 12l6-6 6 6M6 18l6-6 6 6"/></symbol>
@@ -625,200 +350,147 @@ details.more > div { display: grid; gap: 8px; }
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></symbol>
   <symbol id="i-pip" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M10 14h4M10 17h4"/></symbol>
-  <symbol id="i-script" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></symbol>
-  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
-  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
-  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
-  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></symbol>
-  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
-  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
-  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-clip" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6"/></symbol>
-  <symbol id="i-file" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
 </svg>
 
-<!-- ============ 外壳：标签栏 + 页面 ============ -->
-<div id="app" data-tab="script" data-sub="library">
-  <nav id="tabbar" aria-label="主导航">
-    <button class="tab" type="button" data-tab="script" aria-current="page"><svg class="i"><use href="#i-script"/></svg><span>稿子</span></button>
-    <button class="tab" type="button" data-tab="takes"><svg class="i"><use href="#i-cam"/></svg><span>录像</span></button>
-    <button class="tab" type="button" data-tab="remote"><svg class="i"><use href="#i-remote"/></svg><span>遥控</span></button>
-    <button class="tab" type="button" data-tab="settings"><svg class="i"><use href="#i-sliders"/></svg><span>设置</span></button>
-  </nav>
+<!-- ============ 编辑页 ============ -->
+<div id="editor">
+  <header class="top">
+    <h1 class="brand">提词器</h1>
+    <div class="stats" aria-live="polite">
+      <span>字数<b id="stUnits">0</b></span>
+      <span>段落<b id="stParas">0</b></span>
+      <span>小节<b id="stSecs">0</b></span>
+      <span>预计时长<b id="stDur">00:00</b></span>
+    </div>
+  </header>
 
-  <div id="views">
-
-    <!-- 稿子库 -->
-    <section id="vLibrary" class="view" aria-label="稿子库">
-      <header class="lib-head">
-        <div><h1 class="title">稿子</h1><p class="sub" id="libCount"></p></div>
-        <button class="round ink" id="newBtn" type="button" aria-label="新建稿子"><svg class="i"><use href="#i-plus"/></svg></button>
-      </header>
-      <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="libSearch" type="search" placeholder="搜索稿子" autocomplete="off" aria-label="搜索稿子"></label>
-      <div class="chips" id="libChips" role="group" aria-label="筛选"></div>
-      <div class="lib-list" id="libList"></div>
-      <p class="empty" id="libEmpty" hidden>没有找到稿子。点右上角的 + 新建一份。</p>
-    </section>
-
-    <!-- 编辑稿子 -->
-    <section id="vEditor" class="view" aria-label="编辑稿子">
-      <header class="ed-head">
-        <button class="back" id="edBack" type="button" aria-label="返回稿子库"><svg class="i"><use href="#i-back"/></svg>稿子</button>
-        <input class="ed-name" id="edTitle" maxlength="40" autocomplete="off" aria-label="稿子标题" placeholder="给稿子起个名字">
-      </header>
-      <p class="ed-meta">
-        <span><b id="stUnits">0</b> 字</span>
-        <span>预计 <b id="stDur">00:00</b></span>
-        <span><b id="stSecs">0</b> 节</span>
-        <span id="edSub"></span>
-        <label class="proj"><span>项目</span><input id="projectIn" list="projectList" maxlength="20" placeholder="可不填" autocomplete="off"></label>
-        <datalist id="projectList"></datalist>
-        <span id="stParas" hidden></span><span id="tileCpm" hidden></span>
-      </p>
-      <div class="ctl" id="speedCard">
-        <div class="grp sp"><label class="k" for="cpm">语速</label><input type="range" id="cpm" min="60" max="600" step="10"><output id="cpmOut" for="cpm"></output></div>
-        <div class="grp"><label class="k" for="dur">读完用时</label><input class="field num" id="dur" inputmode="numeric" autocomplete="off" placeholder="03:00" style="width:84px;text-align:center" aria-label="目标时长，分:秒"></div>
-        <div class="grp"><span class="k">倒数</span>
-          <div class="seg" role="radiogroup" aria-label="开始前倒数">
-            <label><input type="radio" name="cd" value="0"><span>无</span></label>
-            <label><input type="radio" name="cd" value="3"><span>3 秒</span></label>
-            <label><input type="radio" name="cd" value="5"><span>5 秒</span></label>
-            <label><input type="radio" name="cd" value="10"><span>10 秒</span></label>
-          </div>
-        </div>
+  <main class="work">
+    <section class="script">
+      <div class="lib">
+        <label for="scriptSel" class="vh">当前稿子</label>
+        <select id="scriptSel"></select>
+        <button class="btn" id="newScript" type="button">新建稿子</button>
+        <button class="btn" id="delScript" type="button">删除</button>
       </div>
-      <div class="card script-box">
-        <textarea id="ta" spellcheck="false" placeholder="把稿子粘贴到这里。&#10;&#10;空一行就是新的一段。&#10;# 开头的一行是小节标题，例如：# 第二部分&#10;**重点** 会高亮，[停顿] 会变成提示标签"></textarea>
-        <div class="script-foot">
-          <label class="btn ghost" for="file" aria-label="导入 .txt"><svg class="i"><use href="#i-file"/></svg>导入 .txt</label>
-          <input id="file" type="file" accept=".txt,text/plain" hidden>
-          <span class="grow"></span>
-          <button class="btn" id="startCaret" type="button">从光标处开始</button>
-          <button class="btn primary" id="start" type="button"><svg class="i"><use href="#i-play"/></svg>开始提词</button>
-        </div>
+      <textarea id="ta" spellcheck="false" placeholder="把稿子粘贴到这里。&#10;&#10;空一行就是新的一段。&#10;用 # 开头的一行是小节标题，例如：# 第二部分"></textarea>
+      <p class="tip">以 <code>#</code> 开头的一行会变成小节标题，提词时可以一键跳到这一节。<code>**重点**</code> 会高亮显示，<code>[停顿]</code>、<code>[微笑]</code> 这样的方括号会变成小提示标签（不计入字数）。把光标放在稿子里任意位置，再点「从光标处开始」，就能只录这一段。</p>
+      <div class="actions">
+        <label class="btn" for="file">导入 .txt</label>
+        <input id="file" type="file" accept=".txt,text/plain" hidden>
+        <button class="btn" id="sample" type="button">载入示例稿</button>
+        <button class="btn web-only" id="install" type="button" hidden>安装到桌面</button>
+        <button class="btn" id="remoteBtn" type="button"><svg class="i"><use href="#i-remote"/></svg>手机遥控</button>
+        <button class="btn app-only" id="ctrlBtn" type="button" hidden>当遥控器</button>
+        <span class="grow"></span>
+        <button class="btn" id="startCaret" type="button">从光标处开始</button>
+        <button class="btn primary" id="start" type="button"><svg class="i"><use href="#i-play"/></svg>开始提词</button>
       </div>
     </section>
 
-    <!-- 录像 -->
-    <section id="vTakes" class="view" aria-label="录像">
-      <header class="page-head"><h1 class="title">录像</h1><p class="sub" id="takesSub"></p></header>
-      <div class="card" style="margin-bottom:16px"><div class="row"><label for="autoSave">录好一条自动保存</label><input type="checkbox" class="sw" id="autoSave"></div></div>
-      <div class="lib-list" id="takesList"></div>
-      <p class="empty" id="takesEmpty">还没有录像。进入提词画面，点摄像头按钮开始。</p>
-    </section>
-
-    <!-- 遥控 -->
-    <section id="vRemote" class="view" aria-label="遥控">
-      <header class="page-head"><h1 class="title">遥控</h1><p class="sub">用另一台手机当遥控器，翻页、重录都能远程按</p></header>
-      <div class="grid2">
-        <div class="card stack">
-          <h3 style="margin:0">让这台设备被遥控</h3>
-          <p class="dot" id="remoteTabStat">还没有遥控器连上</p>
-          <button class="btn primary" id="remoteBtn" type="button"><svg class="i"><use href="#i-remote"/></svg>设置遥控</button>
+    <aside class="settings" aria-label="提词设置">
+      <div class="group">
+        <h3>速度与时长</h3>
+        <div class="row"><label for="cpm">语速</label><output id="cpmOut" for="cpm"></output></div>
+        <input type="range" id="cpm" min="60" max="600" step="10">
+        <div class="row">
+          <label for="dur">按时长读完</label>
+          <input id="dur" inputmode="numeric" autocomplete="off" placeholder="03:00" aria-describedby="durHint">
         </div>
-        <div class="card stack app-only" hidden>
-          <h3 style="margin:0">当遥控器</h3>
-          <p class="sub" style="margin:0">连同一个 Wi-Fi 或对方的热点，选择要遥控的设备</p>
-          <button class="btn primary" id="ctrlBtn" type="button">选择设备</button>
+        <p class="tip" id="durHint">输入想要的总时长（分:秒），语速会自动算好。</p>
+        <div class="row">
+          <label for="cdSel">开始前倒数</label>
+          <select id="cdSel">
+            <option value="0">不倒数</option>
+            <option value="3">3 秒</option>
+            <option value="5">5 秒</option>
+            <option value="10">10 秒</option>
+          </select>
         </div>
       </div>
-    </section>
 
-    <!-- 设置 -->
-    <section id="vSettings" class="view" aria-label="设置">
-      <header class="page-head"><h1 class="title">设置</h1></header>
-      <div class="grid2">
-        <div class="card stack">
-          <h3 style="margin:0">外观</h3>
-          <div class="seg" role="radiogroup" aria-label="外观">
-            <label><input type="radio" name="appearance" value="auto"><span>跟随系统</span></label>
-            <label><input type="radio" name="appearance" value="light"><span>浅色</span></label>
-            <label><input type="radio" name="appearance" value="dark"><span>深色</span></label>
-          </div>
+      <div class="group">
+        <h3>文字</h3>
+        <div class="row"><label for="fs">字号</label><output id="fsVal" for="fs"></output></div>
+        <input type="range" id="fs" min="20" max="160" step="2">
+        <div class="row"><label for="lh">行距</label><output id="lhVal" for="lh"></output></div>
+        <input type="range" id="lh" min="1.1" max="2.4" step="0.05">
+        <div class="row"><label for="mg">左右留白</label><output id="mgVal" for="mg"></output></div>
+        <input type="range" id="mg" min="0" max="30" step="1">
+        <div class="seg" role="radiogroup" aria-label="对齐">
+          <label><input type="radio" name="align" value="left"><span>左对齐</span></label>
+          <label><input type="radio" name="align" value="center"><span>居中</span></label>
         </div>
-
-        <div class="card stack">
-          <h3 style="margin:0">提词文字</h3>
-          <div><div class="row"><label for="fs">字号</label><output id="fsVal" for="fs"></output></div><input type="range" id="fs" min="20" max="160" step="2"></div>
-          <div><div class="row"><label for="lh">行距</label><output id="lhVal" for="lh"></output></div><input type="range" id="lh" min="1.1" max="2.4" step="0.05"></div>
-          <div><div class="row"><label for="mg">左右留白</label><output id="mgVal" for="mg"></output></div><input type="range" id="mg" min="0" max="30" step="1"></div>
-          <div class="seg" role="radiogroup" aria-label="对齐">
-            <label><input type="radio" name="align" value="left"><span>左对齐</span></label>
-            <label><input type="radio" name="align" value="center"><span>居中</span></label>
-          </div>
-          <div class="seg" role="radiogroup" aria-label="配色">
-            <label><input type="radio" name="theme" value="dark"><span>白字黑底</span></label>
-            <label><input type="radio" name="theme" value="amber"><span>黄字黑底</span></label>
-            <label><input type="radio" name="theme" value="light"><span>黑字白底</span></label>
-          </div>
-          <div class="row"><label for="dim">读过的句子变暗</label><input type="checkbox" class="sw" id="dim"></div>
+        <div class="seg" role="radiogroup" aria-label="配色">
+          <label><input type="radio" name="theme" value="dark"><span>白字黑底</span></label>
+          <label><input type="radio" name="theme" value="amber"><span>黄字黑底</span></label>
+          <label><input type="radio" name="theme" value="light"><span>黑字白底</span></label>
         </div>
-
-        <div class="card stack">
-          <h3 style="margin:0">阅读线与镜像</h3>
-          <div><div class="row"><label for="gd">阅读线位置</label><output id="gdVal" for="gd"></output></div><input type="range" id="gd" min="10" max="70" step="1"></div>
-          <div class="row"><label for="showGuide">显示阅读线</label><input type="checkbox" class="sw" id="showGuide"></div>
-          <div class="row"><label for="mx">水平镜像</label><input type="checkbox" class="sw" id="mx"></div>
-          <div class="row"><label for="my">垂直镜像</label><input type="checkbox" class="sw" id="my"></div>
-        </div>
-
-        <div class="card stack">
-          <h3 style="margin:0">分段录制</h3>
-          <div class="row"><label for="secStop">每节读完自动暂停</label><input type="checkbox" class="sw" id="secStop"></div>
-          <div class="row"><label for="lang">语音跟随语言</label>
-            <select class="field" id="lang">
-              <option value="zh-CN">普通话</option>
-              <option value="zh-TW">國語（台灣）</option>
-              <option value="yue-Hant-HK">粤语</option>
-              <option value="en-US">English</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="card stack">
-          <h3 style="margin:0">帮助</h3>
-          <details class="more">
-            <summary>稿子怎么写</summary>
-            <div class="tip" style="display:grid;gap:6px">
-              <span>空一行是新的一段。</span>
-              <span><b>#</b> 开头的一行是小节标题，提词时可以按小节跳转、按小节重录。</span>
-              <span><b>**重点**</b> 会高亮显示。</span>
-              <span><b>[停顿]</b>、<b>【微笑】</b> 会变成小提示标签，不计入字数。</span>
-            </div>
-          </details>
-          <details class="more">
-            <summary>快捷键（键盘 / 翻页笔）</summary>
-            <dl class="keys">
-              <dt>空格</dt><dd>播放 / 暂停</dd>
-              <dt>← → PgUp PgDn</dt><dd>上一页 / 下一页</dd>
-              <dt>↑ ↓ / 滚轮</dt><dd>微调位置</dd>
-              <dt>A D</dt><dd>上一段 / 下一段</dd>
-              <dt>Q E</dt><dd>上一节 / 下一节</dd>
-              <dt>R</dt><dd>重录本节</dd>
-              <dt>Home</dt><dd>回到开头</dd>
-              <dt>G</dt><dd>语音跟随 开 / 关</dd>
-              <dt>C</dt><dd>录像 开 / 关</dd>
-              <dt>+ −</dt><dd>加速 / 减速</dd>
-              <dt>[ ]</dt><dd>字号小 / 大</dd>
-              <dt>M V</dt><dd>水平 / 垂直镜像</dd>
-              <dt>B</dt><dd>在当前句加书签</dd>
-              <dt>1 – 9</dt><dd>跳到第 N 个书签</dd>
-              <dt>L</dt><dd>打开目录</dd>
-              <dt>F</dt><dd>全屏</dd>
-              <dt>Esc</dt><dd>返回</dd>
-              <dt>点击句子</dt><dd>从这一句开始</dd>
-            </dl>
-          </details>
-          <button class="btn web-only" id="install" type="button" hidden>安装到桌面</button>
-        </div>
+        <label class="check"><input type="checkbox" id="dim">读过的句子变暗</label>
       </div>
-    </section>
-  </div>
+
+      <div class="group">
+        <h3>分段录制</h3>
+        <label class="check"><input type="checkbox" id="secStop">每节读完自动暂停</label>
+        <label class="check"><input type="checkbox" id="autoSave">录像每录完一条自动下载</label>
+        <div class="row">
+          <label for="lang">语音跟随语言</label>
+          <select id="lang">
+            <option value="zh-CN">普通话</option>
+            <option value="zh-TW">國語（台灣）</option>
+            <option value="yue-Hant-HK">粤语</option>
+            <option value="en-US">English</option>
+          </select>
+        </div>
+        <p class="tip">语音跟随用的是浏览器自带的语音识别，需要联网。推荐用 Safari 或 Edge；Chrome 的识别服务在国内可能连不上。</p>
+      </div>
+
+      <div class="group">
+        <h3>阅读线</h3>
+        <div class="row"><label for="gd">位置（离顶部）</label><output id="gdVal" for="gd"></output></div>
+        <input type="range" id="gd" min="10" max="70" step="1">
+        <label class="check"><input type="checkbox" id="showGuide">显示阅读线</label>
+      </div>
+
+      <div class="group">
+        <h3>镜像</h3>
+        <div class="pair">
+          <button class="btn" id="mx" type="button" aria-pressed="false"><svg class="i"><use href="#i-fliph"/></svg>水平</button>
+          <button class="btn" id="my" type="button" aria-pressed="false"><svg class="i"><use href="#i-flipv"/></svg>垂直</button>
+        </div>
+        <p class="tip">再点一次就取消镜像。配合提词器玻璃使用时开「水平」。</p>
+      </div>
+
+      <div class="group">
+        <details class="keys">
+          <summary>快捷键（键盘 / 翻页笔）</summary>
+          <dl>
+            <dt>空格</dt><dd>播放 / 暂停</dd>
+            <dt>← → PgUp PgDn</dt><dd>上一页 / 下一页</dd>
+            <dt>↑ ↓ / 滚轮</dt><dd>微调位置</dd>
+            <dt>A D</dt><dd>上一段 / 下一段</dd>
+            <dt>Q E</dt><dd>上一节 / 下一节</dd>
+            <dt>R</dt><dd>重录本节（回到本节开头重新开始）</dd>
+            <dt>Home</dt><dd>回到开头</dd>
+            <dt>G</dt><dd>语音跟随 开 / 关</dd>
+            <dt>C</dt><dd>录像 开 / 关</dd>
+            <dt>+ −</dt><dd>加速 / 减速</dd>
+            <dt>[ ]</dt><dd>字号小 / 大</dd>
+            <dt>M V</dt><dd>水平 / 垂直镜像</dd>
+            <dt>B</dt><dd>在当前句加书签</dd>
+            <dt>1 – 9</dt><dd>跳到第 N 个书签</dd>
+            <dt>L</dt><dd>打开目录</dd>
+            <dt>F</dt><dd>全屏</dd>
+            <dt>Esc</dt><dd>返回编辑</dd>
+            <dt>点击句子</dt><dd>从这一句开始</dd>
+          </dl>
+        </details>
+      </div>
+    </aside>
+  </main>
 </div>
 
 <!-- ============ 提词页 ============ -->
-<div id="prompter" class="dk" hidden>
+<div id="prompter" hidden>
   <div id="stage" class="t-dark">
     <div id="content"></div>
     <div id="guide"></div>
@@ -827,122 +499,103 @@ details.more > div { display: grid; gap: 8px; }
   <div id="hint" hidden></div>
   <div id="cam" hidden title="点一下切换大小"><video id="camVideo" muted playsinline autoplay></video></div>
 
-  <div class="pill top" id="topPill">
-    <button class="ib" data-act="back" type="button" title="返回稿子 (Esc)" aria-label="返回稿子"><svg class="i"><use href="#i-back"/></svg></button>
-    <span class="sep wide-only"></span>
-    <button class="ib wide-only" data-act="stop" type="button" title="停止并回到开头 (Home)" aria-label="停止"><svg class="i"><use href="#i-stop"/></svg></button>
-    <button class="ib play" id="pPlay" data-act="play" type="button" title="播放 / 暂停 (空格)" aria-label="播放"><svg class="i"><use href="#i-play"/></svg></button>
-    <button class="ib" data-act="retake" type="button" title="重录本节 (R)"><svg class="i"><use href="#i-retake"/></svg><span class="lbl-t">重录本节</span></button>
-    <span class="sep wide-only"></span>
-    <button class="ib" data-act="voice" type="button" title="语音跟随 (G)" aria-label="语音跟随" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg></button>
-    <button class="ib" data-act="cam" type="button" title="录像 (C)" aria-label="录像" aria-pressed="false"><svg class="i"><use href="#i-cam"/></svg></button>
-    <span class="sep wide-only"></span>
-    <div class="stepper wide-only">
-      <button class="ib" data-act="spDn" type="button" aria-label="减速">−</button>
-      <div class="v"><output class="spOut"></output><small>字/分</small></div>
-      <button class="ib" data-act="spUp" type="button" aria-label="加速">+</button>
+  <div class="bar topbar">
+    <button class="ib" id="pBack" type="button" title="返回编辑 (Esc)"><svg class="i"><use href="#i-back"/></svg><span class="lbl-t">编辑</span></button>
+    <span class="sep"></span>
+    <div class="grp">
+      <button class="ib" id="pStop" type="button" title="停止并回到开头 (Home)" aria-label="停止"><svg class="i"><use href="#i-stop"/></svg></button>
+      <button class="ib play" id="pPlay" type="button" title="播放 / 暂停 (空格)" aria-label="播放"><svg class="i"><use href="#i-play"/></svg></button>
+      <button class="ib" id="pRetake" type="button" title="重录本节 (R)"><svg class="i"><use href="#i-retake"/></svg><span class="lbl-t">重录本节</span></button>
     </div>
-    <div class="stepper wide-only">
-      <button class="ib" data-act="fsDn" type="button" aria-label="字号变小">−</button>
-      <div class="v"><output class="fsOut"></output><small>px</small></div>
-      <button class="ib" data-act="fsUp" type="button" aria-label="字号变大">+</button>
+    <span class="sep"></span>
+    <div class="grp">
+      <button class="ib" id="pVoice" type="button" title="语音跟随 (G)" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg><span class="lbl-t">语音跟随</span></button>
+      <button class="ib" id="pCam" type="button" title="录像 (C)" aria-pressed="false"><svg class="i"><use href="#i-cam"/></svg><span class="lbl-t">录像</span></button>
     </div>
-    <span class="sep wide-only"></span>
-    <button class="ib wide-only" data-act="mark" type="button" title="在当前句加书签 (B)" aria-label="加书签"><svg class="i"><use href="#i-mark"/></svg></button>
-    <button class="ib" data-act="list" type="button" title="目录与书签 (L)" aria-label="目录"><svg class="i"><use href="#i-list"/></svg></button>
-    <button class="ib" data-act="more" type="button" title="更多" aria-label="更多" aria-haspopup="menu" aria-expanded="false"><svg class="i"><use href="#i-more"/></svg></button>
+    <span class="sep"></span>
+    <div class="grp stepper">
+      <span class="lbl">语速</span>
+      <button class="ib" id="spDn" type="button" aria-label="减速">−</button>
+      <output id="spOut"></output>
+      <button class="ib" id="spUp" type="button" aria-label="加速">+</button>
+    </div>
+    <div class="grp stepper">
+      <span class="lbl">字号</span>
+      <button class="ib" id="fsDn" type="button" aria-label="字号变小">−</button>
+      <output id="fsOut"></output>
+      <button class="ib" id="fsUp" type="button" aria-label="字号变大">+</button>
+    </div>
+    <span class="sep"></span>
+    <div class="grp">
+      <button class="ib" id="pMx" type="button" title="水平镜像 (M)" aria-pressed="false"><svg class="i"><use href="#i-fliph"/></svg><span class="lbl-t opt">水平镜像</span></button>
+      <button class="ib" id="pMy" type="button" title="垂直镜像 (V)" aria-pressed="false"><svg class="i"><use href="#i-flipv"/></svg><span class="lbl-t opt">垂直镜像</span></button>
+    </div>
+    <span class="sep"></span>
+    <div class="grp">
+      <button class="ib" id="pMark" type="button" title="在当前句加书签 (B)"><svg class="i"><use href="#i-mark"/></svg><span class="lbl-t opt">书签</span></button>
+      <button class="ib" id="pList" type="button" title="目录与书签 (L)"><svg class="i"><use href="#i-list"/></svg><span class="lbl-t opt">目录</span></button>
+      <button class="ib" id="pEdit" type="button" title="改字：点句子直接修改（也可以双击句子）" aria-pressed="false"><svg class="i"><use href="#i-edit"/></svg><span class="lbl-t opt">改字</span></button>
+      <button class="ib" id="pPip" type="button" title="置顶小窗" hidden><svg class="i"><use href="#i-pip"/></svg><span class="lbl-t opt">小窗</span></button>
+      <button class="ib" id="pRemote" type="button" title="手机遥控"><svg class="i"><use href="#i-remote"/></svg><span class="lbl-t opt">遥控</span></button>
+      <button class="ib" id="pFs" type="button" title="全屏 (F)"><svg class="i"><use href="#i-fs"/></svg><span class="lbl-t opt">全屏</span></button>
+    </div>
   </div>
 
-  <div class="menu" id="moreMenu" role="menu" hidden>
-    <button class="mi narrow-only" data-act="stop" type="button" role="menuitem"><svg class="i"><use href="#i-stop"/></svg>停止，回到开头</button>
-    <button class="mi narrow-only" data-act="mark" type="button" role="menuitem"><svg class="i"><use href="#i-mark"/></svg>在当前句加书签</button>
-    <div class="mrow narrow-only"><span>语速</span><div class="stepper"><button class="ib" data-act="spDn" type="button" aria-label="减速">−</button><div class="v"><output class="spOut"></output></div><button class="ib" data-act="spUp" type="button" aria-label="加速">+</button></div></div>
-    <div class="mrow narrow-only"><span>字号</span><div class="stepper"><button class="ib" data-act="fsDn" type="button" aria-label="字号变小">−</button><div class="v"><output class="fsOut"></output></div><button class="ib" data-act="fsUp" type="button" aria-label="字号变大">+</button></div></div>
-    <hr class="narrow-only">
-    <button class="mi" data-act="mx" type="button" role="menuitem" aria-pressed="false"><svg class="i"><use href="#i-fliph"/></svg>水平镜像</button>
-    <button class="mi" data-act="my" type="button" role="menuitem" aria-pressed="false"><svg class="i"><use href="#i-flipv"/></svg>垂直镜像</button>
-    <button class="mi" data-act="edit" type="button" role="menuitem" aria-pressed="false"><svg class="i"><use href="#i-edit"/></svg>改字</button>
-    <button class="mi" data-act="pip" id="pPip" type="button" role="menuitem" hidden><svg class="i"><use href="#i-pip"/></svg>置顶小窗</button>
-    <button class="mi" data-act="remote" type="button" role="menuitem" aria-pressed="false"><svg class="i"><use href="#i-remote"/></svg>手机遥控</button>
-    <button class="mi" data-act="fs" type="button" role="menuitem"><svg class="i"><use href="#i-fs"/></svg>全屏</button>
-  </div>
-
-  <div class="pill bottom" id="botPill">
-    <div class="grp wide-only">
-      <button class="ib" data-act="secUp" type="button" title="上一节 (Q)" aria-label="上一节"><svg class="i"><use href="#i-secup"/></svg></button>
-      <button class="ib" data-act="paraUp" type="button" title="上一段 (A)" aria-label="上一段"><svg class="i"><use href="#i-up1"/></svg></button>
+  <div class="bar bottombar">
+    <div class="nav">
+      <button class="ib" id="nSecUp" type="button" title="上一节 (Q)" aria-label="上一节"><svg class="i"><use href="#i-secup"/></svg></button>
+      <button class="ib" id="nParaUp" type="button" title="上一段 (A)" aria-label="上一段"><svg class="i"><use href="#i-up1"/></svg></button>
+      <button class="ib" id="nPageUp" type="button" title="上一页 (← / PgUp)" aria-label="上一页"><svg class="i"><use href="#i-up2"/></svg><span class="lbl-t">上一页</span></button>
     </div>
-    <button class="ib" data-act="pageUp" type="button" title="上一页 (← / PgUp)" aria-label="上一页"><svg class="i"><use href="#i-up2"/></svg></button>
     <div class="track" id="track" role="slider" aria-label="提词进度" tabindex="-1">
       <div class="fill" id="fill"></div>
       <div id="ticks"></div>
       <div class="knob" id="knob"></div>
     </div>
-    <button class="ib" data-act="pageDn" type="button" title="下一页 (→ / PgDn)" aria-label="下一页"><svg class="i"><use href="#i-down2"/></svg></button>
-    <div class="grp wide-only">
-      <button class="ib" data-act="paraDn" type="button" title="下一段 (D)" aria-label="下一段"><svg class="i"><use href="#i-down1"/></svg></button>
-      <button class="ib" data-act="secDn" type="button" title="下一节 (E)" aria-label="下一节"><svg class="i"><use href="#i-secdown"/></svg></button>
+    <div class="nav">
+      <button class="ib" id="nPageDn" type="button" title="下一页 (→ / PgDn)" aria-label="下一页"><span class="lbl-t">下一页</span><svg class="i"><use href="#i-down2"/></svg></button>
+      <button class="ib" id="nParaDn" type="button" title="下一段 (D)" aria-label="下一段"><svg class="i"><use href="#i-down1"/></svg></button>
+      <button class="ib" id="nSecDn" type="button" title="下一节 (E)" aria-label="下一节"><svg class="i"><use href="#i-secdown"/></svg></button>
     </div>
-    <span class="sep wide-only"></span>
     <div class="times">
       <span class="tally"></span>
       <span class="recbadge" id="recBadge" hidden></span>
       <span class="heard" id="heard" hidden></span>
       <span class="where" id="where"></span>
-      <span class="opt">已用 <b id="tEl">00:00</b></span>
+      <span>已用 <b id="tEl">00:00</b></span>
       <span>剩余 <b id="tRem">00:00</b></span>
-      <span class="opt" id="tPct">0%</span>
+      <span id="tPct">0%</span>
     </div>
   </div>
 
-  <aside id="panel" hidden aria-label="目录与书签" data-ptab="sec">
-    <div class="grab narrow-only" aria-hidden="true" style="align-self:center;margin:-8px 0 0"></div>
+  <aside id="panel" hidden aria-label="目录与书签">
     <div class="phead">
       <strong>目录</strong>
       <button class="ib" id="panelClose" type="button" aria-label="关闭"><svg class="i"><use href="#i-x"/></svg></button>
     </div>
-    <div class="seg" role="tablist" aria-label="目录内容">
-      <label><input type="radio" name="ptab" value="sec" checked><span>小节</span></label>
-      <label><input type="radio" name="ptab" value="mark"><span>书签</span></label>
-      <label><input type="radio" name="ptab" value="take"><span>片段</span></label>
-    </div>
-    <div class="lists">
-      <ul class="plist" id="secList"></ul>
-      <ul class="plist" id="markList"></ul>
-      <ul class="plist" id="takeList"></ul>
-    </div>
+    <h3>小节</h3>
+    <ul class="plist" id="secList"></ul>
+    <h3>书签</h3>
+    <ul class="plist" id="markList"></ul>
+    <h3>录好的片段</h3>
+    <ul class="plist" id="takeList"></ul>
   </aside>
 
   <div id="pipNote" hidden>提词正在置顶小窗里显示。<br>关掉小窗，就回到这里。</div>
   <div id="toast" role="status"></div>
 </div>
 
-<!-- ============ 新建稿子 ============ -->
-<div id="newDlg" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="newTitle">
-  <div class="card sheet">
-    <div class="grab" aria-hidden="true"></div>
-    <h2 class="sheet-title" id="newTitle">新建稿子</h2>
-    <button class="opt-row" id="nBlank" type="button"><span class="ic"><svg class="i"><use href="#i-edit"/></svg></span><span><b>空白稿子</b><span class="s">从头写，或者直接粘贴</span></span></button>
-    <button class="opt-row" id="nClip" type="button"><span class="ic"><svg class="i"><use href="#i-clip"/></svg></span><span><b>从剪贴板粘贴</b><span class="s">复制好文字，一点就建好</span></span></button>
-    <label class="opt-row" for="nFile" style="cursor:pointer"><span class="ic"><svg class="i"><use href="#i-file"/></svg></span><span><b>导入文件</b><span class="s">.txt 文本文件</span></span></label>
-    <input id="nFile" type="file" accept=".txt,text/plain" hidden>
-    <button class="opt-row" id="nSample" type="button"><span class="ic"><svg class="i"><use href="#i-script"/></svg></span><span><b>示例稿</b><span class="s">带小节、重点、停顿标记的范例</span></span></button>
-    <button class="btn ghost" id="nCancel" type="button">取消</button>
-  </div>
-</div>
-
 <!-- ============ 遥控配对 ============ -->
 <div id="rdlg" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="rdlgTitle">
-  <div class="card sheet">
-    <div class="grab" aria-hidden="true"></div>
+  <div class="card">
     <div class="phead">
       <strong id="rdlgTitle">手机遥控</strong>
       <button class="ib" id="rdlgClose" type="button" aria-label="关闭"><svg class="i"><use href="#i-x"/></svg></button>
     </div>
     <div class="seg" role="radiogroup" aria-label="连接方式">
       <label class="app-only" hidden><input type="radio" name="rtab" value="near"><span>附近设备</span></label>
-      <label><input type="radio" name="rtab" value="lan"><span>同一网络</span></label>
-      <label><input type="radio" name="rtab" value="net"><span>互联网</span></label>
+      <label><input type="radio" name="rtab" value="lan"><span>同一网络 / 热点直连</span></label>
+      <label><input type="radio" name="rtab" value="net"><span>通过互联网</span></label>
     </div>
 
     <div id="tabNear" hidden>
@@ -951,7 +604,7 @@ details.more > div { display: grid; gap: 8px; }
       <div class="row"><label for="nearAlias">本机名称</label><input id="nearAlias" maxlength="20" autocomplete="off"></div>
       <p class="dot" id="nearStat">正在启动…</p>
       <p class="tip" id="nearIps"></p>
-      <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <div class="actions">
         <button class="btn" id="nearNew" type="button">换验证码</button>
         <button class="btn" id="nearForget" type="button">忘记已配对设备</button>
         <span class="grow"></span>
@@ -966,7 +619,7 @@ details.more > div { display: grid; gap: 8px; }
         <li>遥控页面会显示另一个码。点「扫描遥控器的码」，用提词设备的摄像头对准它。</li>
         <li>连上后遥控手机上就能按了。</li>
       </ol>
-      <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <div class="actions">
         <button class="btn primary" id="lanStart" type="button">开始配对</button>
         <button class="btn" id="lanScan" type="button" hidden>扫描遥控器的码</button>
       </div>
@@ -985,27 +638,27 @@ details.more > div { display: grid; gap: 8px; }
     </div>
 
     <div id="tabNet" hidden>
-      <p class="tip">用另一台手机的相机扫码，打开的页面就是遥控器。两台设备都要能上网；如果提词设备开了热点、有流量，遥控手机连上去也行。</p>
-      <div class="qr" id="qr" aria-label="遥控二维码"></div>
-      <div class="row"><input id="rlink" readonly aria-label="遥控链接"><button class="btn" id="rcopy" type="button">复制链接</button></div>
-      <p class="dot" id="rstat">遥控已关闭</p>
-      <div style="display:flex;flex-wrap:wrap;gap:8px">
-        <button class="btn" id="rnew" type="button">换一个配对码</button>
-        <span class="grow"></span>
-        <button class="btn" id="roff" type="button">关闭遥控</button>
-      </div>
+    <p class="tip">用另一台手机的相机扫码，打开的页面就是遥控器。两台设备都要能上网；如果提词设备开了热点、有流量，遥控手机连上去也行。</p>
+    <div class="qr" id="qr" aria-label="遥控二维码"></div>
+    <div class="row"><input id="rlink" readonly aria-label="遥控链接"><button class="btn" id="rcopy" type="button">复制链接</button></div>
+    <p class="dot" id="rstat">遥控已关闭</p>
+    <div class="actions">
+      <button class="btn" id="rnew" type="button">换一个配对码</button>
+      <span class="grow"></span>
+      <button class="btn" id="roff" type="button">关闭遥控</button>
+    </div>
     </div>
   </div>
 </div>
 
 <!-- ============ 选择要遥控的设备（App） ============ -->
 <div id="cdlg" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="cdlgTitle">
-  <div class="card sheet">
-    <div class="grab" aria-hidden="true"></div>
+  <div class="card">
     <div class="phead">
       <strong id="cdlgTitle">选择要遥控的设备</strong>
       <button class="ib" id="cdlgClose" type="button" aria-label="关闭"><svg class="i"><use href="#i-x"/></svg></button>
     </div>
+    <p class="tip">在提词设备上点「手机遥控」，选「附近设备」，它就会出现在这里。</p>
     <ul class="plist" id="peerList"></ul>
     <p class="empty" id="peerEmpty">正在搜索附近的设备…</p>
     <div id="codeAsk" hidden>
@@ -1015,7 +668,7 @@ details.more > div { display: grid; gap: 8px; }
     <details class="more">
       <summary>找不到设备？手动输入地址</summary>
       <div>
-        <p class="tip">遥控手机连着提词设备的热点时，一般是 192.168.43.1。提词设备的「附近设备」页面会显示它的地址。</p>
+        <p class="tip">遥控手机连着提词设备的热点时，一般是 192.168.43.1（安卓热点的默认地址）。提词设备的「附近设备」页面会显示它的地址。</p>
         <div class="row"><input id="manIp" inputmode="decimal" placeholder="例如 192.168.43.1" autocomplete="off"><button class="btn" id="manGo" type="button">连接</button></div>
       </div>
     </details>
@@ -1023,60 +676,45 @@ details.more > div { display: grid; gap: 8px; }
 </div>
 
 <!-- ============ 遥控器（另一台手机） ============ -->
-<div id="remote" class="dk" hidden>
-  <div class="r-wrap">
-    <div class="r-top">
-      <span class="chip off" id="rconn">正在连接…</span>
-      <div class="acts">
-        <button class="round" id="rLock" type="button" aria-label="锁定，防止误触" aria-pressed="false"><svg class="i"><use href="#i-unlock"/></svg></button>
-        <button class="round app-only" id="rLeave" type="button" aria-label="断开" hidden><svg class="i"><use href="#i-x"/></svg></button>
-      </div>
-    </div>
-    <section id="rpair" hidden>
-      <strong>最后一步</strong>
-      <p class="tip">让提词设备点「扫描遥控器的码」，对准下面的码。连上后这里会自动消失。</p>
-      <div class="qr" id="rQr"></div>
-      <details class="more">
-        <summary>没法扫码？复制回应码</summary>
-        <div><textarea id="rAnsCode" readonly spellcheck="false" aria-label="回应码"></textarea><button class="btn" id="rAnsCopy" type="button">复制回应码</button></div>
-      </details>
-    </section>
-    <section class="card r-now" aria-live="polite" style="--pad:20px">
-      <div class="r-sec"><span id="rSec">等待提词设备</span><span id="rSecN"></span></div>
-      <div class="r-line dim" id="rPrev"></div>
-      <div class="r-line cur" id="rSent">在提词设备上保持页面打开，这里会显示它正在读的句子。</div>
-      <div class="r-line dim" id="rNext"></div>
-      <div class="r-bar" id="rBar"><div id="rFill" style="width:0"></div><div id="rTicks"></div></div>
-      <div class="r-times">
-        <div><div class="k">已用</div><b id="rEl">00:00</b></div>
-        <div><div class="k">剩余</div><b id="rRem">00:00</b></div>
-        <div class="st" id="rState">—</div>
-      </div>
-    </section>
-    <div class="r-thumb">
-      <button class="rbtn side" type="button" data-c="pageUp" aria-label="上一页"><svg class="i"><use href="#i-up2"/></svg>上一页</button>
-      <button class="rbtn play" id="rPlay" type="button" data-c="toggle" aria-label="播放"><svg class="i"><use href="#i-play"/></svg></button>
-      <button class="rbtn side" type="button" data-c="pageDown" aria-label="下一页"><svg class="i"><use href="#i-down2"/></svg>下一页</button>
-    </div>
-    <div class="r-rest" id="rRest">
-      <button class="rbtn retake" type="button" data-c="retake"><svg class="i"><use href="#i-retake"/></svg>重录本节</button>
-      <div class="r-jump">
-        <button class="rbtn" type="button" data-c="secUp"><svg class="i"><use href="#i-secup"/></svg>上一节</button>
-        <button class="rbtn" type="button" data-c="paraUp"><svg class="i"><use href="#i-up1"/></svg>上一段</button>
-        <button class="rbtn" type="button" data-c="paraDown"><svg class="i"><use href="#i-down1"/></svg>下一段</button>
-        <button class="rbtn" type="button" data-c="secDown"><svg class="i"><use href="#i-secdown"/></svg>下一节</button>
-      </div>
-      <div class="r-steps">
-        <div class="r-step"><button class="rbtn" type="button" data-c="slower" aria-label="语速减">−</button><div class="v"><i>语速</i><b id="rCpm">220</b><small>字/分</small></div><button class="rbtn" type="button" data-c="faster" aria-label="语速加">+</button></div>
-        <div class="r-step"><button class="rbtn" type="button" data-c="smaller" aria-label="字号减">−</button><div class="v"><i>字号</i><b id="rFs">64</b><small>px</small></div><button class="rbtn" type="button" data-c="bigger" aria-label="字号加">+</button></div>
-      </div>
-      <div class="r-marks" id="rMarks"><button class="rbtn add" type="button" data-c="mark"><svg class="i" style="width:18px;height:18px"><use href="#i-mark"/></svg>书签</button></div>
-    </div>
-    <p class="r-note" id="rLockNote" hidden>已锁定，防止误触 · 点右上角解锁</p>
+<div id="remote" hidden>
+  <header class="rtop">
+    <h1 class="brand">提词遥控器</h1>
+    <p class="dot" id="rconn">正在连接…</p>
+    <button class="btn app-only" id="rLeave" type="button" hidden>断开</button>
+  </header>
+  <section id="rpair" hidden>
+    <strong>最后一步</strong>
+    <p class="tip">让提词设备点「扫描遥控器的码」，对准下面的码。连上后这里会自动消失。</p>
+    <div class="qr" id="rQr"></div>
+    <details class="more">
+      <summary>没法扫码？复制回应码</summary>
+      <div><textarea id="rAnsCode" readonly spellcheck="false" aria-label="回应码"></textarea><button class="btn" id="rAnsCopy" type="button">复制回应码</button></div>
+    </details>
+  </section>
+  <section class="rstatus" aria-live="polite">
+    <div class="rsec" id="rSec">等待提词设备</div>
+    <p class="rsent" id="rSent">在提词设备上保持页面打开，这里会显示它正在读的句子。</p>
+    <div class="rbar"><div class="fill" id="rFill" style="width:0"></div></div>
+    <div class="rtimes"><span id="rState">—</span><span>已用 <b id="rEl">00:00</b></span><span>剩余 <b id="rRem">00:00</b></span><span id="rInfo"></span></div>
+  </section>
+  <div class="rpad">
+    <button class="rbtn big" type="button" data-c="toggle" id="rPlay">▶ 开始</button>
+    <button class="rbtn" type="button" data-c="retake">重录本节</button>
+    <button class="rbtn" type="button" data-c="home">回到开头</button>
+    <button class="rbtn" type="button" data-c="pageUp">上一页</button>
+    <button class="rbtn" type="button" data-c="pageDown">下一页</button>
+    <button class="rbtn" type="button" data-c="paraUp">上一段</button>
+    <button class="rbtn" type="button" data-c="paraDown">下一段</button>
+    <button class="rbtn" type="button" data-c="secUp">上一节</button>
+    <button class="rbtn" type="button" data-c="secDown">下一节</button>
+    <button class="rbtn" type="button" data-c="slower">语速 −</button>
+    <button class="rbtn" type="button" data-c="faster">语速 +</button>
+    <button class="rbtn" type="button" data-c="smaller">字号 −</button>
+    <button class="rbtn" type="button" data-c="bigger">字号 +</button>
+    <button class="rbtn wide" type="button" data-c="mark">在当前句加书签</button>
   </div>
+  <p class="tip">这台手机只当遥控器用。保持这个页面开着，别锁屏。</p>
 </div>
-
-<div id="gtoast" role="status"><span id="gtoastMsg"></span><button type="button" id="gtoastAct" hidden>撤销</button></div>
 
 <script>
 (() => {
@@ -1122,28 +760,10 @@ const DEFAULTS = {
   align: 'left', theme: 'dark', dimRead: true, guide: 35, showGuide: true,
   mirrorX: false, mirrorY: false, countdown: 3,
   secStop: true, autoSave: IS_NATIVE || !matchMedia('(pointer: coarse)').matches, lang: 'zh-CN',
-  appearance: 'auto',
 };
 const isTouch = matchMedia('(pointer: coarse)').matches;
 const S = Object.assign({}, DEFAULTS, store.get('settings', {}));
 const save = () => store.set('settings', S);
-
-// 触感：安卓 App 用系统的震动反馈，网页里用 navigator.vibrate（不支持就什么也不做）
-function buzz(kind) {
-  try {
-    const H = window.Capacitor?.Plugins?.Haptics;
-    if (H) { if (kind === 'ok') H.notification({ type: 'SUCCESS' }); else H.impact({ style: 'LIGHT' }); }
-    else navigator.vibrate?.(kind === 'ok' ? [10, 40, 10] : 8);
-  } catch (e) {}
-}
-// 外观：跟随系统 / 浅色 / 深色
-function applyAppearance() {
-  const a = S.appearance || 'auto';
-  if (a === 'auto') delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = a;
-}
-applyAppearance();
-const setPressed = (act, on) => document.querySelectorAll(`[data-act="${act}"]`).forEach((el) => el.setAttribute('aria-pressed', String(on)));
 
 // ---------- 文稿解析 ----------
 const CJK = /[㐀-鿿豈-﫿぀-ヿ가-힯]/g;
@@ -1204,318 +824,85 @@ function parse(src) {
   return { blocks, units, paras, secs };
 }
 
-// ---------- 稿子库、编辑页、页面切换 ----------
+// ---------- 编辑页 ----------
 const ta = $('#ta');
-const shell = $('#app');
-const isWide = () => matchMedia('(min-width: 900px)').matches;
+const scriptSel = $('#scriptSel');
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const escHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 let library = store.get('library', null);
 if (!Array.isArray(library) || !library.length) library = [{ id: newId(), text: store.get('text', null) ?? SAMPLE, updated: Date.now() }];
-for (const x of library) { x.project = x.project || ''; x.title = x.title || ''; x.rec = Array.isArray(x.rec) ? x.rec : []; x.updated = x.updated || Date.now(); }
 let currentId = store.get('current', library[0].id);
 if (!library.some((x) => x.id === currentId)) currentId = library[0].id;
 const curScript = () => library.find((x) => x.id === currentId);
-const nameOf = (x) => x.title || titleOf(x.text);
 const titleOf = (txt) => (txt.split('\n').map((l) => plain(l.replace(/^#+\s*/, '')).trim()).find(Boolean) || '空白稿子').slice(0, 24);
-const snippetOf = (txt) => (txt.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#')).map((l) => plain(l)).find(Boolean) || '').slice(0, 40);
 const saveLibrary = () => { store.set('library', library); store.set('current', currentId); };
+function renderLibrary() {
+  scriptSel.textContent = '';
+  for (const x of library) {
+    const o = document.createElement('option');
+    o.value = x.id;
+    o.textContent = titleOf(x.text);
+    scriptSel.append(o);
+  }
+  scriptSel.value = currentId;
+}
 ta.value = curScript().text;
 let doc = parse(ta.value);
 let dirty = true;
 let marks = store.get('marks', []);
-
-function fmtAgo(ts) {
-  const d = new Date(ts), n = new Date();
-  const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const diff = Math.round((day(n) - day(d)) / 864e5);
-  const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-  if (diff <= 0) return '今天 ' + hm;
-  if (diff === 1) return '昨天';
-  if (diff < 7) return '周' + '日一二三四五六'[d.getDay()];
-  return `${d.getMonth() + 1} 月 ${d.getDate()} 日`;
-}
-
-// 滑块已填的部分
-function paintRange(el) { const mn = +el.min, mx = +el.max; el.style.setProperty('--p', ((+el.value - mn) / (mx - mn) * 100) + '%'); }
-const paintRanges = () => document.querySelectorAll('input[type="range"]').forEach(paintRange);
-document.addEventListener('input', (e) => { if (e.target.type === 'range') paintRange(e.target); });
 
 function refreshStats() {
   $('#stUnits').textContent = doc.units;
   $('#stParas').textContent = doc.paras;
   $('#stSecs').textContent = doc.secs;
   $('#stDur').textContent = fmt(doc.units / S.cpm * 60);
-  $('#tileCpm').textContent = S.cpm;
   if (document.activeElement !== $('#dur')) $('#dur').value = doc.units ? fmt(doc.units / S.cpm * 60) : '';
-  const cur = curScript();
-  if (document.activeElement !== $('#edTitle')) $('#edTitle').value = nameOf(cur);
-  $('#edSub').textContent = '上次编辑 ' + fmtAgo(cur.updated);
-  if (document.activeElement !== $('#projectIn')) $('#projectIn').value = cur.project;
 }
 let saveT;
 function onTextChange() {
   doc = parse(ta.value);
   dirty = true;
   if (marks.length) { marks = []; store.set('marks', marks); }
+  refreshStats();
   const cur = curScript();
   cur.text = ta.value;
   cur.updated = Date.now();
-  refreshStats();
+  const opt = scriptSel.querySelector(`option[value="${cur.id}"]`);
+  if (opt) opt.textContent = titleOf(cur.text);
   clearTimeout(saveT);
-  saveT = setTimeout(() => { saveLibrary(); renderLibrary(); }, 300);
+  saveT = setTimeout(saveLibrary, 300);
 }
 ta.addEventListener('input', onTextChange);
-$('#edTitle').addEventListener('input', (e) => { const c = curScript(); c.title = e.target.value.trim(); c.updated = Date.now(); clearTimeout(saveT); saveT = setTimeout(() => { saveLibrary(); renderLibrary(); }, 300); });
-$('#edTitle').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
-$('#projectIn').addEventListener('change', (e) => { curScript().project = e.target.value.trim(); saveLibrary(); renderLibrary(); });
 
-// ----- 页面切换 -----
-function setSub(sub, push = true) {
-  shell.dataset.sub = sub;
-  if (sub === 'editor' && push && !isWide()) history.pushState({ sub: 'editor' }, '');
-  window.scrollTo(0, 0);
-}
-function setTab(tab) {
-  if (shell.dataset.tab === tab) return;
-  shell.dataset.tab = tab;
-  document.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
-  if (tab === 'takes') renderTakes();
-  window.scrollTo(0, 0);
-  buzz();
-}
-document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
-window.addEventListener('popstate', () => { if (shell.dataset.sub === 'editor' && !isWide() && $('#remote').hidden) setSub('library', false); });
-$('#edBack').addEventListener('click', () => { if (history.state?.sub === 'editor') history.back(); else setSub('library', false); });
-
-// ----- 稿子库列表 -----
-let libQuery = '', libFilter = 'all';
-const projectNames = () => [...new Set(library.map((x) => x.project).filter(Boolean))];
-function scriptInfo(x) {
-  const d = parse(x.text);
-  const titles = d.blocks.filter((b) => b.type === 'sec').map((b) => plain(b.title));
-  const total = Math.max(1, titles.length);
-  const done = titles.length ? titles.filter((t) => x.rec.includes(t)).length : (x.rec.length ? 1 : 0);
-  return { d, total, done, dur: d.units / S.cpm * 60 };
-}
-function ringSvg(done, total) {
-  const C = 2 * Math.PI * 22, frac = done / total;
-  const color = done >= total ? '#1E9E61' : '#FF7A1A';
-  return `<svg width="100%" height="100%" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="22" fill="none" style="stroke:var(--track)" stroke-width="5"/><circle cx="26" cy="26" r="22" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${(C * frac).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 26 26)"${frac === 0 ? ' opacity="0"' : ''}/></svg><b>${done}/${total}</b>`;
-}
-let openSwipe = null;
-function closeSwipe() { if (openSwipe) { const c = openSwipe; c.style.transform = ''; openSwipe = null; setTimeout(() => c.parentElement && c.parentElement.classList.remove('pull'), 350); } }
-function attachSwipe(wrap, card) {
-  const W = 152;
-  let sx = 0, dx = 0, on = false, moved = false, base = 0;
-  wrap.addEventListener('pointerdown', (e) => {
-    if (e.pointerType !== 'touch') return;
-    sx = e.clientX; dx = 0; on = true; moved = false;
-    base = openSwipe === card ? -W : 0;
-    card.style.transition = 'none';
-  });
-  wrap.addEventListener('pointermove', (e) => {
-    if (!on) return;
-    dx = e.clientX - sx;
-    if (Math.abs(dx) > 8) moved = true;
-    if (moved) { wrap.classList.add('pull'); card.style.transform = `translateX(${clamp(base + dx, -W, 0)}px)`; }
-  });
-  const end = () => {
-    if (!on) return;
-    on = false;
-    card.style.transition = '';
-    if (!moved) return;
-    const cur = clamp(base + dx, -W, 0);
-    if (cur < -W / 2) { if (openSwipe && openSwipe !== card) closeSwipe(); openSwipe = card; card.style.transform = `translateX(${-W}px)`; buzz(); }
-    else { if (openSwipe === card) openSwipe = null; card.style.transform = ''; setTimeout(() => { if (openSwipe !== card) wrap.classList.remove('pull'); }, 350); }
-    wrap.dataset.moved = '1';
-    setTimeout(() => { delete wrap.dataset.moved; }, 60);
-  };
-  wrap.addEventListener('pointerup', end);
-  wrap.addEventListener('pointercancel', end);
-}
-function groupOf(ts) {
-  const n = new Date(), d = new Date(ts);
-  const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const diff = Math.round((day(n) - day(d)) / 864e5);
-  if (diff <= 0) return '今天';
-  if (diff < 7) return '过去 7 天';
-  if (diff < 30) return '过去 30 天';
-  return d.getFullYear() === n.getFullYear() ? `${d.getMonth() + 1} 月` : `${d.getFullYear()} 年`;
-}
-function renderLibrary() {
-  const list = $('#libList');
-  list.textContent = '';
-  const q = libQuery.trim().toLowerCase();
-  const info = new Map(library.map((x) => [x.id, scriptInfo(x)]));
-  const week = Date.now() - 7 * 864e5;
-  let items = library.slice().sort((a, b) => b.updated - a.updated).filter((x) => {
-    if (q && !(x.text.toLowerCase().includes(q) || x.project.toLowerCase().includes(q))) return false;
-    if (libFilter === 'recent') return x.updated >= week;
-    if (libFilter === 'todo') { const i = info.get(x.id); return i.done < i.total; }
-    if (libFilter.startsWith('p:')) return x.project === libFilter.slice(2);
-    return true;
-  });
-  $('#libCount').textContent = `${library.length} 份 · 都在这台设备上`;
-  $('#libEmpty').hidden = items.length > 0;
-  // 筛选条
-  const chips = $('#libChips');
-  chips.textContent = '';
-  const mk = (key, label) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = label;
-    b.setAttribute('aria-pressed', String(libFilter === key));
-    b.addEventListener('click', () => { libFilter = key; buzz(); renderLibrary(); });
-    chips.append(b);
-  };
-  mk('all', '全部'); mk('recent', '最近'); mk('todo', '还没录完');
-  projectNames().forEach((p) => mk('p:' + p, p));
-  $('#projectList').innerHTML = projectNames().map((p) => `<option value="${escHtml(p)}">`).join('');
-  let lastG = '';
-  for (const x of items) {
-    const i = info.get(x.id);
-    const g = groupOf(x.updated);
-    if (g !== lastG) { lastG = g; const h = document.createElement('div'); h.className = 'lib-group'; h.textContent = g; list.append(h); }
-    const wrap = document.createElement('div');
-    wrap.className = 'swipe';
-    wrap.innerHTML = `
-      <div class="swipe-actions"><button type="button" class="cp" aria-label="复制"><svg class="i"><use href="#i-copy"/></svg>复制</button><button type="button" class="rm" aria-label="删除"><svg class="i"><use href="#i-trash"/></svg>删除</button></div>
-      <button type="button" class="script-card"${x.id === currentId && isWide() ? ' aria-current="true"' : ''}>
-        <div class="sc-body">
-          <div class="sc-top"><span class="sc-title">${escHtml(nameOf(x))}</span><span class="sc-dur">${fmt(i.dur)}</span></div>
-          <div class="sc-row2"><span class="when">${fmtAgo(x.updated)}</span><span class="sc-snip">${escHtml(snippetOf(x.text)) || '&nbsp;'}</span></div>
-          ${x.project || i.done ? `<div class="sc-row3">${x.project ? `<span class="sc-proj">${escHtml(x.project)}</span>` : ''}${i.done ? `<span class="sc-prog">已录 ${i.done}/${i.total} 节</span>` : ''}</div>` : ''}
-        </div>
-      </button>
-      <div class="hover-actions"><button type="button" class="cp" aria-label="复制"><svg class="i" style="width:16px;height:16px"><use href="#i-copy"/></svg></button><button type="button" class="rm" aria-label="删除"><svg class="i" style="width:16px;height:16px"><use href="#i-trash"/></svg></button></div>
-    `;
-    const card = wrap.querySelector('.script-card');
-    card.addEventListener('click', () => {
-      if (wrap.dataset.moved) return;
-      if (openSwipe) { closeSwipe(); return; }
-      buzz();
-      openScript(x.id);
-    });
-    wrap.querySelectorAll('.cp').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); closeSwipe(); dupScript(x.id); }));
-    wrap.querySelectorAll('.rm').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); closeSwipe(); delScript(x.id); }));
-    attachSwipe(wrap, card);
-    list.append(wrap);
-  }
-}
-function switchScript(id) {
+function openScript(id) {
   currentId = id;
-  const cur = curScript();
-  ta.value = cur.text;
-  doc = parse(ta.value);
-  dirty = true;
-  marks = [];
-  store.set('marks', marks);
-  saveLibrary();
-  refreshStats();
-  renderLibrary();
-}
-function openScript(id) { switchScript(id); setSub('editor'); }
-function newScript(text = '', focus = true) {
-  const proj = libFilter.startsWith('p:') ? libFilter.slice(2) : '';
-  library.unshift({ id: newId(), text, updated: Date.now(), project: proj, rec: [] });
-  switchScript(library[0].id);
-  setSub('editor');
-  if (focus) setTimeout(() => ta.focus(), 50);
-}
-function dupScript(id) {
-  const x = library.find((y) => y.id === id);
-  if (!x) return;
-  const text = x.title ? x.text : x.text.replace(/^([^\n]*)/, '$1 副本');
-  library.unshift({ id: newId(), text, title: x.title ? x.title + ' 副本' : '', updated: Date.now(), project: x.project, rec: [] });
+  ta.value = curScript().text;
+  onTextChange();
   saveLibrary();
   renderLibrary();
-  gtoast('已复制');
 }
-function delScript(id) {
-  const i = library.findIndex((x) => x.id === id);
-  if (i < 0) return;
-  const [gone] = library.splice(i, 1);
-  let placeholder = null;
-  if (!library.length) { placeholder = { id: newId(), text: '', updated: Date.now(), project: '', rec: [] }; library.push(placeholder); }
-  if (currentId === id) { switchScript(library[0].id); if (!isWide() && shell.dataset.sub === 'editor') { if (history.state?.sub === 'editor') history.back(); else setSub('library', false); } }
-  else { saveLibrary(); renderLibrary(); }
-  buzz();
-  gtoast(`已删除「${nameOf(gone)}」`, '撤销', () => {
-    if (placeholder) library = library.filter((x) => x !== placeholder);
-    library.splice(Math.min(i, library.length), 0, gone);
-    saveLibrary();
-    renderLibrary();
-  }, 10000);
-}
-$('#libSearch').addEventListener('input', (e) => { libQuery = e.target.value; renderLibrary(); });
-document.addEventListener('pointerdown', (e) => { if (openSwipe && !e.target.closest('.swipe')) closeSwipe(); });
-
-// ----- 小提示（可带“撤销”） -----
-let gT;
-const hideG = () => $('#gtoast').classList.remove('show');
-function gtoast(msg, label, fn, ms = 2600) {
-  $('#gtoastMsg').textContent = msg;
-  const b = $('#gtoastAct');
-  b.hidden = !label;
-  if (label) b.onclick = () => { fn?.(); hideG(); };
-  $('#gtoast').classList.add('show');
-  clearTimeout(gT);
-  gT = setTimeout(hideG, ms);
-}
-
-// ----- 底部面板 / 弹窗：往下拖可以关掉，松手有回弹 -----
-document.addEventListener('pointerdown', (e) => {
-  const g = e.target.closest('.grab');
-  if (!g) return;
-  const card = g.closest('.card.sheet, #panel');
-  if (!card) return;
-  const modal = card.closest('.modal');
-  const y0 = e.clientY;
-  let dy = 0;
-  card.style.transition = 'none';
-  const mv = (ev) => { dy = Math.max(0, ev.clientY - y0); card.style.transform = `translateY(${dy}px)`; };
-  const up = () => {
-    window.removeEventListener('pointermove', mv);
-    window.removeEventListener('pointerup', up);
-    window.removeEventListener('pointercancel', up);
-    card.style.transition = '';
-    card.style.transform = '';
-    if (dy > 100) (modal ? modal.querySelector('#nCancel, #rdlgClose, #cdlgClose') : card.querySelector('#panelClose'))?.click();
-  };
-  window.addEventListener('pointermove', mv);
-  window.addEventListener('pointerup', up);
-  window.addEventListener('pointercancel', up);
+scriptSel.addEventListener('change', () => openScript(scriptSel.value));
+$('#newScript').addEventListener('click', () => {
+  library.unshift({ id: newId(), text: '', updated: Date.now() });
+  openScript(library[0].id);
+  ta.focus();
 });
-
-// ----- 新建稿子 -----
-const newDlg = $('#newDlg');
-const openNew = () => { newDlg.hidden = false; buzz(); };
-const closeNew = () => { newDlg.hidden = true; };
-$('#newBtn').addEventListener('click', openNew);
-$('#nCancel').addEventListener('click', closeNew);
-newDlg.addEventListener('click', (e) => { if (e.target === newDlg) closeNew(); });
-$('#nBlank').addEventListener('click', () => { closeNew(); newScript('', true); });
-$('#nSample').addEventListener('click', () => { closeNew(); newScript(SAMPLE, false); });
-$('#nClip').addEventListener('click', async () => {
-  closeNew();
-  try {
-    const t = (await navigator.clipboard.readText()).replace(/\r\n?/g, '\n').trim();
-    if (!t) return gtoast('剪贴板里没有文字');
-    newScript(t, false);
-  } catch (e) {
-    newScript('', true);
-    gtoast('没法读取剪贴板，请在稿子里长按粘贴');
+let delArmed = null;
+$('#delScript').addEventListener('click', (e) => {
+  const btn = e.currentTarget;
+  if (!delArmed) {
+    btn.textContent = '再点一次删除';
+    delArmed = setTimeout(() => { btn.textContent = '删除'; delArmed = null; }, 3000);
+    return;
   }
+  clearTimeout(delArmed);
+  delArmed = null;
+  btn.textContent = '删除';
+  library = library.filter((x) => x.id !== currentId);
+  if (!library.length) library = [{ id: newId(), text: '', updated: Date.now() }];
+  openScript(library[0].id);
 });
-$('#nFile').addEventListener('change', (e) => {
-  const f = e.target.files[0];
-  if (!f) return;
-  const r = new FileReader();
-  r.onload = () => { closeNew(); newScript(String(r.result).replace(/\r\n?/g, '\n'), false); };
-  r.readAsText(f);
-  e.target.value = '';
-});
+renderLibrary();
+
 $('#file').addEventListener('change', (e) => {
   const f = e.target.files[0];
   if (!f) return;
@@ -1524,7 +911,7 @@ $('#file').addEventListener('change', (e) => {
   r.readAsText(f);
   e.target.value = '';
 });
-renderLibrary();
+$('#sample').addEventListener('click', () => { ta.value = SAMPLE; onTextChange(); });
 
 function setSpeed(cpm) {
   S.cpm = clamp(Math.round(cpm), 30, 900);
@@ -1558,22 +945,18 @@ function syncControls() {
   $('#gdVal').textContent = S.guide + '%';
   $('#dim').checked = S.dimRead;
   $('#showGuide').checked = S.showGuide;
-  document.querySelectorAll('input[name="cd"]').forEach((r) => { r.checked = r.value === String(S.countdown); });
-  document.querySelectorAll('input[name="appearance"]').forEach((r) => { r.checked = r.value === (S.appearance || 'auto'); });
+  $('#cdSel').value = String(S.countdown);
   document.querySelectorAll('input[name="align"]').forEach((r) => { r.checked = r.value === S.align; });
   document.querySelectorAll('input[name="theme"]').forEach((r) => { r.checked = r.value === S.theme; });
-  $('#mx').checked = S.mirrorX;
-  $('#my').checked = S.mirrorY;
-  setPressed('mx', S.mirrorX);
-  setPressed('my', S.mirrorY);
+  for (const [ids, key] of [[['#mx', '#pMx'], 'mirrorX'], [['#my', '#pMy'], 'mirrorY']])
+    ids.forEach((id) => $(id).setAttribute('aria-pressed', String(S[key])));
   $('#secStop').checked = S.secStop;
   $('#autoSave').checked = S.autoSave;
   $('#lang').value = S.lang;
-  setPressed('voice', voice.on);
-  setPressed('cam', cam.on);
-  document.querySelectorAll('.spOut').forEach((o) => { o.textContent = S.cpm; });
-  document.querySelectorAll('.fsOut').forEach((o) => { o.textContent = S.fontSize; });
-  paintRanges();
+  $('#pVoice').setAttribute('aria-pressed', String(voice.on));
+  $('#pCam').setAttribute('aria-pressed', String(cam.on));
+  $('#spOut').textContent = S.cpm;
+  $('#fsOut').textContent = S.fontSize;
   refreshStats();
 }
 
@@ -1583,8 +966,7 @@ $('#dur').addEventListener('change', (e) => {
   if (sec && doc.units) setSpeed(doc.units / (sec / 60));
   e.target.value = doc.units ? fmt(doc.units / S.cpm * 60) : '';
 });
-document.querySelectorAll('input[name="cd"]').forEach((r) => r.addEventListener('change', () => { S.countdown = +r.value; save(); buzz(); }));
-document.querySelectorAll('input[name="appearance"]').forEach((r) => r.addEventListener('change', () => { S.appearance = r.value; save(); applyAppearance(); buzz(); }));
+$('#cdSel').addEventListener('change', (e) => { S.countdown = +e.target.value; save(); });
 $('#fs').addEventListener('input', (e) => setFont(+e.target.value));
 $('#lh').addEventListener('input', (e) => { S.lineHeight = +e.target.value; save(); syncControls(); });
 $('#mg').addEventListener('input', (e) => { S.margin = +e.target.value; save(); syncControls(); });
@@ -1596,8 +978,8 @@ $('#autoSave').addEventListener('change', (e) => { S.autoSave = e.target.checked
 $('#lang').addEventListener('change', (e) => { S.lang = e.target.value; save(); });
 document.querySelectorAll('input[name="align"]').forEach((r) => r.addEventListener('change', () => { S.align = r.value; save(); }));
 document.querySelectorAll('input[name="theme"]').forEach((r) => r.addEventListener('change', () => { S.theme = r.value; save(); }));
-$('#mx').addEventListener('change', (e) => setMirror('mirrorX', e.target.checked));
-$('#my').addEventListener('change', (e) => setMirror('mirrorY', e.target.checked));
+$('#mx').addEventListener('click', () => setMirror('mirrorX', !S.mirrorX));
+$('#my').addEventListener('click', () => setMirror('mirrorY', !S.mirrorY));
 $('#start').addEventListener('click', () => enter(false));
 $('#startCaret').addEventListener('click', () => enter(true));
 
@@ -1608,8 +990,6 @@ const content = $('#content');
 const guide = $('#guide');
 const cd = $('#cd');
 const panel = $('#panel');
-const moreMenu = $('#moreMenu');
-document.querySelectorAll('input[name="ptab"]').forEach((r) => r.addEventListener('change', () => { panel.dataset.ptab = r.value; buzz(); }));
 
 let sents = [];        // { el, start, top }
 let blockTops = [];    // 段落和小节标题的顶部位置，用于"上一段/下一段"
@@ -1760,8 +1140,8 @@ function lowerBound(p) {
 }
 
 function placeOverlays() {
-  $('#cam').style.top = ($('#topPill').offsetHeight + 32) + 'px';
-  $('#hint').style.bottom = ($('#botPill').offsetHeight + 32) + 'px';
+  $('#cam').style.top = ($('.topbar').offsetHeight + 12) + 'px';
+  $('#hint').style.bottom = ($('.bottombar').offsetHeight + 14) + 'px';
 }
 
 function computeSpeed() {
@@ -2067,10 +1447,9 @@ function camStartTake() {
   catch (e) { return toast('无法开始录像'); }
   const chunks = [];
   const sec = takeSec;
-  const sid = currentId;
   const t0 = performance.now();
   r.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
-  r.onstop = () => saveTake(chunks, r.mimeType || mime, sec, (performance.now() - t0) / 1000, sid);
+  r.onstop = () => saveTake(chunks, r.mimeType || mime, sec, (performance.now() - t0) / 1000);
   r.start(1000);
   cam.rec = r;
   cam.t0 = t0;
@@ -2084,7 +1463,7 @@ function camStopTake() {
   camBox.classList.remove('rec');
   recBadge.hidden = true;
 }
-function saveTake(chunks, mime, sec, dur, sid) {
+function saveTake(chunks, mime, sec, dur) {
   const type = (mime || 'video/webm').split(';')[0];
   const blob = new Blob(chunks, { type });
   if (!blob.size) return;
@@ -2093,48 +1472,10 @@ function saveTake(chunks, mime, sec, dur, sid) {
   const n = takes.filter((t) => t.label === label).length + 1;
   const safe = sec ? '-' + sec.title.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 20) : '';
   const t = { label, n, dur, blob, url: URL.createObjectURL(blob), name: `${label}${safe}-第${n}条.${type.includes('mp4') ? 'mp4' : 'webm'}`, saved: false };
-  t.secTitle = sec ? plain(sec.title) : '';
   takes.push(t);
-  const sc = library.find((x) => x.id === sid);
-  if (sc) { const key = sec ? plain(sec.title) : '*'; if (!sc.rec.includes(key)) { sc.rec.push(key); saveLibrary(); renderLibrary(); } }
-  buzz('ok');
   toast(`已录好 ${label} 第${n}条（${fmt(dur)}）`);
   if (S.autoSave) downloadTake(t);
   renderPanel();
-}
-function renderTakes() {
-  const box = $('#takesList');
-  box.textContent = '';
-  $('#takesEmpty').hidden = takes.length > 0;
-  $('#takesSub').textContent = takes.length ? `${takes.length} 条，还有 ${takes.filter((t) => !t.saved).length} 条没保存` : '';
-  takes.slice().reverse().forEach((t) => {
-    const row = document.createElement('div');
-    row.className = 'take';
-    row.innerHTML = `<div class="ic"><svg class="i"><use href="#i-cam"/></svg></div><div class="tt"><b></b><span></span></div><span class="dur">${fmt(t.dur)}</span>`;
-    row.querySelector('b').textContent = `${t.label} · 第 ${t.n} 条`;
-    row.querySelector('span').textContent = t.secTitle || '全文';
-    if (t.saved) {
-      const tag = document.createElement('span');
-      tag.className = 'tag-ok';
-      tag.textContent = '已保存';
-      row.append(tag);
-    } else {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'btn';
-      b.textContent = '保存';
-      b.addEventListener('click', () => saveTakeManually(t));
-      row.append(b);
-    }
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.className = 'round';
-    del.setAttribute('aria-label', `删除 ${t.label} 第${t.n}条`);
-    del.innerHTML = '<svg class="i"><use href="#i-trash"/></svg>';
-    del.addEventListener('click', () => { URL.revokeObjectURL(t.url); takes.splice(takes.indexOf(t), 1); renderTakes(); renderPanel(); });
-    row.append(del);
-    box.append(row);
-  });
 }
 // 安卓 App 里没有"下载"，分块交给原生写进相册（Movies/提词器）
 async function nativeSave(t) {
@@ -2194,7 +1535,7 @@ let idleT;
 function poke() {
   prompter.classList.remove('idle');
   clearTimeout(idleT);
-  idleT = setTimeout(() => { if (state === 'playing' && panel.hidden && moreMenu.hidden) prompter.classList.add('idle'); }, 2500);
+  idleT = setTimeout(() => { if (state === 'playing' && panel.hidden) prompter.classList.add('idle'); }, 2500);
 }
 
 let toastT;
@@ -2282,7 +1623,6 @@ function renderPanel() {
     li.append(b, del);
     tl.append(li);
   });
-  renderTakes();
 }
 function openPanel() { renderPanel(); panel.hidden = false; poke(); }
 function closePanel() { panel.hidden = true; poke(); }
@@ -2352,7 +1692,7 @@ function setEditMode(on) {
   editMode = on;
   if (!on) commitEdit();
   prompter.classList.toggle('editmode', on);
-  setPressed('edit', on);
+  $('#pEdit').setAttribute('aria-pressed', String(on));
   if (on) { if (state !== 'paused') pause(); toast('改字模式：点要改的句子'); }
 }
 function startEdit(i) {
@@ -2425,7 +1765,7 @@ document.addEventListener('visibilitychange', () => {
 function enter(fromCaret) {
   if (!doc.units) { ta.focus(); return; }
   if (dirty) { build(); dirty = false; }
-  shell.hidden = true;
+  $('#editor').hidden = true;
   prompter.hidden = false;
   panel.hidden = true;
   maxPos = 0;
@@ -2456,7 +1796,7 @@ function exit() {
   voiceStop();
   if (cam.on) camOff();
   prompter.hidden = true;
-  shell.hidden = false;
+  $('#editor').hidden = false;
   if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   wakeLock?.release?.().catch(() => {});
   wakeLock = null;
@@ -2465,7 +1805,6 @@ function exit() {
   const s = sents[Math.max(0, curIdx)];
   if (s) { try { ta.setSelectionRange(s.start, s.start); } catch (e) {} }
   syncControls();
-  renderLibrary();
 }
 let nativeFs = false;
 function toggleFullscreen() {
@@ -2476,40 +1815,34 @@ function toggleFullscreen() {
 
 // ---------- 提词页交互 ----------
 const bind = (id, fn) => $(id).addEventListener('click', fn);
+bind('#pBack', exit);
+bind('#pPlay', toggle);
+bind('#pStop', stop);
+bind('#pRetake', retake);
+bind('#pVoice', voiceToggle);
+bind('#pCam', camToggle);
+bind('#spDn', () => setSpeed(S.cpm - 10));
+bind('#spUp', () => setSpeed(S.cpm + 10));
+bind('#fsDn', () => setFont(S.fontSize - 4));
+bind('#fsUp', () => setFont(S.fontSize + 4));
+bind('#pMx', () => setMirror('mirrorX', !S.mirrorX));
+bind('#pMy', () => setMirror('mirrorY', !S.mirrorY));
+bind('#pMark', addMark);
+bind('#pList', () => (panel.hidden ? openPanel() : closePanel()));
 bind('#panelClose', closePanel);
-function closeMore() {
-  if (moreMenu.hidden) return;
-  moreMenu.hidden = true;
-  document.querySelectorAll('[data-act="more"]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
-}
-function toggleMore() {
-  moreMenu.hidden = !moreMenu.hidden;
-  document.querySelectorAll('[data-act="more"]').forEach((b) => b.setAttribute('aria-expanded', String(!moreMenu.hidden)));
-  poke();
-}
-const ACT = {
-  back: exit, play: toggle, stop, retake, voice: voiceToggle, cam: camToggle,
-  spDn: () => setSpeed(S.cpm - 10), spUp: () => setSpeed(S.cpm + 10),
-  fsDn: () => setFont(S.fontSize - 4), fsUp: () => setFont(S.fontSize + 4),
-  mx: () => setMirror('mirrorX', !S.mirrorX), my: () => setMirror('mirrorY', !S.mirrorY),
-  mark: addMark, list: () => (panel.hidden ? openPanel() : closePanel()), more: toggleMore,
-  edit: () => setEditMode(!editMode), pip: () => togglePip(), remote: () => openRemoteDlg(false), fs: toggleFullscreen,
-  pageUp: nav.pageUp, pageDn: nav.pageDown, paraUp: nav.paraUp, paraDn: nav.paraDown, secUp: nav.secUp, secDn: nav.secDown,
-};
-prompter.addEventListener('click', (e) => {
-  const b = e.target.closest('[data-act]');
-  if (!b) return;
-  const a = b.dataset.act;
-  buzz();
-  ACT[a]?.();
-  if (a !== 'more') closeMore();
-});
+bind('#pFs', toggleFullscreen);
+bind('#pEdit', () => setEditMode(!editMode));
+bind('#nPageUp', nav.pageUp);
+bind('#nPageDn', nav.pageDown);
+bind('#nParaUp', nav.paraUp);
+bind('#nParaDn', nav.paraDown);
+bind('#nSecUp', nav.secUp);
+bind('#nSecDn', nav.secDown);
 // 点过按钮后让出焦点，避免空格键既触发按钮又触发播放/暂停
 prompter.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && e.detail) b.blur(); });
 
 stage.addEventListener('pointerdown', (e) => {
   poke();
-  closeMore();
   if (e.button) return;
   if (!panel.hidden) { closePanel(); return; }
   if (editing) { if (!editing.el.contains(e.target)) commitEdit(); return; }
@@ -2569,10 +1902,8 @@ window.addEventListener('resize', () => { if (!prompter.hidden) layout(true); })
 
 function onKey(e) {
   if (!rdlg.hidden) { if (e.key === 'Escape') closeRemoteDlg(); return; }
-  if (!newDlg.hidden) { if (e.key === 'Escape') closeNew(); return; }
   if (prompter.hidden) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); enter(false); }
-    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (shell.dataset.tab !== 'script') setTab('script'); $('#libSearch').focus(); }
     return;
   }
   if (editing) {
@@ -2587,7 +1918,7 @@ function onKey(e) {
   let handled = true;
   switch (k) {
     case ' ': case 'Spacebar': if (!e.repeat) toggle(); break;
-    case 'Escape': if (!moreMenu.hidden) closeMore(); else if (panel.hidden) exit(); else closePanel(); break;
+    case 'Escape': panel.hidden ? exit() : closePanel(); break;
     case 'ArrowLeft': case 'PageUp': nav.pageUp(); break;
     case 'ArrowRight': case 'PageDown': nav.pageDown(); break;
     case 'ArrowUp': nav.nudge(-1); break;
@@ -2649,6 +1980,7 @@ async function togglePip() {
   w.addEventListener('pointercancel', () => { drag = null; });
   layout(true);
 }
+bind('#pPip', togglePip);
 
 // ---------- 遥控 ----------
 // 两台设备通过公共 MQTT 服务器中转消息；内容用配对码里的密钥加密，服务器看不到稿子和操作
@@ -2829,22 +2161,11 @@ function hostStop() {
 }
 function snapshot() {
   const inP = !prompter.hidden;
-  let prev = '', next = '', secIdx = 0, ticks = [], mk = [];
-  if (inP) {
-    const cs = Math.max(0, curIdx);
-    for (let i = cs - 1; i >= 0; i--) if (!sents[i].sec) { prev = sents[i].plain.trim().slice(0, 60); break; }
-    for (let i = cs + 1; i < sents.length; i++) if (!sents[i].sec) { next = sents[i].plain.trim().slice(0, 60); break; }
-    const sc = currentSec();
-    secIdx = sc ? secs.indexOf(sc) + 1 : 0;
-    ticks = maxPos ? secs.map((x) => Math.round(x.top / maxPos * 1000) / 10) : [];
-    mk = marks.map((idx, n) => ({ n: n + 1, time: fmt(timeAt(posOf(idx))) }));
-  }
   return {
     t: 'state', mode: inP ? 'prompter' : 'editor', st: state, reason: pauseReason,
     pct: inP && maxPos ? Math.round(pos / maxPos * 1000) / 10 : 0,
-    sec: inP ? (currentSec()?.title ? plain(currentSec().title) : '') : nameOf(curScript()),
+    sec: inP ? (currentSec()?.title ? plain(currentSec().title) : '') : titleOf(ta.value),
     sent: inP ? (sents[Math.max(0, curIdx)]?.plain || '').trim().slice(0, 80) : '',
-    prev, next, secIdx, secTotal: inP ? secs.length : 0, ticks, marks: mk,
     el: Math.round(elapsed),
     rem: Math.round(inP ? (maxPos - pos) / speedPx : doc.units / S.cpm * 60),
     cpm: S.cpm, fs: S.fontSize, rec: !!cam.rec, voice: voice.on,
@@ -2982,7 +2303,6 @@ function runRemote(c) {
     faster: () => setSpeed(S.cpm + 10), slower: () => setSpeed(S.cpm - 10),
     bigger: () => setFont(S.fontSize + 4), smaller: () => setFont(S.fontSize - 4),
     mark: addMark,
-    ...Object.fromEntries(Array.from({ length: 9 }, (_, i) => ['m' + (i + 1), () => gotoMark(i)])),
   };
   acts[c]?.();
   poke();
@@ -3000,12 +2320,7 @@ function renderRemoteStatus() {
   if (el.textContent !== text) el.textContent = text;
   el.classList.toggle('ok', host.on && host.net === 'online');
   const nNear = IS_NATIVE ? [...app.clients.values()].filter((c) => c.authed).length : 0;
-  setPressed('remote', (host.on && n > 0) || nLan > 0 || nNear > 0);
-  const total = (host.on ? n : 0) + nLan + nNear;
-  const rt = $('#remoteTabStat');
-  const rtText = total ? `已连接 ${total} 台遥控器` : '还没有遥控器连上';
-  if (rt.textContent !== rtText) rt.textContent = rtText;
-  rt.classList.toggle('ok', total > 0);
+  $('#pRemote').setAttribute('aria-pressed', String((host.on && n > 0) || nLan > 0 || nNear > 0));
 }
 function showTab(t) {
   if (t === 'near' && !IS_NATIVE) t = 'lan';
@@ -3044,6 +2359,7 @@ async function openRemoteDlg(fresh, keepTab) {
 }
 function closeRemoteDlg() { rdlg.hidden = true; lanStopScan(); }
 $('#remoteBtn').addEventListener('click', () => openRemoteDlg(false));
+bind('#pRemote', () => openRemoteDlg(false));
 $('#rdlgClose').addEventListener('click', closeRemoteDlg);
 rdlg.addEventListener('click', (e) => { if (e.target === rdlg) closeRemoteDlg(); });
 $('#rnew').addEventListener('click', () => openRemoteDlg(true));
@@ -3056,12 +2372,12 @@ $('#rcopy').addEventListener('click', async (e) => {
 
 // ----- 遥控器（另一台手机）这一端 -----
 async function remoteMode(room, keyStr) {
-  shell.hidden = true;
+  $('#editor').hidden = true;
   prompter.hidden = true;
   $('#remote').hidden = false;
   document.title = '提词遥控器';
   const conn = $('#rconn');
-  const setConn = (t, ok) => { conn.textContent = t; conn.classList.toggle('off', !ok); };
+  const setConn = (t, ok) => { conn.textContent = t; conn.classList.toggle('ok', !!ok); };
   let key;
   try { key = await importKey(b64u.dec(keyStr)); } catch (e) { setConn('配对码不完整，请重新扫码'); return; }
   const id = Math.random().toString(36).slice(2, 10);
@@ -3084,17 +2400,20 @@ async function remoteMode(room, keyStr) {
     if (c && !ok) setConn('还没连上，稍等一下再按');
   }
   setInterval(() => { send(null); refresh(); }, 4000);
-  remoteSend = (c) => send(c);
+  document.querySelectorAll('.rbtn').forEach((b) => b.addEventListener('click', () => {
+    send(b.dataset.c);
+    navigator.vibrate?.(15);
+  }));
   lockScreen();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') lockScreen(); });
 }
 async function directRemote(code) {
-  shell.hidden = true;
+  $('#editor').hidden = true;
   prompter.hidden = true;
   $('#remote').hidden = false;
   document.title = '提词遥控器';
   const conn = $('#rconn');
-  const setConn = (t, ok) => { conn.textContent = t; conn.classList.toggle('off', !ok); };
+  const setConn = (t, ok) => { conn.textContent = t; conn.classList.toggle('ok', !!ok); };
   setConn('正在配对…');
   let offer;
   try { offer = await unpackOf(code); } catch (e) { return setConn('配对码不完整，请重新扫码'); }
@@ -3130,74 +2449,29 @@ async function directRemote(code) {
   $('#rAnsCopy').addEventListener('click', async (e) => {
     try { await navigator.clipboard.writeText($('#rAnsCode').value); e.currentTarget.textContent = '已复制'; } catch (err) { $('#rAnsCode').select(); }
   });
-  remoteSend = (c) => {
+  document.querySelectorAll('.rbtn').forEach((b) => b.addEventListener('click', () => {
     if (ch?.readyState !== 'open') return setConn('还没连上，稍等一下再按');
-    ch.send(JSON.stringify({ t: 'cmd', c }));
-  };
+    ch.send(JSON.stringify({ t: 'cmd', c: b.dataset.c }));
+    navigator.vibrate?.(15);
+  }));
   lockScreen();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') lockScreen(); });
 }
-let remoteSend = null;
-let remoteLocked = false;
-$('#remote').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-c]');
-  if (!b || !remoteSend || b.disabled) return;
-  if (remoteLocked && b.dataset.c !== 'toggle') return;
-  remoteSend(b.dataset.c);
-  buzz();
-});
-$('#rLock').addEventListener('click', () => {
-  remoteLocked = !remoteLocked;
-  $('#rLock').setAttribute('aria-pressed', String(remoteLocked));
-  $('#rLock').setAttribute('aria-label', remoteLocked ? '解锁' : '锁定，防止误触');
-  $('#rLock use').setAttribute('href', remoteLocked ? '#i-lock' : '#i-unlock');
-  document.querySelectorAll('.r-thumb .rbtn.side').forEach((b) => { b.style.opacity = remoteLocked ? '.3' : ''; b.style.pointerEvents = remoteLocked ? 'none' : ''; });
-  $('#rRest').classList.toggle('locked', remoteLocked);
-  $('#rLockNote').hidden = !remoteLocked;
-  buzz();
-});
-let rTickKey = '', rMarkKey = '';
 function renderRemote(m) {
   const inP = m.mode === 'prompter';
-  $('#rSec').textContent = m.sec || (inP ? '' : '提词设备在稿子页');
-  $('#rSecN').textContent = inP && m.secTotal ? `第 ${m.secIdx || 1} / ${m.secTotal} 节` : '';
-  $('#rPrev').textContent = inP ? (m.prev || '') : '';
-  $('#rSent').textContent = inP ? (m.sent || '…') : '按下面的大按钮开始提词。';
-  $('#rNext').textContent = inP ? (m.next || '') : '';
+  $('#rSec').textContent = m.sec || (inP ? '' : '提词设备在编辑页');
+  $('#rSent').textContent = inP ? (m.sent || '…') : '按下面的按钮开始提词。';
   $('#rFill').style.width = m.pct + '%';
-  const tk = JSON.stringify(m.ticks || []);
-  if (tk !== rTickKey) {
-    rTickKey = tk;
-    $('#rTicks').innerHTML = (m.ticks || []).map((p) => `<span class="tick" style="left:${p}%"></span>`).join('');
-  }
-  const stTxt = !inP ? '在稿子页' : m.st === 'playing' ? '播放中' : m.st === 'countdown' ? '倒数中' : ({ secEnd: '本节读完', end: '全文读完' }[m.reason] || '已暂停');
-  const st = $('#rState');
-  st.textContent = m.rec ? '录像中' : stTxt;
-  st.classList.toggle('rec', !!m.rec);
+  const stTxt = !inP ? '在编辑页' : m.st === 'playing' ? '播放中' : m.st === 'countdown' ? '倒数中' : ({ secEnd: '本节读完', end: '全文读完' }[m.reason] || '已暂停');
+  $('#rState').textContent = stTxt;
   $('#rEl').textContent = fmt(m.el);
   $('#rRem').textContent = fmt(m.rem);
-  $('#rCpm').textContent = m.cpm;
-  $('#rFs').textContent = m.fs;
+  $('#rInfo').textContent = `语速 ${m.cpm} · 字号 ${m.fs}` + (m.rec ? ' · 录像中' : '') + (m.voice ? ' · 语音跟随' : '');
   const play = $('#rPlay');
   const running = inP && m.st !== 'paused';
+  play.textContent = !inP ? '▶ 开始提词' : running ? '❚❚ 暂停' : '▶ 播放';
   play.classList.toggle('on', running);
-  play.setAttribute('aria-label', running ? '暂停' : '播放');
-  play.querySelector('use').setAttribute('href', running ? '#i-pause' : '#i-play');
-  const mkk = JSON.stringify(m.marks || []);
-  if (mkk !== rMarkKey) {
-    rMarkKey = mkk;
-    const box = $('#rMarks');
-    box.querySelectorAll('.rbtn:not(.add)').forEach((x) => x.remove());
-    (m.marks || []).forEach((x) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'rbtn';
-      b.dataset.c = 'm' + x.n;
-      b.innerHTML = `${x.n}<small>${x.time}</small>`;
-      box.append(b);
-    });
-  }
-  document.querySelectorAll('.r-thumb .rbtn.side, #rRest .rbtn').forEach((b) => { b.disabled = !inP; });
+  document.querySelectorAll('.rbtn:not(.big)').forEach((b) => { b.disabled = !inP; });
 }
 
 // ---------- 附近设备（只在安卓 App 里）：设备发现 + 6 位验证码配对 ----------
@@ -3328,7 +2602,7 @@ $('#nearAlias').addEventListener('change', (e) => {
 
 // ----- 当遥控器的这一端 -----
 const cdlg = $('#cdlg');
-const setCtrlConn = (t, ok) => { $('#rconn').textContent = t; $('#rconn').classList.toggle('off', !ok); };
+const setCtrlConn = (t, ok) => { $('#rconn').textContent = t; $('#rconn').classList.toggle('ok', !!ok); };
 const knownPeers = () => store.get('peers', {});
 function renderPeers() {
   const ul = $('#peerList');
@@ -3385,7 +2659,6 @@ function ctrlSocket() {
   let ws;
   try { ws = new WebSocket(`ws://${peer.ip}:${peer.port}`); } catch (e) { toast('地址不对'); ctrl.want = false; return; }
   ctrl.ws = ws;
-  remoteSend = (c) => { if (ctrl.ws && ctrl.ws.readyState === 1) ctrl.ws.send(JSON.stringify({ t: 'cmd', c })); };
   setCtrlConn(`正在连接 ${peer.alias}…`);
   ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', id: app.id, alias: app.alias, tok: knownPeers()[peer.id]?.tok || '' }));
   ws.onmessage = (ev) => {
@@ -3437,7 +2710,7 @@ $('#manGo').addEventListener('click', () => {
 });
 function showRemoteScreen(on) {
   $('#remote').hidden = !on;
-  shell.hidden = on;
+  $('#editor').hidden = on;
   if (on) history.pushState({ r: 1 }, '');
 }
 function ctrlLeave() {
@@ -3454,6 +2727,13 @@ $('#rLeave').addEventListener('click', () => { if (history.state?.r) history.bac
 $('#ctrlBtn').addEventListener('click', ctrlOpen);
 $('#cdlgClose').addEventListener('click', ctrlCloseDlg);
 cdlg.addEventListener('click', (e) => { if (e.target === cdlg) ctrlCloseDlg(); });
+// 遥控器的按钮：走 WebSocket（网页版遥控页各自有自己的发送方式，这里 ws 为空时不会动作）
+$('#remote').addEventListener('click', (e) => {
+  const b = e.target.closest('.rbtn');
+  if (!b || !ctrl.ws || ctrl.ws.readyState !== 1) return;
+  ctrl.ws.send(JSON.stringify({ t: 'cmd', c: b.dataset.c }));
+  navigator.vibrate?.(15);
+});
 
 // ---------- 安装成 App ----------
 let installEvt = null;
@@ -3478,7 +2758,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !IS_
 }
 
 syncControls();
-renderTakes();
 if (location.hash.startsWith('#d=')) directRemote(location.hash.slice(3));
 else if (qs.get('r') && location.hash.length > 1) remoteMode(qs.get('r'), location.hash.slice(1));
 else if (S.remoteOn) hostStart(false);

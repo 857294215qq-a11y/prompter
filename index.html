@@ -187,12 +187,6 @@ textarea.field { height: auto; padding: 10px 14px; font: 12px var(--num); resize
   #tabbar { left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); height: 68px; }
   #views { padding: max(22px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-left, 0px)) calc(110px + env(safe-area-inset-bottom, 0px)); }
 }
-@media (min-width: 900px) {
-  #tabbar { top: max(16px, env(safe-area-inset-top, 0px)); left: 50%; translate: -50% 0; height: 52px; }
-  .tab { flex-direction: row; gap: 8px; padding: 0 18px; font-size: 14px; }
-  .tab svg.i { width: 20px; height: 20px; }
-  #views { padding: 88px 40px 40px; }
-}
 .view { display: none; }
 #app[data-tab="script"][data-sub="library"] #vLibrary,
 #app[data-tab="script"][data-sub="editor"] #vEditor,
@@ -200,13 +194,6 @@ textarea.field { height: auto; padding: 10px 14px; font: 12px var(--num); resize
 #app[data-tab="remote"] #vRemote,
 #app[data-tab="settings"] #vSettings { display: block; }
 #views > .view { max-width: 960px; margin: 0 auto; }
-@media (min-width: 900px) {
-  #app[data-tab="script"] #views { display: block; max-width: 1360px; margin: 0 auto; }
-  #app[data-tab="script"][data-sub]:not([data-lib="open"]) #vLibrary { display: none; }
-  #app[data-tab="script"] #vEditor { display: block; max-width: none; margin: 0; min-width: 0; }
-  #app[data-tab="script"][data-lib="open"] #views { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 32px; }
-  #app[data-tab="script"][data-lib="open"] #vLibrary { display: block; max-width: none; margin: 0; min-width: 0; }
-}
 
 /* ---------- 稿子库 ---------- */
 .lib-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 16px; }
@@ -556,6 +543,59 @@ details.more > div { display: grid; gap: 8px; }
 @media (prefers-reduced-motion: reduce) {
   .pill, #content .s, #toast, .script-card, .modal .card.sheet, #panel, .tab, .btn, .ib, .rbtn, input.sw, input.sw::after, #gtoast { transition: none; }
 }
+
+/* ---------- 备忘录式布局：侧栏 + 列表 + 正文，全部常驻 ---------- */
+@media (min-width: 900px) {
+  #tabbar { top: 0; bottom: 0; left: 0; right: auto; translate: none; width: 184px; height: auto; flex-direction: column; justify-content: flex-start; gap: 2px; padding: 18px 10px; border-radius: 0; border: 0; border-right: 1px solid var(--hair); background: var(--side); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .tab { flex: none; flex-direction: row; justify-content: flex-start; gap: 10px; height: 38px; padding: 0 12px; border-radius: 10px; font-size: 15px; font-weight: 500; }
+  .tab[aria-current="page"] { background: var(--seg); box-shadow: none; font-weight: 600; }
+  #views { margin-left: 184px; padding: 0; max-width: none; }
+  #views > .view { max-width: 960px; margin: 0 auto; padding: 40px; }
+  #app[data-tab="script"] #views { display: grid; grid-template-columns: 300px minmax(0, 1fr); height: 100vh; }
+  #app[data-tab="script"][data-sub] #vLibrary { display: block; max-width: none; margin: 0; padding: 18px 10px 20px; height: 100vh; overflow: auto; border-right: 1px solid var(--hair); }
+  #app[data-tab="script"][data-sub] #vEditor { display: flex; flex-direction: column; max-width: none; margin: 0; padding: 20px 32px 24px; height: 100vh; min-height: 0; overflow: auto; }
+  #edBack { display: none; }
+  .script-box { flex: 1; min-height: 320px; }
+  #ta { flex: 1; height: auto; min-height: 0; }
+}
+.lib-list { gap: 0; }
+.lib-group { margin: 16px 6px 4px; font-size: 13px; font-weight: 600; color: var(--gr); }
+.swipe { --r: 12px; border-radius: 12px; }
+.swipe:not(:last-child)::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 1px; background: var(--hair); pointer-events: none; }
+.script-card { --r: 12px; --pad: 10px; padding: 10px 12px; gap: 0; border: 0; border-radius: 12px; background: transparent; box-shadow: none; }
+.script-card[aria-current="true"] { background: var(--seg); box-shadow: none; }
+.sc-top { display: flex; align-items: baseline; gap: 8px; }
+.sc-top .sc-title { flex: 1; min-width: 0; font-size: 15px; }
+.sc-dur { flex: none; font-size: 12px; color: var(--gr); font-variant-numeric: tabular-nums; }
+.sc-row2 { display: flex; gap: 8px; margin-top: 2px; min-width: 0; font-size: 13px; color: var(--gr); }
+.sc-row2 .when { flex: none; color: var(--ink); opacity: .75; }
+.sc-row2 .sc-snip { margin: 0; flex: 1; min-width: 0; }
+.sc-row3 { display: flex; gap: 8px; margin-top: 4px; font-size: 12px; color: var(--gr); align-items: center; }
+.sc-prog { color: var(--green); font-weight: 600; }
+.ed-head { align-items: center; margin-bottom: 2px; }
+.ed-head .ed-name { flex: 1; min-width: 0; display: block; margin: 0 0 0 -8px; padding: 2px 8px; border: 0; border-radius: 10px; background: transparent; outline: 0; color: var(--ink); font: inherit; font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -.03em; text-overflow: ellipsis; }
+.ed-head .ed-name:hover, .ed-head .ed-name:focus { background: var(--seg); }
+.ed-meta { margin: 2px 0 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-size: 13px; color: var(--gr); }
+.ed-meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ed-meta .proj { margin: 0; }
+.ed-meta .proj input { height: 28px; width: 120px; }
+.ctl { --r: var(--r-md); --pad: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; padding: var(--pad) 16px; margin-bottom: 14px; background: var(--paper); border: 1px solid var(--hair); border-radius: var(--r); }
+.ctl .grp { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ctl .grp.sp { flex: 1 1 240px; }
+.ctl .grp.sp input[type="range"] { flex: 1; min-width: 90px; }
+.ctl .k { font-size: 13px; color: var(--gr); white-space: nowrap; }
+.ctl output { min-width: 78px; text-align: right; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ctl .field { height: 34px; padding: 0 10px; }
+.ctl .seg label span { padding: 6px 12px; }
+@media (max-width: 899px) {
+  #app[data-tab="script"][data-sub="editor"] #tabbar { display: none; }
+  #app[data-tab="script"][data-sub="editor"] #views { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 560px) {
+  .script-foot .btn.ghost { font-size: 0; gap: 0; padding: 0 14px; }
+  .script-foot { flex-wrap: nowrap; padding: 12px 14px; }
+  .script-foot .btn { padding: 0 16px; }
+}
 </style>
 </head>
 <body>
@@ -624,51 +664,39 @@ details.more > div { display: grid; gap: 8px; }
     <!-- 编辑稿子 -->
     <section id="vEditor" class="view" aria-label="编辑稿子">
       <header class="ed-head">
-        <button class="back" id="edBack" type="button" aria-label="稿子库"><svg class="i"><use href="#i-back"/></svg>稿子</button>
-        <div class="ed-title">
-          <input class="ed-name" id="edTitle" maxlength="40" autocomplete="off" aria-label="稿子标题" placeholder="给稿子起个名字">
-          <p class="sub" id="edSub"></p>
-          <label class="proj"><span class="tip">项目</span><input id="projectIn" list="projectList" maxlength="20" placeholder="可不填" autocomplete="off"></label>
-          <datalist id="projectList"></datalist>
-        </div>
+        <button class="back" id="edBack" type="button" aria-label="返回稿子库"><svg class="i"><use href="#i-back"/></svg>稿子</button>
+        <input class="ed-name" id="edTitle" maxlength="40" autocomplete="off" aria-label="稿子标题" placeholder="给稿子起个名字">
       </header>
-      <div class="tiles">
-        <div class="tile"><div class="k">字数</div><div class="v"><b id="stUnits">0</b><span>字</span></div></div>
-        <div class="tile"><div class="k">预计时长</div><div class="v"><b id="stDur">00:00</b><span>分:秒</span></div></div>
-        <div class="tile"><div class="k">语速</div><div class="v"><b id="tileCpm">220</b><span>字/分</span></div></div>
-        <div class="tile opt"><div class="k">小节</div><div class="v"><b id="stSecs">0</b><span>节</span></div></div>
-        <span id="stParas" hidden></span>
-      </div>
-      <div class="ed-body">
-        <div class="card script-box">
-          <textarea id="ta" spellcheck="false" placeholder="把稿子粘贴到这里。&#10;&#10;空一行就是新的一段。&#10;# 开头的一行是小节标题，例如：# 第二部分&#10;**重点** 会高亮，[停顿] 会变成提示标签"></textarea>
-          <div class="script-foot">
-            <label class="btn ghost" for="file"><svg class="i"><use href="#i-file"/></svg>导入 .txt</label>
-            <input id="file" type="file" accept=".txt,text/plain" hidden>
-            <span class="grow"></span>
-            <button class="btn" id="startCaret" type="button">从光标处开始</button>
-            <button class="btn primary" id="start" type="button"><svg class="i"><use href="#i-play"/></svg>开始提词</button>
+      <p class="ed-meta">
+        <span><b id="stUnits">0</b> 字</span>
+        <span>预计 <b id="stDur">00:00</b></span>
+        <span><b id="stSecs">0</b> 节</span>
+        <span id="edSub"></span>
+        <label class="proj"><span>项目</span><input id="projectIn" list="projectList" maxlength="20" placeholder="可不填" autocomplete="off"></label>
+        <datalist id="projectList"></datalist>
+        <span id="stParas" hidden></span><span id="tileCpm" hidden></span>
+      </p>
+      <div class="ctl" id="speedCard">
+        <div class="grp sp"><label class="k" for="cpm">语速</label><input type="range" id="cpm" min="60" max="600" step="10"><output id="cpmOut" for="cpm"></output></div>
+        <div class="grp"><label class="k" for="dur">读完用时</label><input class="field num" id="dur" inputmode="numeric" autocomplete="off" placeholder="03:00" style="width:84px;text-align:center" aria-label="目标时长，分:秒"></div>
+        <div class="grp"><span class="k">倒数</span>
+          <div class="seg" role="radiogroup" aria-label="开始前倒数">
+            <label><input type="radio" name="cd" value="0"><span>无</span></label>
+            <label><input type="radio" name="cd" value="3"><span>3 秒</span></label>
+            <label><input type="radio" name="cd" value="5"><span>5 秒</span></label>
+            <label><input type="radio" name="cd" value="10"><span>10 秒</span></label>
           </div>
         </div>
-        <aside class="side">
-          <div class="card stack" id="speedCard">
-            <h3 style="margin:0">速度与时长</h3>
-            <div>
-              <div class="row"><label for="cpm">语速</label><output id="cpmOut" for="cpm"></output></div>
-              <input type="range" id="cpm" min="60" max="600" step="10">
-            </div>
-            <div class="row"><label for="dur">按时长读完</label><input class="field num" id="dur" inputmode="numeric" autocomplete="off" placeholder="03:00" style="width:110px;text-align:center" aria-label="目标时长，分:秒"></div>
-            <div>
-              <div class="row"><span>开始前倒数</span></div>
-              <div class="seg" role="radiogroup" aria-label="开始前倒数">
-                <label><input type="radio" name="cd" value="0"><span>不倒数</span></label>
-                <label><input type="radio" name="cd" value="3"><span>3 秒</span></label>
-                <label><input type="radio" name="cd" value="5"><span>5 秒</span></label>
-                <label><input type="radio" name="cd" value="10"><span>10 秒</span></label>
-              </div>
-            </div>
-          </div>
-        </aside>
+      </div>
+      <div class="card script-box">
+        <textarea id="ta" spellcheck="false" placeholder="把稿子粘贴到这里。&#10;&#10;空一行就是新的一段。&#10;# 开头的一行是小节标题，例如：# 第二部分&#10;**重点** 会高亮，[停顿] 会变成提示标签"></textarea>
+        <div class="script-foot">
+          <label class="btn ghost" for="file" aria-label="导入 .txt"><svg class="i"><use href="#i-file"/></svg>导入 .txt</label>
+          <input id="file" type="file" accept=".txt,text/plain" hidden>
+          <span class="grow"></span>
+          <button class="btn" id="startCaret" type="button">从光标处开始</button>
+          <button class="btn primary" id="start" type="button"><svg class="i"><use href="#i-play"/></svg>开始提词</button>
+        </div>
       </div>
     </section>
 
@@ -806,7 +834,7 @@ details.more > div { display: grid; gap: 8px; }
     <button class="ib play" id="pPlay" data-act="play" type="button" title="播放 / 暂停 (空格)" aria-label="播放"><svg class="i"><use href="#i-play"/></svg></button>
     <button class="ib" data-act="retake" type="button" title="重录本节 (R)"><svg class="i"><use href="#i-retake"/></svg><span class="lbl-t">重录本节</span></button>
     <span class="sep wide-only"></span>
-    <button class="ib wide-only" data-act="voice" type="button" title="语音跟随 (G)" aria-label="语音跟随" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg></button>
+    <button class="ib" data-act="voice" type="button" title="语音跟随 (G)" aria-label="语音跟随" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg></button>
     <button class="ib" data-act="cam" type="button" title="录像 (C)" aria-label="录像" aria-pressed="false"><svg class="i"><use href="#i-cam"/></svg></button>
     <span class="sep wide-only"></span>
     <div class="stepper wide-only">
@@ -827,7 +855,6 @@ details.more > div { display: grid; gap: 8px; }
 
   <div class="menu" id="moreMenu" role="menu" hidden>
     <button class="mi narrow-only" data-act="stop" type="button" role="menuitem"><svg class="i"><use href="#i-stop"/></svg>停止，回到开头</button>
-    <button class="mi narrow-only" data-act="voice" type="button" role="menuitem" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg>语音跟随</button>
     <button class="mi narrow-only" data-act="mark" type="button" role="menuitem"><svg class="i"><use href="#i-mark"/></svg>在当前句加书签</button>
     <div class="mrow narrow-only"><span>语速</span><div class="stepper"><button class="ib" data-act="spDn" type="button" aria-label="减速">−</button><div class="v"><output class="spOut"></output></div><button class="ib" data-act="spUp" type="button" aria-label="加速">+</button></div></div>
     <div class="mrow narrow-only"><span>字号</span><div class="stepper"><button class="ib" data-act="fsDn" type="button" aria-label="字号变小">−</button><div class="v"><output class="fsOut"></output></div><button class="ib" data-act="fsUp" type="button" aria-label="字号变大">+</button></div></div>
@@ -1259,9 +1286,7 @@ function setTab(tab) {
 }
 document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
 window.addEventListener('popstate', () => { if (shell.dataset.sub === 'editor' && !isWide() && $('#remote').hidden) setSub('library', false); });
-function setLib(open) { shell.dataset.lib = open ? 'open' : ''; store.set('libOpen', !!open); $('#edBack').setAttribute('aria-expanded', String(!!open)); }
-setLib(store.get('libOpen', false));
-$('#edBack').addEventListener('click', () => { if (isWide()) { setLib(shell.dataset.lib !== 'open'); buzz(); } else if (history.state?.sub === 'editor') history.back(); else setSub('library', false); });
+$('#edBack').addEventListener('click', () => { if (history.state?.sub === 'editor') history.back(); else setSub('library', false); });
 
 // ----- 稿子库列表 -----
 let libQuery = '', libFilter = 'all';
@@ -1309,6 +1334,15 @@ function attachSwipe(wrap, card) {
   wrap.addEventListener('pointerup', end);
   wrap.addEventListener('pointercancel', end);
 }
+function groupOf(ts) {
+  const n = new Date(), d = new Date(ts);
+  const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(n) - day(d)) / 864e5);
+  if (diff <= 0) return '今天';
+  if (diff < 7) return '过去 7 天';
+  if (diff < 30) return '过去 30 天';
+  return d.getFullYear() === n.getFullYear() ? `${d.getMonth() + 1} 月` : `${d.getFullYear()} 年`;
+}
 function renderLibrary() {
   const list = $('#libList');
   list.textContent = '';
@@ -1338,22 +1372,24 @@ function renderLibrary() {
   mk('all', '全部'); mk('recent', '最近'); mk('todo', '还没录完');
   projectNames().forEach((p) => mk('p:' + p, p));
   $('#projectList').innerHTML = projectNames().map((p) => `<option value="${escHtml(p)}">`).join('');
+  let lastG = '';
   for (const x of items) {
     const i = info.get(x.id);
+    const g = groupOf(x.updated);
+    if (g !== lastG) { lastG = g; const h = document.createElement('div'); h.className = 'lib-group'; h.textContent = g; list.append(h); }
     const wrap = document.createElement('div');
     wrap.className = 'swipe';
     wrap.innerHTML = `
       <div class="swipe-actions"><button type="button" class="cp" aria-label="复制"><svg class="i"><use href="#i-copy"/></svg>复制</button><button type="button" class="rm" aria-label="删除"><svg class="i"><use href="#i-trash"/></svg>删除</button></div>
       <button type="button" class="script-card"${x.id === currentId && isWide() ? ' aria-current="true"' : ''}>
-        <div class="ring">${ringSvg(i.done, i.total)}</div>
         <div class="sc-body">
-          <div class="sc-title">${escHtml(nameOf(x))}</div>
-          <div class="sc-snip">${escHtml(snippetOf(x.text)) || '&nbsp;'}</div>
-          <div class="sc-meta"><b>${fmt(i.dur)}</b><span>${i.d.secs || 1} 节 · ${i.d.units} 字 · ${fmtAgo(x.updated)}</span>${x.project ? `<span class="sc-proj">${escHtml(x.project)}</span>` : ''}</div>
+          <div class="sc-top"><span class="sc-title">${escHtml(nameOf(x))}</span><span class="sc-dur">${fmt(i.dur)}</span></div>
+          <div class="sc-row2"><span class="when">${fmtAgo(x.updated)}</span><span class="sc-snip">${escHtml(snippetOf(x.text)) || '&nbsp;'}</span></div>
+          ${x.project || i.done ? `<div class="sc-row3">${x.project ? `<span class="sc-proj">${escHtml(x.project)}</span>` : ''}${i.done ? `<span class="sc-prog">已录 ${i.done}/${i.total} 节</span>` : ''}</div>` : ''}
         </div>
-        <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
       </button>
-      <div class="hover-actions"><button type="button" class="cp" aria-label="复制"><svg class="i" style="width:16px;height:16px"><use href="#i-copy"/></svg></button><button type="button" class="rm" aria-label="删除"><svg class="i" style="width:16px;height:16px"><use href="#i-trash"/></svg></button></div>`;
+      <div class="hover-actions"><button type="button" class="cp" aria-label="复制"><svg class="i" style="width:16px;height:16px"><use href="#i-copy"/></svg></button><button type="button" class="rm" aria-label="删除"><svg class="i" style="width:16px;height:16px"><use href="#i-trash"/></svg></button></div>
+    `;
     const card = wrap.querySelector('.script-card');
     card.addEventListener('click', () => {
       if (wrap.dataset.moved) return;

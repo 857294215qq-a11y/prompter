@@ -201,9 +201,11 @@ textarea.field { height: auto; padding: 10px 14px; font: 12px var(--num); resize
 #app[data-tab="settings"] #vSettings { display: block; }
 #views > .view { max-width: 960px; margin: 0 auto; }
 @media (min-width: 900px) {
-  #app[data-tab="script"] #views { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 32px; max-width: 1360px; margin: 0 auto; }
-  #app[data-tab="script"] #vLibrary, #app[data-tab="script"] #vEditor { display: block; max-width: none; margin: 0; min-width: 0; }
-  #app[data-tab="script"] #edBack { display: none; }
+  #app[data-tab="script"] #views { display: block; max-width: 1360px; margin: 0 auto; }
+  #app[data-tab="script"][data-sub]:not([data-lib="open"]) #vLibrary { display: none; }
+  #app[data-tab="script"] #vEditor { display: block; max-width: none; margin: 0; min-width: 0; }
+  #app[data-tab="script"][data-lib="open"] #views { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 32px; }
+  #app[data-tab="script"][data-lib="open"] #vLibrary { display: block; max-width: none; margin: 0; min-width: 0; }
 }
 
 /* ---------- 稿子库 ---------- */
@@ -253,7 +255,10 @@ textarea.field { height: auto; padding: 10px 14px; font: 12px var(--num); resize
 /* ---------- 编辑页 ---------- */
 .ed-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
 .ed-title { flex: 1; min-width: 0; }
-.ed-title h2 { margin: 0; font-size: 34px; line-height: 1.08; font-weight: 700; letter-spacing: -.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ed-title .ed-name { display: block; width: 100%; margin: 0 0 0 -8px; padding: 2px 8px; border: 0; border-radius: var(--r-sm, 10px); background: transparent; outline: 0; color: var(--ink); font: inherit; font-size: 34px; line-height: 1.12; font-weight: 700; letter-spacing: -.03em; text-overflow: ellipsis; }
+.ed-title .ed-name::placeholder { color: var(--gr); }
+.ed-title .ed-name:hover { background: var(--seg); }
+.ed-title .ed-name:focus { background: var(--seg); box-shadow: 0 0 0 2px var(--accent, #FF7A1A); }
 .back { display: inline-flex; align-items: center; gap: 2px; height: 44px; padding: 0 14px 0 8px; border: 0; border-radius: 999px; background: transparent; color: var(--blue); font-size: 16px; font-weight: 500; flex: none; }
 .proj { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; }
 .proj input { height: 32px; width: 150px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--hair2); background: var(--paper); font-size: 13px; }
@@ -262,16 +267,17 @@ textarea.field { height: auto; padding: 10px 14px; font: 12px var(--num); resize
 .tile .k { font-size: 12px; color: var(--gr); }
 .tile .v { display: flex; align-items: baseline; gap: 4px; margin-top: 2px; }
 .tile .v b { font-size: 28px; line-height: 1.1; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.tile .v span { font-size: 12px; color: var(--gr); }
+.tile .v span { font-size: 12px; color: var(--gr); white-space: nowrap; }
 @media (max-width: 560px) { .tiles .tile.opt { display: none; } .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } .tile { --r: var(--r-md); --pad: 12px; padding: var(--pad) 14px; border-radius: var(--r-md); } .tile .v b { font-size: 24px; } }
 .ed-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
 @media (min-width: 1100px) { .ed-body { grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; } }
+@media (min-width: 820px) { #app:not([data-lib="open"]) .ed-body { grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; } }
 .script-box { --pad: 0px; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
 #ta {
   display: block; width: 100%; min-height: 340px; resize: none; border: 0; background: transparent; outline: 0;
   padding: 22px 24px; font-size: 17px; line-height: 1.9; color: var(--ink);
 }
-@media (min-width: 900px) { #ta { min-height: 52vh; } }
+@media (min-width: 900px) { #ta { height: calc(100vh - 380px); min-height: 440px; } }
 #ta::placeholder { color: var(--gr); }
 .script-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 14px 18px; border-top: 1px solid var(--hair); }
 .script-foot .btn { height: 44px; }
@@ -618,9 +624,9 @@ details.more > div { display: grid; gap: 8px; }
     <!-- 编辑稿子 -->
     <section id="vEditor" class="view" aria-label="编辑稿子">
       <header class="ed-head">
-        <button class="back" id="edBack" type="button" aria-label="返回稿子库"><svg class="i"><use href="#i-back"/></svg>稿子</button>
+        <button class="back" id="edBack" type="button" aria-label="稿子库"><svg class="i"><use href="#i-back"/></svg>稿子</button>
         <div class="ed-title">
-          <h2 id="edTitle">稿子</h2>
+          <input class="ed-name" id="edTitle" maxlength="40" autocomplete="off" aria-label="稿子标题" placeholder="给稿子起个名字">
           <p class="sub" id="edSub"></p>
           <label class="proj"><span class="tip">项目</span><input id="projectIn" list="projectList" maxlength="20" placeholder="可不填" autocomplete="off"></label>
           <datalist id="projectList"></datalist>
@@ -1179,10 +1185,11 @@ const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2
 const escHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 let library = store.get('library', null);
 if (!Array.isArray(library) || !library.length) library = [{ id: newId(), text: store.get('text', null) ?? SAMPLE, updated: Date.now() }];
-for (const x of library) { x.project = x.project || ''; x.rec = Array.isArray(x.rec) ? x.rec : []; x.updated = x.updated || Date.now(); }
+for (const x of library) { x.project = x.project || ''; x.title = x.title || ''; x.rec = Array.isArray(x.rec) ? x.rec : []; x.updated = x.updated || Date.now(); }
 let currentId = store.get('current', library[0].id);
 if (!library.some((x) => x.id === currentId)) currentId = library[0].id;
 const curScript = () => library.find((x) => x.id === currentId);
+const nameOf = (x) => x.title || titleOf(x.text);
 const titleOf = (txt) => (txt.split('\n').map((l) => plain(l.replace(/^#+\s*/, '')).trim()).find(Boolean) || '空白稿子').slice(0, 24);
 const snippetOf = (txt) => (txt.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#')).map((l) => plain(l)).find(Boolean) || '').slice(0, 40);
 const saveLibrary = () => { store.set('library', library); store.set('current', currentId); };
@@ -1215,7 +1222,7 @@ function refreshStats() {
   $('#tileCpm').textContent = S.cpm;
   if (document.activeElement !== $('#dur')) $('#dur').value = doc.units ? fmt(doc.units / S.cpm * 60) : '';
   const cur = curScript();
-  $('#edTitle').textContent = titleOf(cur.text);
+  if (document.activeElement !== $('#edTitle')) $('#edTitle').value = nameOf(cur);
   $('#edSub').textContent = '上次编辑 ' + fmtAgo(cur.updated);
   if (document.activeElement !== $('#projectIn')) $('#projectIn').value = cur.project;
 }
@@ -1232,6 +1239,8 @@ function onTextChange() {
   saveT = setTimeout(() => { saveLibrary(); renderLibrary(); }, 300);
 }
 ta.addEventListener('input', onTextChange);
+$('#edTitle').addEventListener('input', (e) => { const c = curScript(); c.title = e.target.value.trim(); c.updated = Date.now(); clearTimeout(saveT); saveT = setTimeout(() => { saveLibrary(); renderLibrary(); }, 300); });
+$('#edTitle').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
 $('#projectIn').addEventListener('change', (e) => { curScript().project = e.target.value.trim(); saveLibrary(); renderLibrary(); });
 
 // ----- 页面切换 -----
@@ -1250,7 +1259,9 @@ function setTab(tab) {
 }
 document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
 window.addEventListener('popstate', () => { if (shell.dataset.sub === 'editor' && !isWide() && $('#remote').hidden) setSub('library', false); });
-$('#edBack').addEventListener('click', () => { if (history.state?.sub === 'editor') history.back(); else setSub('library', false); });
+function setLib(open) { shell.dataset.lib = open ? 'open' : ''; store.set('libOpen', !!open); $('#edBack').setAttribute('aria-expanded', String(!!open)); }
+setLib(store.get('libOpen', false));
+$('#edBack').addEventListener('click', () => { if (isWide()) { setLib(shell.dataset.lib !== 'open'); buzz(); } else if (history.state?.sub === 'editor') history.back(); else setSub('library', false); });
 
 // ----- 稿子库列表 -----
 let libQuery = '', libFilter = 'all';
@@ -1336,7 +1347,7 @@ function renderLibrary() {
       <button type="button" class="script-card"${x.id === currentId && isWide() ? ' aria-current="true"' : ''}>
         <div class="ring">${ringSvg(i.done, i.total)}</div>
         <div class="sc-body">
-          <div class="sc-title">${escHtml(titleOf(x.text))}</div>
+          <div class="sc-title">${escHtml(nameOf(x))}</div>
           <div class="sc-snip">${escHtml(snippetOf(x.text)) || '&nbsp;'}</div>
           <div class="sc-meta"><b>${fmt(i.dur)}</b><span>${i.d.secs || 1} 节 · ${i.d.units} 字 · ${fmtAgo(x.updated)}</span>${x.project ? `<span class="sc-proj">${escHtml(x.project)}</span>` : ''}</div>
         </div>
@@ -1379,8 +1390,8 @@ function newScript(text = '', focus = true) {
 function dupScript(id) {
   const x = library.find((y) => y.id === id);
   if (!x) return;
-  const text = x.text.replace(/^([^\n]*)/, '$1 副本');
-  library.unshift({ id: newId(), text, updated: Date.now(), project: x.project, rec: [] });
+  const text = x.title ? x.text : x.text.replace(/^([^\n]*)/, '$1 副本');
+  library.unshift({ id: newId(), text, title: x.title ? x.title + ' 副本' : '', updated: Date.now(), project: x.project, rec: [] });
   saveLibrary();
   renderLibrary();
   gtoast('已复制');
@@ -1394,7 +1405,7 @@ function delScript(id) {
   if (currentId === id) { switchScript(library[0].id); if (!isWide() && shell.dataset.sub === 'editor') { if (history.state?.sub === 'editor') history.back(); else setSub('library', false); } }
   else { saveLibrary(); renderLibrary(); }
   buzz();
-  gtoast(`已删除「${titleOf(gone.text)}」`, '撤销', () => {
+  gtoast(`已删除「${nameOf(gone)}」`, '撤销', () => {
     if (placeholder) library = library.filter((x) => x !== placeholder);
     library.splice(Math.min(i, library.length), 0, gone);
     saveLibrary();
@@ -2795,7 +2806,7 @@ function snapshot() {
   return {
     t: 'state', mode: inP ? 'prompter' : 'editor', st: state, reason: pauseReason,
     pct: inP && maxPos ? Math.round(pos / maxPos * 1000) / 10 : 0,
-    sec: inP ? (currentSec()?.title ? plain(currentSec().title) : '') : titleOf(ta.value),
+    sec: inP ? (currentSec()?.title ? plain(currentSec().title) : '') : nameOf(curScript()),
     sent: inP ? (sents[Math.max(0, curIdx)]?.plain || '').trim().slice(0, 80) : '',
     prev, next, secIdx, secTotal: inP ? secs.length : 0, ticks, marks: mk,
     el: Math.round(elapsed),

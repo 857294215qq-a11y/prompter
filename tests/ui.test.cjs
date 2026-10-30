@@ -286,3 +286,16 @@ test('recorded clip preview provides real video controls and a save action', () 
     assert.match(app.$('#helpContent').textContent, /保存到本机/);
   } finally { app.close(); }
 });
+
+test('picture-in-picture carries external V3 styles into the reading window', async () => {
+  const app = boot();
+  const pip = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'https://prompter.test/', pretendToBeVisual: true });
+  try {
+    app.w.documentPictureInPicture = { requestWindow: async () => pip.window };
+    app.click('#start'); await app.w.testEngine.togglePip();
+    const style = pip.window.document.querySelector('link[rel="stylesheet"]');
+    assert.ok(style, 'PiP must include the new external stylesheet');
+    assert.equal(style.href, 'https://prompter.test/ui-v3.css');
+    assert.ok(pip.window.document.querySelector('#stage'));
+  } finally { pip.window.close(); app.close(); }
+});

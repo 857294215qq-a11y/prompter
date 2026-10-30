@@ -31,10 +31,10 @@
 - [x] Apply reader/remote designs; retain protocols and platform capability checks.
 - [x] Update PWA caching and Android packaging; run tests, web build and Capacitor sync.
 - [x] Verify the app in the in-app browser at desktop, tablet and phone widths; compare against Figma and fix defects.
-- [ ] Review the final diff, commit, push the feature branch, and create a reviewable PR.
+- [x] Review the final diff, commit, push the feature branch, and create a reviewable PR (GitHub PR #1).
 
 ## Verification
 
 Node's built-in test runner with jsdom executes the real application scripts against persisted legacy documents. Browser checks cover real rendering, editing, tabs, focus, playback, sheets and settings. Android native hardware and actual two-device camera/voice/network behavior require device testing; report that boundary.
 
-Independent final review: two findings (root-level paste range; reader tab key propagation). Both reproduced by regression tests before correction; full suite 21/21 after the fix pass. No deferred reviewer findings. Platform font fallback and real document content are deliberate differences from Figma examples.
+Independent final review: two findings (root-level paste range; reader tab key propagation). Both reproduced by regression tests before correction. A final compatibility check also covered PiP external styles; full suite 22/22 after the fix pass. No deferred reviewer findings. Platform font fallback and real document content are deliberate differences from Figma examples.

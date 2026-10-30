@@ -31,7 +31,7 @@ Local evidence files delivered with this chat: `desktop.jpg`, `tablet.jpg`, `pho
 
 ## Functional evidence
 
-`npm test`: 21 passing tests covering legacy documents, switching/search, tabs, rename, deletion confirmation, focus restoration, independent appearance, playback/return, packaging, rich-text source fidelity, bookmark ownership, mobile entry points, remote locking/disconnection, reader parameters, newlines, section toggling, import preservation, select-all paste, tab keyboard handling and clip preview.
+`npm test`: 22 passing tests covering legacy documents, switching/search, tabs, rename, deletion confirmation, focus restoration, independent appearance, playback/return, packaging, rich-text source fidelity, bookmark ownership, mobile entry points, remote locking/disconnection, reader parameters, newlines, section toggling, import preservation, select-all paste, tab keyboard handling, clip preview and external V3 styles in picture-in-picture.
 
 `npm run sync`: web build and Capacitor Android resource synchronization pass. `git diff --check` and JavaScript syntax checks pass.
 

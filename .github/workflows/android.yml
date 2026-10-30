@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'ui-v3.css'
+      - 'ui-v3.js'
+      - 'assets/**'
       - 'android/**'
       - 'scripts/**'
       - 'icons/**'
@@ -44,6 +47,7 @@ jobs:
       - name: 安装依赖并打包网页
         run: |
           npm ci
+          npm test
           npm run build:web
           npx cap sync android
 

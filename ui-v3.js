@@ -441,3 +441,16 @@ window.initPrompterV3 = function initPrompterV3(api) {
     get remoteLocked() { return remoteLocked; },
   };
 };
+
+// 滑块已填部分的宽度：设值或拖动时更新 --p
+(function () {
+  const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  const paint = (el) => { const mn = +el.min || 0, mx = +el.max || 100; el.style.setProperty('--p', ((+el.value - mn) / (mx - mn) * 100) + '%'); };
+  const hook = () => document.querySelectorAll('input[type="range"]').forEach((el) => {
+    if (el.__painted) return; el.__painted = true;
+    Object.defineProperty(el, 'value', { get() { return desc.get.call(this); }, set(v) { desc.set.call(this, v); paint(this); }, configurable: true });
+    el.addEventListener('input', () => paint(el)); paint(el);
+  });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hook); else hook();
+  window.addEventListener('load', hook);
+})();

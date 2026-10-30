@@ -299,3 +299,23 @@ test('picture-in-picture carries external V3 styles into the reading window', as
     assert.ok(pip.window.document.querySelector('#stage'));
   } finally { pip.window.close(); app.close(); }
 });
+
+test('dialogs animate both directions with the specified ease and respect reduced motion', async () => {
+  const app = boot();
+  try {
+    const calls = [];
+    app.w.HTMLElement.prototype.animate = function(frames, options) { calls.push({ frames, options }); return { finished: Promise.resolve(), cancel() {} }; };
+    app.click('#appSettings'); await new Promise(setImmediate);
+    assert.ok(calls.some(x => x.options.easing === 'cubic-bezier(.32,.72,0,1)'));
+    calls.length = 0;
+    app.click('[data-close="appDialog"]'); await new Promise(setImmediate);
+    assert.ok(calls.length > 0, 'closing must animate too');
+    assert.equal(app.$('#appDialog').hidden, true);
+    assert.equal(app.$('#appDialog').style.display, '');
+    calls.length = 0;
+    app.w.matchMedia = q => ({ matches: q.includes('prefers-reduced-motion'), addEventListener() {} });
+    app.click('#appSettings'); await new Promise(setImmediate);
+    assert.equal(calls.length, 0);
+    assert.equal(app.$('#appDialog').hidden, false);
+  } finally { app.close(); }
+});

@@ -9,10 +9,29 @@ window.initPrompterV3 = function initPrompterV3(api) {
   let mobileLeft = false, mobileRight = false, focusRestore = null, notifyTimer;
   let history = [api.ta.value], historyIndex = 0, historyBusy = false, action = null, actionOpener;
   let optionsOpen = false, parametersInReader = false, latestRemote = null, remoteLocked = false;
+  let settingsMove = 0;
   const uiSave = () => api.store.set('ui', ui);
   const on = (id, fn) => $(id).addEventListener('click', fn);
   const icon = (name) => { const img = document.createElement('img'); img.src = 'assets/v3/' + name + '.svg'; img.className = 'v3-icon'; img.alt = ''; return img; };
   const text = (el, value) => { if (el.textContent !== value) el.textContent = value; };
+  const motionJobs = new WeakMap();
+  let previousLayout = null;
+  function animateSurface(el, show, display = 'block') {
+    motionJobs.get(el)?.cancel();
+    if (typeof el.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const oldDisplay = el.style.getPropertyValue('display'), priority = el.style.getPropertyPriority('display');
+    if (!show) el.style.setProperty('display', display, 'important');
+    const target = el.matches('.modal') ? el.querySelector('.card') : el;
+    const animations = [];
+    const options = { duration: 240, easing: 'cubic-bezier(.32,.72,0,1)' };
+    if (target !== el) animations.push(el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], options));
+    const from = { opacity: 0, translate: '0 12px', scale: '.98' }, to = { opacity: 1, translate: '0 0', scale: '1' };
+    animations.push(target.animate(show ? [from, to] : [to, from], options));
+    let active = true;
+    const restore = () => { if (!active) return; active = false; animations.forEach(a => a.cancel()); if (!show) { if (oldDisplay) el.style.setProperty('display', oldDisplay, priority); else el.style.removeProperty('display'); } motionJobs.delete(el); };
+    motionJobs.set(el, { cancel: restore });
+    return Promise.all(animations.map(a => a.finished)).then(restore, restore);
+  }
 
   function notify(message) {
     const el = $('#uiToast'); text(el, message); el.hidden = false;
@@ -38,12 +57,21 @@ window.initPrompterV3 = function initPrompterV3(api) {
     $('#toggleSettings').setAttribute('aria-expanded', String(right || parametersInReader));
     $('#toggleSettings img').src = 'assets/v3/' + (small.matches ? 'settings2' : 'panel-right-close') + '.svg';
     $('#sheetBackdrop').hidden = !(small.matches && left || tablet.matches && right);
+    if (previousLayout) {
+      if (left !== previousLayout.left) animateSurface(library, left, 'flex');
+      if (right !== previousLayout.right) animateSurface(settings, right, 'flex');
+    }
+    previousLayout = { left, right };
     updateMeta();
   }
   function closeSheets() { mobileLeft = mobileRight = false; closeMenu(); closeReaderOptions(); layout(); }
   function returnSettings() {
     if (!parametersInReader) return;
-    editor.append(settings); parametersInReader = false; settings.classList.remove('reader-parameters');
+    parametersInReader = false; settings.inert = true;
+    const move = ++settingsMove;
+    const finish = () => { if (move !== settingsMove) return; editor.append(settings); settings.classList.remove('reader-parameters'); layout(); };
+    const animation = animateSurface(settings, false, 'flex');
+    if (animation) animation.then(finish); else finish();
     $('#readerParameters').setAttribute('aria-pressed', 'false');
     $('#readerMore').setAttribute('aria-pressed', 'false'); $('#readerMore').setAttribute('aria-expanded', 'false'); $('#readerMore').setAttribute('aria-controls', 'readerOptions'); layout();
   }
@@ -345,7 +373,9 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function closeReaderOptions() { options.hidden = true; optionsOpen = false; more.setAttribute('aria-expanded', 'false'); }
   more.addEventListener('click', () => { returnSettings(); optionsOpen = !optionsOpen; options.hidden = !optionsOpen; more.setAttribute('aria-expanded', String(optionsOpen)); api.poke(); });
   parameters.addEventListener('click', () => {
+    settingsMove++;
     closeReaderOptions(); parametersInReader = true; $('#prompter').append(settings); settings.classList.add('reader-parameters'); settings.inert = false;
+    animateSurface(settings, true, 'flex');
     parameters.setAttribute('aria-pressed', 'true'); tab('Text'); $('#tabText').focus();
     more.setAttribute('aria-pressed', 'true'); more.setAttribute('aria-expanded', 'true'); more.setAttribute('aria-controls', 'settingsPanel');
   });
@@ -428,6 +458,20 @@ window.initPrompterV3 = function initPrompterV3(api) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.activeElement === rich) { e.preventDefault(); e.stopImmediatePropagation(); caret(); api.enter(false); }
   }, true);
 
+  const motionSelector = '.modal, .popover, #panel, #hint, #cam, #uiToast, #prompter';
+  const visibility = new WeakMap();
+  document.querySelectorAll(motionSelector).forEach(el => visibility.set(el, !el.hidden));
+  new MutationObserver(records => {
+    const changed = new Set(records.map(r => r.target));
+    for (const el of changed) {
+      if (!el.matches(motionSelector)) continue;
+      const show = !el.hidden;
+      if (visibility.get(el) === show) continue;
+      visibility.set(el, show);
+      if (el.id === 'prompter') { if (show) el.querySelectorAll('.bar').forEach(bar => animateSurface(bar, true)); continue; }
+      animateSurface(el, show, el.matches('.modal') ? 'grid' : el.id === 'hint' ? 'flex' : 'block');
+    }
+  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
   refresh(); sync();
   return {
     refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,

@@ -323,6 +323,7 @@ details.more > div { display: grid; gap: 8px; }
   .bar, #content .s, #toast { transition: none; }
 }
 </style>
+<link rel="stylesheet" href="ui-v3.css">
 </head>
 <body>
 
@@ -354,140 +355,75 @@ details.more > div { display: grid; gap: 8px; }
 
 <!-- ============ 编辑页 ============ -->
 <div id="editor">
-  <header class="top">
-    <h1 class="brand">提词器</h1>
-    <div class="stats" aria-live="polite">
-      <span>字数<b id="stUnits">0</b></span>
-      <span>段落<b id="stParas">0</b></span>
-      <span>小节<b id="stSecs">0</b></span>
-      <span>预计时长<b id="stDur">00:00</b></span>
-    </div>
-  </header>
-
-  <main class="work">
-    <section class="script">
-      <div class="lib">
-        <label for="scriptSel" class="vh">当前稿子</label>
-        <select id="scriptSel"></select>
-        <button class="btn" id="newScript" type="button">新建稿子</button>
-        <button class="btn" id="delScript" type="button">删除</button>
+  <button id="sheetBackdrop" class="sheet-backdrop" type="button" aria-label="关闭侧栏" hidden></button>
+  <button id="toggleLibrary" class="icon-btn library-toggle" type="button" aria-label="稿件侧栏" aria-controls="libraryPanel" aria-expanded="true" title="稿件侧栏"><img class="v3-icon" src="assets/v3/panel-left-close.svg" alt=""></button>
+  <aside id="libraryPanel" class="library-panel" aria-label="稿件导航">
+    <div class="library-heading"><span>稿件</span><button id="newScript" class="icon-btn" type="button" aria-label="新建稿件" title="新建稿件"><img class="v3-icon" src="assets/v3/plus.svg" alt=""></button></div>
+    <label class="search-box"><span class="vh">搜索稿件</span><input id="scriptSearch" type="search" placeholder="搜索稿件" autocomplete="off"></label>
+    <p class="section-label">最近使用</p>
+    <nav id="scriptList" aria-label="稿件列表"></nav>
+    <select id="scriptSel" class="vh" tabindex="-1" aria-label="当前稿件" aria-hidden="true"></select>
+    <footer class="library-footer">
+      <div class="library-tools"><button class="text-btn" id="importScript" type="button"><img class="v3-icon" src="assets/v3/import.svg" alt="">导入稿件</button><button class="icon-btn" id="docMore" type="button" aria-label="稿件更多" aria-haspopup="true" aria-controls="docMenu" aria-expanded="false"><img class="v3-icon" src="assets/v3/ellipsis.svg" alt=""></button></div>
+      <input id="file" type="file" accept=".txt,text/plain" hidden>
+      <div id="saveState" class="save-state" role="status">已保存到本机</div>
+      <div id="deviceState" class="save-state">未连接遥控设备</div>
+    </footer>
+  </aside>
+  <main class="document-workspace">
+    <header class="document-toolbar">
+      <div class="tool-pill format-tools" role="toolbar" aria-label="正文工具">
+        <button class="text-btn" type="button" data-format="section" title="插入小节标题"><img class="v3-icon" src="assets/v3/list.svg" alt=""><span>小节</span></button>
+        <button class="text-btn" type="button" data-format="emphasis" title="标记重点"><img class="v3-icon" src="assets/v3/highlighter.svg" alt=""><span>重点</span></button>
+        <button class="text-btn" type="button" data-format="cue" title="插入提示"><img class="v3-icon" src="assets/v3/type.svg" alt=""><span>提示</span></button>
       </div>
-      <textarea id="ta" spellcheck="false" placeholder="把稿子粘贴到这里。&#10;&#10;空一行就是新的一段。&#10;用 # 开头的一行是小节标题，例如：# 第二部分"></textarea>
-      <p class="tip">以 <code>#</code> 开头的一行会变成小节标题，提词时可以一键跳到这一节。<code>**重点**</code> 会高亮显示，<code>[停顿]</code>、<code>[微笑]</code> 这样的方括号会变成小提示标签（不计入字数）。把光标放在稿子里任意位置，再点「从光标处开始」，就能只录这一段。</p>
-      <div class="actions">
-        <label class="btn" for="file">导入 .txt</label>
-        <input id="file" type="file" accept=".txt,text/plain" hidden>
-        <button class="btn" id="sample" type="button">载入示例稿</button>
-        <button class="btn web-only" id="install" type="button" hidden>安装到桌面</button>
-        <button class="btn" id="remoteBtn" type="button"><svg class="i"><use href="#i-remote"/></svg>手机遥控</button>
-        <button class="btn app-only" id="ctrlBtn" type="button" hidden>当遥控器</button>
-        <span class="grow"></span>
-        <button class="btn" id="startCaret" type="button">从光标处开始</button>
-        <button class="btn primary" id="start" type="button"><svg class="i"><use href="#i-play"/></svg>开始提词</button>
+      <div class="toolbar-trailing">
+        <div class="tool-pill history-tools"><button id="undoEdit" class="icon-btn" type="button" aria-label="撤销" title="撤销"><img class="v3-icon" src="assets/v3/undo2.svg" alt=""></button><button id="redoEdit" class="icon-btn" type="button" aria-label="重做" title="重做"><img class="v3-icon" src="assets/v3/redo2.svg" alt=""></button></div>
+        <div class="tool-pill app-tools"><button id="remoteBtn" class="text-btn" type="button" aria-label="设备与遥控" title="设备与遥控"><img class="v3-icon" src="assets/v3/monitor-smartphone.svg" alt=""><span>设备</span></button><button id="focusEditor" class="icon-btn" type="button" aria-label="专注编辑" aria-pressed="false" title="专注编辑"><img class="v3-icon" src="assets/v3/maximize.svg" alt=""></button><button id="appSettings" class="icon-btn" type="button" aria-label="应用设置" aria-haspopup="dialog" title="应用设置"><img class="v3-icon" src="assets/v3/settings2.svg" alt=""></button></div>
+        <button id="mobileDocMore" class="icon-btn mobile-only" type="button" aria-label="稿件更多"><img class="v3-icon" src="assets/v3/ellipsis.svg" alt=""></button>
       </div>
+    </header>
+    <section class="document-content" aria-label="稿件编辑">
+      <h1 id="documentTitle">未命名稿件</h1><p id="documentMeta" class="document-meta"></p>
+      <label for="ta" class="vh">稿件正文</label>
+      <textarea id="ta" spellcheck="false" placeholder="在这里写下你的稿件。&#10;&#10;以 # 开头的一行是小节标题。用 **重点** 标记高亮，用 [停顿] 添加提示。"></textarea>
     </section>
-
-    <aside class="settings" aria-label="提词设置">
-      <div class="group">
-        <h3>速度与时长</h3>
-        <div class="row"><label for="cpm">语速</label><output id="cpmOut" for="cpm"></output></div>
-        <input type="range" id="cpm" min="60" max="600" step="10">
-        <div class="row">
-          <label for="dur">按时长读完</label>
-          <input id="dur" inputmode="numeric" autocomplete="off" placeholder="03:00" aria-describedby="durHint">
-        </div>
-        <p class="tip" id="durHint">输入想要的总时长（分:秒），语速会自动算好。</p>
-        <div class="row">
-          <label for="cdSel">开始前倒数</label>
-          <select id="cdSel">
-            <option value="0">不倒数</option>
-            <option value="3">3 秒</option>
-            <option value="5">5 秒</option>
-            <option value="10">10 秒</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="group">
-        <h3>文字</h3>
-        <div class="row"><label for="fs">字号</label><output id="fsVal" for="fs"></output></div>
-        <input type="range" id="fs" min="20" max="160" step="2">
-        <div class="row"><label for="lh">行距</label><output id="lhVal" for="lh"></output></div>
-        <input type="range" id="lh" min="1.1" max="2.4" step="0.05">
-        <div class="row"><label for="mg">左右留白</label><output id="mgVal" for="mg"></output></div>
-        <input type="range" id="mg" min="0" max="30" step="1">
-        <div class="seg" role="radiogroup" aria-label="对齐">
-          <label><input type="radio" name="align" value="left"><span>左对齐</span></label>
-          <label><input type="radio" name="align" value="center"><span>居中</span></label>
-        </div>
-        <div class="seg" role="radiogroup" aria-label="配色">
-          <label><input type="radio" name="theme" value="dark"><span>白字黑底</span></label>
-          <label><input type="radio" name="theme" value="amber"><span>黄字黑底</span></label>
-          <label><input type="radio" name="theme" value="light"><span>黑字白底</span></label>
-        </div>
-        <label class="check"><input type="checkbox" id="dim">读过的句子变暗</label>
-      </div>
-
-      <div class="group">
-        <h3>分段录制</h3>
-        <label class="check"><input type="checkbox" id="secStop">每节读完自动暂停</label>
-        <label class="check"><input type="checkbox" id="autoSave">录像每录完一条自动下载</label>
-        <div class="row">
-          <label for="lang">语音跟随语言</label>
-          <select id="lang">
-            <option value="zh-CN">普通话</option>
-            <option value="zh-TW">國語（台灣）</option>
-            <option value="yue-Hant-HK">粤语</option>
-            <option value="en-US">English</option>
-          </select>
-        </div>
-        <p class="tip">语音跟随用的是浏览器自带的语音识别，需要联网。推荐用 Safari 或 Edge；Chrome 的识别服务在国内可能连不上。</p>
-      </div>
-
-      <div class="group">
-        <h3>阅读线</h3>
-        <div class="row"><label for="gd">位置（离顶部）</label><output id="gdVal" for="gd"></output></div>
-        <input type="range" id="gd" min="10" max="70" step="1">
-        <label class="check"><input type="checkbox" id="showGuide">显示阅读线</label>
-      </div>
-
-      <div class="group">
-        <h3>镜像</h3>
-        <div class="pair">
-          <button class="btn" id="mx" type="button" aria-pressed="false"><svg class="i"><use href="#i-fliph"/></svg>水平</button>
-          <button class="btn" id="my" type="button" aria-pressed="false"><svg class="i"><use href="#i-flipv"/></svg>垂直</button>
-        </div>
-        <p class="tip">再点一次就取消镜像。配合提词器玻璃使用时开「水平」。</p>
-      </div>
-
-      <div class="group">
-        <details class="keys">
-          <summary>快捷键（键盘 / 翻页笔）</summary>
-          <dl>
-            <dt>空格</dt><dd>播放 / 暂停</dd>
-            <dt>← → PgUp PgDn</dt><dd>上一页 / 下一页</dd>
-            <dt>↑ ↓ / 滚轮</dt><dd>微调位置</dd>
-            <dt>A D</dt><dd>上一段 / 下一段</dd>
-            <dt>Q E</dt><dd>上一节 / 下一节</dd>
-            <dt>R</dt><dd>重录本节（回到本节开头重新开始）</dd>
-            <dt>Home</dt><dd>回到开头</dd>
-            <dt>G</dt><dd>语音跟随 开 / 关</dd>
-            <dt>C</dt><dd>录像 开 / 关</dd>
-            <dt>+ −</dt><dd>加速 / 减速</dd>
-            <dt>[ ]</dt><dd>字号小 / 大</dd>
-            <dt>M V</dt><dd>水平 / 垂直镜像</dd>
-            <dt>B</dt><dd>在当前句加书签</dd>
-            <dt>1 – 9</dt><dd>跳到第 N 个书签</dd>
-            <dt>L</dt><dd>打开目录</dd>
-            <dt>F</dt><dd>全屏</dd>
-            <dt>Esc</dt><dd>返回编辑</dd>
-            <dt>点击句子</dt><dd>从这一句开始</dd>
-          </dl>
-        </details>
-      </div>
-    </aside>
+    <footer class="document-footer"><div class="stats" aria-live="polite"><span><b id="stUnits">0</b> 字</span><span><b id="stSecs">0</b> 节</span><span>预计 <b id="stDur">00:00</b></span><span class="vh"><b id="stParas">0</b> 段</span></div><button id="mobileStart" class="btn primary" type="button">开始提词</button></footer>
   </main>
+  <button id="toggleSettings" class="icon-btn settings-toggle" type="button" aria-label="提词参数" aria-controls="settingsPanel" aria-expanded="true" title="提词参数"><img class="v3-icon" src="assets/v3/panel-right-close.svg" alt=""></button>
+  <aside id="settingsPanel" class="settings" aria-label="提词参数">
+    <div class="settings-heading">提词</div>
+    <div class="parameter-tabs" role="tablist" aria-label="提词参数分类">
+      <button id="tabPlay" type="button" role="tab" aria-selected="true" aria-controls="panePlay">播放</button><button id="tabText" type="button" role="tab" aria-selected="false" aria-controls="paneText" tabindex="-1">文字</button><button id="tabRecord" type="button" role="tab" aria-selected="false" aria-controls="paneRecord" tabindex="-1">录制</button>
+    </div>
+    <div class="parameter-scroll">
+      <section id="panePlay" role="tabpanel" aria-labelledby="tabPlay">
+        <div class="group"><h3>速度与时长</h3><div class="row"><label for="cpm">语速</label><output id="cpmOut" for="cpm"></output></div><input id="cpm" type="range" min="30" max="900" step="10"><div class="row"><label for="dur">目标时长</label><input id="dur" inputmode="numeric" autocomplete="off" placeholder="03:00" aria-describedby="durHint"></div><p class="vh" id="durHint">输入分:秒，自动计算语速。</p><div class="row"><label for="cdSel">开始前倒数</label><select id="cdSel"><option value="0">不倒数</option><option value="3">3 秒</option><option value="5">5 秒</option><option value="10">10 秒</option></select></div></div>
+        <div class="group"><h3>分段录制</h3><label class="check switch-row">每节读完暂停<input id="secStop" type="checkbox" role="switch"></label><label class="check switch-row">语音跟随<input id="editorVoice" type="checkbox" role="switch"></label><p class="tip" id="voiceNote">提词时跟随语音，需要浏览器支持并允许麦克风。</p></div>
+        <div id="mirrorControls" class="group"><div class="row"><span>镜像</span><div class="pair"><button id="mx" class="icon-btn" type="button" aria-label="水平镜像" aria-pressed="false" title="水平镜像"><img class="v3-icon" src="assets/v3/flip-horizontal2.svg" alt=""></button><button id="my" class="icon-btn" type="button" aria-label="垂直镜像" aria-pressed="false" title="垂直镜像"><img class="v3-icon" src="assets/v3/flip-vertical2.svg" alt=""></button></div></div><p class="tip">按反射玻璃的方向选择镜像。</p></div>
+      </section>
+      <section id="paneText" role="tabpanel" aria-labelledby="tabText" hidden>
+        <div class="group"><h3>文字</h3><div class="row"><label for="fs">字号</label><output id="fsVal" for="fs"></output></div><input id="fs" type="range" min="20" max="200" step="2"><div class="row"><label for="lh">行距</label><output id="lhVal" for="lh"></output></div><input id="lh" type="range" min="1.1" max="2.4" step="0.05"><div class="row"><label for="mg">左右留白</label><output id="mgVal" for="mg"></output></div><input id="mg" type="range" min="0" max="30" step="1">
+          <div class="row"><span>对齐</span><div class="seg align-seg" role="radiogroup" aria-label="对齐"><label title="左对齐"><input type="radio" name="align" value="left" aria-label="左对齐"><span><img class="v3-icon" src="assets/v3/align-left.svg" alt=""></span></label><label title="居中"><input type="radio" name="align" value="center" aria-label="居中"><span><img class="v3-icon" src="assets/v3/align-center.svg" alt=""></span></label></div></div>
+          <div class="row"><label for="readerTheme">阅读配色</label><select id="readerTheme"><option value="dark">白字黑底</option><option value="amber">黄字黑底</option><option value="light">黑字白底</option></select></div><label class="check switch-row">读过的句子变暗<input id="dim" type="checkbox" role="switch"></label>
+        </div>
+        <div class="group"><h3>阅读线</h3><label class="check switch-row">显示阅读线<input id="showGuide" type="checkbox" role="switch"></label><div class="row"><label for="gd">距顶部</label><output id="gdVal" for="gd"></output></div><input id="gd" type="range" min="10" max="70" step="1"></div>
+      </section>
+      <section id="paneRecord" role="tabpanel" aria-labelledby="tabRecord" hidden>
+        <div class="group"><h3>本机录像</h3><label class="check switch-row">启用摄像头录像<input id="editorCamera" type="checkbox" role="switch"></label><p class="tip">提词时，每次从开始到暂停会保存为独立片段。</p></div><div class="group"><label class="check switch-row">录完自动下载<input id="autoSave" type="checkbox" role="switch"></label><div class="row"><span>录好的片段</span><button id="editorClips" class="btn" type="button">查看片段</button></div><p class="tip">也可使用外部摄像机独立拍摄。</p></div>
+      </section>
+    </div>
+    <footer class="start-actions"><button id="startCaret" class="btn" type="button">从当前编辑位置开始</button><button id="start" class="btn primary" type="button">开始提词</button></footer>
+  </aside>
 </div>
+
+<div id="docMenu" class="popover doc-menu" hidden aria-label="稿件操作"><button id="renameScript" type="button">重命名</button><button id="duplicateScript" type="button">复制稿件</button><button id="exportScript" type="button">导出 .txt</button><button id="sample" type="button">载入示例稿</button><hr><button id="delScript" class="danger" type="button">删除稿件…</button></div>
+
+<div id="appDialog" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="appDialogTitle"><div class="card app-card"><div class="phead"><strong id="appDialogTitle">应用设置</strong><button class="icon-btn" type="button" data-close="appDialog" aria-label="关闭应用设置"><img class="v3-icon" src="assets/v3/x.svg" alt=""></button></div><div class="group"><h3>通用</h3><div class="row"><label for="appearance">应用外观</label><select id="appearance"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></div><div class="row"><label for="lang">语音跟随语言</label><select id="lang"><option value="zh-CN">普通话</option><option value="zh-TW">國語（台灣）</option><option value="yue-Hant-HK">粤语</option><option value="en-US">English</option></select></div></div><div class="group"><h3>默认配置</h3><button id="saveDefaults" class="btn" type="button">保存当前阅读参数为默认值</button><button id="restoreDefaults" class="text-btn" type="button">恢复已保存的默认值</button></div><div class="group"><h3>帮助与安装</h3><button id="settingsPip" class="text-btn" type="button">开启置顶小窗</button><button id="shortcutsBtn" class="text-btn" type="button">快捷键与翻页笔</button><button id="install" class="btn web-only" type="button" hidden>安装到桌面</button><button id="ctrlBtn" class="btn app-only" type="button" hidden>当遥控器</button><button id="aboutBtn" class="text-btn" type="button">关于提词器</button></div></div></div>
+
+<div id="actionDialog" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogMessage"><form id="dialogForm" class="card"><strong id="dialogTitle"></strong><p id="dialogMessage" class="tip"></p><label id="dialogInputLabel" for="dialogInput">稿件名称</label><input id="dialogInput" maxlength="80" autocomplete="off"><div class="dialog-actions"><button id="dialogCancel" class="btn" type="button">取消</button><button id="dialogConfirm" class="btn primary" type="submit">确定</button></div></form></div>
+<div id="helpDialog" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="card"><div class="phead"><strong id="helpTitle"></strong><button class="icon-btn" type="button" data-close="helpDialog" aria-label="关闭帮助"><img class="v3-icon" src="assets/v3/x.svg" alt=""></button></div><div id="helpContent"></div></div></div>
+<div id="uiToast" class="ui-toast" role="status" hidden></div>
 
 <!-- ============ 提词页 ============ -->
 <div id="prompter" hidden>
@@ -716,9 +652,11 @@ details.more > div { display: grid; gap: 8px; }
   <p class="tip">这台手机只当遥控器用。保持这个页面开着，别锁屏。</p>
 </div>
 
+<script src="ui-v3.js"></script>
 <script>
 (() => {
 'use strict';
+let v3 = null;
 
 const SAMPLE = `# 开场
 大家好，欢迎回到我的频道。今天想跟大家聊一个很多人都踩过的坑：录口播的时候，前面说得很顺，结尾却卡了一下。
@@ -746,7 +684,7 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem('prompter:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem('prompter:' + k, JSON.stringify(v)); } catch (e) {} },
+  set(k, v) { try { localStorage.setItem('prompter:' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
 };
 
 // 在安卓 App 里运行时，Capacitor 会注入原生插件 Link；在普通浏览器里是 null
@@ -756,13 +694,13 @@ document.querySelectorAll('.app-only').forEach((el) => { el.hidden = !IS_NATIVE;
 document.querySelectorAll('.web-only').forEach((el) => { if (IS_NATIVE) el.remove(); });
 
 const DEFAULTS = {
-  cpm: 220, fontSize: clamp(Math.round(innerWidth / 18 / 2) * 2, 32, 72), lineHeight: 1.5, margin: 8,
+  cpm: 220, fontSize: innerWidth >= 768 ? 56 : 40, lineHeight: 1.6, margin: 10,
   align: 'left', theme: 'dark', dimRead: true, guide: 35, showGuide: true,
   mirrorX: false, mirrorY: false, countdown: 3,
   secStop: true, autoSave: IS_NATIVE || !matchMedia('(pointer: coarse)').matches, lang: 'zh-CN',
 };
 const isTouch = matchMedia('(pointer: coarse)').matches;
-const S = Object.assign({}, DEFAULTS, store.get('settings', {}));
+const S = Object.assign({}, DEFAULTS, store.get('readingDefaults', {}), store.get('settings', {}));
 const save = () => store.set('settings', S);
 
 // ---------- 文稿解析 ----------
@@ -834,21 +772,24 @@ let currentId = store.get('current', library[0].id);
 if (!library.some((x) => x.id === currentId)) currentId = library[0].id;
 const curScript = () => library.find((x) => x.id === currentId);
 const titleOf = (txt) => (txt.split('\n').map((l) => plain(l.replace(/^#+\s*/, '')).trim()).find(Boolean) || '空白稿子').slice(0, 24);
-const saveLibrary = () => { store.set('library', library); store.set('current', currentId); };
+const saveLibrary = () => { const ok = store.set('library', library); store.set('current', currentId); v3?.saved(ok); return ok; };
+const scriptTitle = (x) => x.title || titleOf(x.text);
 function renderLibrary() {
   scriptSel.textContent = '';
   for (const x of library) {
     const o = document.createElement('option');
     o.value = x.id;
-    o.textContent = titleOf(x.text);
+    o.textContent = scriptTitle(x);
     scriptSel.append(o);
   }
   scriptSel.value = currentId;
+  v3?.refresh();
 }
 ta.value = curScript().text;
 let doc = parse(ta.value);
 let dirty = true;
-let marks = store.get('marks', []);
+let marks = Array.isArray(curScript().marks) ? [...curScript().marks] : store.get('marks', []);
+function saveMarks() { curScript().marks = [...marks]; store.set('marks', marks); saveLibrary(); }
 
 function refreshStats() {
   $('#stUnits').textContent = doc.units;
@@ -861,57 +802,62 @@ let saveT;
 function onTextChange() {
   doc = parse(ta.value);
   dirty = true;
-  if (marks.length) { marks = []; store.set('marks', marks); }
+  if (marks.length) { marks = []; saveMarks(); }
   refreshStats();
   const cur = curScript();
   cur.text = ta.value;
   cur.updated = Date.now();
   const opt = scriptSel.querySelector(`option[value="${cur.id}"]`);
-  if (opt) opt.textContent = titleOf(cur.text);
+  if (opt) opt.textContent = scriptTitle(cur);
   clearTimeout(saveT);
+  v3?.refresh();
+  v3?.saving();
   saveT = setTimeout(saveLibrary, 300);
 }
 ta.addEventListener('input', onTextChange);
 
 function openScript(id) {
+  if (!library.some((x) => x.id === id)) return;
+  clearTimeout(saveT);
+  curScript().marks = [...marks];
   currentId = id;
   ta.value = curScript().text;
-  onTextChange();
+  doc = parse(ta.value);
+  dirty = true;
+  marks = Array.isArray(curScript().marks) ? [...curScript().marks] : [];
+  store.set('marks', marks);
   saveLibrary();
   renderLibrary();
+  refreshStats();
 }
 scriptSel.addEventListener('change', () => openScript(scriptSel.value));
-$('#newScript').addEventListener('click', () => {
-  library.unshift({ id: newId(), text: '', updated: Date.now() });
-  openScript(library[0].id);
-  ta.focus();
-});
-let delArmed = null;
-$('#delScript').addEventListener('click', (e) => {
-  const btn = e.currentTarget;
-  if (!delArmed) {
-    btn.textContent = '再点一次删除';
-    delArmed = setTimeout(() => { btn.textContent = '删除'; delArmed = null; }, 3000);
-    return;
-  }
-  clearTimeout(delArmed);
-  delArmed = null;
-  btn.textContent = '删除';
-  library = library.filter((x) => x.id !== currentId);
-  if (!library.length) library = [{ id: newId(), text: '', updated: Date.now() }];
-  openScript(library[0].id);
-});
+$('#newScript').addEventListener('click', () => v3?.newDocument());
+$('#delScript').addEventListener('click', () => v3?.deleteDocument());
 renderLibrary();
 
-$('#file').addEventListener('change', (e) => {
+$('#file').addEventListener('change', async (e) => {
   const f = e.target.files[0];
-  if (!f) return;
-  const r = new FileReader();
-  r.onload = () => { ta.value = String(r.result).replace(/\r\n?/g, '\n'); onTextChange(); };
-  r.readAsText(f);
   e.target.value = '';
+  if (!f) return;
+  if (!/\.txt$/i.test(f.name) || f.size > 5 * 1024 * 1024) {
+    v3?.notify('请选择 5 MB 以内的 .txt 文本文件。'); return;
+  }
+  try {
+    const text = await f.text();
+    if (text.includes('\0')) throw new Error('这不是文本文件');
+    createDocument(text.replace(/\r\n?/g, '\n'), f.name.replace(/\.txt$/i, ''));
+    v3?.notify('已导入为新稿件');
+  } catch (error) { v3?.notify('导入失败，请检查文件是否为 UTF-8 文本。'); }
 });
-$('#sample').addEventListener('click', () => { ta.value = SAMPLE; onTextChange(); });
+$('#sample').addEventListener('click', () => { createDocument(SAMPLE, '示例 · 分段录制'); });
+function createDocument(text, title) {
+  const item = { id: newId(), text, title: title?.trim() || undefined, updated: Date.now(), marks: [] };
+  library.unshift(item);
+  openScript(item.id);
+  v3?.resetHistory();
+  ta.focus();
+}
+window.addEventListener('pagehide', saveLibrary);
 
 function setSpeed(cpm) {
   S.cpm = clamp(Math.round(cpm), 30, 900);
@@ -958,6 +904,8 @@ function syncControls() {
   $('#spOut').textContent = S.cpm;
   $('#fsOut').textContent = S.fontSize;
   refreshStats();
+  if ($('#readerTheme')) $('#readerTheme').value = S.theme;
+  v3?.sync();
 }
 
 $('#cpm').addEventListener('input', (e) => setSpeed(+e.target.value));
@@ -1528,6 +1476,7 @@ function syncPlay() {
   const btn = $('#pPlay');
   btn.querySelector('use').setAttribute('href', playing ? '#i-pause' : '#i-play');
   btn.setAttribute('aria-label', playing ? '暂停' : '播放');
+  v3?.sync();
 }
 
 // 控制条：播放时 2.5 秒无操作自动隐藏
@@ -1540,6 +1489,7 @@ function poke() {
 
 let toastT;
 function toast(msg) {
+  if (prompter.hidden && v3) { v3.notify(msg); return; }
   const t = $('#toast');
   t.textContent = msg;
   t.classList.add('show');
@@ -1554,7 +1504,7 @@ function addMark() {
   if (marks.length >= 9) return toast('最多 9 个书签，先在目录里删掉一个');
   marks.push(idx);
   marks.sort((a, b) => a - b);
-  store.set('marks', marks);
+  saveMarks();
   renderTicks();
   renderPanel();
   toast('已加书签 ' + (marks.indexOf(idx) + 1));
@@ -1598,7 +1548,7 @@ function renderPanel() {
     del.className = 'del';
     del.setAttribute('aria-label', '删除书签 ' + (n + 1));
     del.innerHTML = '<svg class="i"><use href="#i-x"/></svg>';
-    del.addEventListener('click', () => { marks.splice(n, 1); store.set('marks', marks); renderTicks(); renderPanel(); });
+    del.addEventListener('click', () => v3.confirmAction('删除书签？', '这不会删除稿件正文。', '删除书签', () => { marks.splice(n, 1); saveMarks(); renderTicks(); renderPanel(); }));
     li.append(b, del);
     ml.append(li);
   });
@@ -1610,16 +1560,16 @@ function renderPanel() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'go';
-    b.title = '保存到本机';
+    b.title = '预览片段';
     b.innerHTML = `<svg class="i"><use href="#i-save"/></svg><span class="t"></span><span class="tm">${fmt(t.dur)}</span>`;
     b.querySelector('.t').textContent = `${t.label} 第${t.n}条${t.saved ? ' · 已保存' : ''}`;
-    b.addEventListener('click', () => saveTakeManually(t));
+    b.addEventListener('click', () => v3.previewClip(t));
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'del';
     del.setAttribute('aria-label', `删除 ${t.label} 第${t.n}条`);
     del.innerHTML = '<svg class="i"><use href="#i-x"/></svg>';
-    del.addEventListener('click', () => { URL.revokeObjectURL(t.url); takes.splice(i, 1); renderPanel(); });
+    del.addEventListener('click', () => v3.confirmAction('删除录制片段？', '请先保存需要保留的视频。', '删除片段', () => { URL.revokeObjectURL(t.url); takes.splice(i, 1); renderPanel(); }));
     li.append(b, del);
     tl.append(li);
   });
@@ -1727,7 +1677,7 @@ function applyText(v, keepIdx) {
   onTextChange();
   build();
   dirty = false;
-  if (sents.length === n && keepMarks.length) { marks = keepMarks; store.set('marks', marks); }
+  if (sents.length === n && keepMarks.length) { marks = keepMarks; saveMarks(); }
   layout(false);
   jumpTo(posOf(Math.min(keepIdx, sents.length - 1)), false);
 }
@@ -1763,11 +1713,12 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function enter(fromCaret) {
-  if (!doc.units) { ta.focus(); return; }
+  if (!doc.units) { v3?.emptyDocument(); return; }
   if (dirty) { build(); dirty = false; }
   $('#editor').hidden = true;
   prompter.hidden = false;
   panel.hidden = true;
+  v3?.closeSheets();
   maxPos = 0;
   layout(false);
   let idx = 0;
@@ -1817,7 +1768,7 @@ function toggleFullscreen() {
 const bind = (id, fn) => $(id).addEventListener('click', fn);
 bind('#pBack', exit);
 bind('#pPlay', toggle);
-bind('#pStop', stop);
+bind('#pStop', () => v3.confirmReset(stop));
 bind('#pRetake', retake);
 bind('#pVoice', voiceToggle);
 bind('#pCam', camToggle);
@@ -1901,6 +1852,7 @@ track.addEventListener('pointercancel', () => { seeking = false; });
 window.addEventListener('resize', () => { if (!prompter.hidden) layout(true); });
 
 function onKey(e) {
+  if (e.defaultPrevented) return;
   if (!rdlg.hidden) { if (e.key === 'Escape') closeRemoteDlg(); return; }
   if (prompter.hidden) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); enter(false); }
@@ -1959,7 +1911,12 @@ async function togglePip() {
   catch (e) { return toast('打不开小窗'); }
   pipWin = w;
   const d = w.document;
-  document.querySelectorAll('style').forEach((st) => d.head.append(st.cloneNode(true)));
+  document.querySelectorAll('style, link[rel="stylesheet"]').forEach((st) => {
+    const clone = st.cloneNode(true);
+    if (st.tagName === 'LINK') clone.href = st.href;
+    d.head.append(clone);
+  });
+  d.documentElement.dataset.appearance = document.documentElement.dataset.appearance;
   d.title = '提词器';
   d.body.style.cssText = 'margin:0;height:100vh;overflow:hidden;position:relative;background:#000';
   d.body.append(stage);
@@ -2164,6 +2121,9 @@ function snapshot() {
   return {
     t: 'state', mode: inP ? 'prompter' : 'editor', st: state, reason: pauseReason,
     pct: inP && maxPos ? Math.round(pos / maxPos * 1000) / 10 : 0,
+    title: scriptTitle(curScript()),
+    context: inP ? sents.slice(Math.max(0, curIdx - 1), curIdx + 3).map((s, i) => ({ text: s.plain, index: Math.max(0, curIdx - 1) + i })) : [],
+    currentIndex: Math.max(0, curIdx),
     sec: inP ? (currentSec()?.title ? plain(currentSec().title) : '') : titleOf(ta.value),
     sent: inP ? (sents[Math.max(0, curIdx)]?.plain || '').trim().slice(0, 80) : '',
     el: Math.round(elapsed),
@@ -2297,6 +2257,7 @@ function lanStopScan() {
 function runRemote(c) {
   if (prompter.hidden) { if (c === 'toggle') enter(false); return; }
   if (editing) commitEdit();
+  if (typeof c === 'string' && /^seek:\d+$/.test(c)) { const idx = +c.slice(5); if (idx < sents.length) jumpTo(posOf(idx)); poke(); return; }
   const acts = {
     toggle, retake, home: () => jumpTo(0),
     pageUp: nav.pageUp, pageDown: nav.pageDown, paraUp: nav.paraUp, paraDown: nav.paraDown, secUp: nav.secUp, secDown: nav.secDown,
@@ -2321,6 +2282,7 @@ function renderRemoteStatus() {
   el.classList.toggle('ok', host.on && host.net === 'online');
   const nNear = IS_NATIVE ? [...app.clients.values()].filter((c) => c.authed).length : 0;
   $('#pRemote').setAttribute('aria-pressed', String((host.on && n > 0) || nLan > 0 || nNear > 0));
+  v3?.connection(nLan + n + nNear);
 }
 function showTab(t) {
   if (t === 'near' && !IS_NATIVE) t = 'lan';
@@ -2404,6 +2366,7 @@ async function remoteMode(room, keyStr) {
     send(b.dataset.c);
     navigator.vibrate?.(15);
   }));
+  $('#remote').addEventListener('prompter-seek', (e) => { if (!v3.remoteLocked && $('#rconn').classList.contains('ok')) send('seek:' + e.detail); });
   lockScreen();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') lockScreen(); });
 }
@@ -2454,6 +2417,7 @@ async function directRemote(code) {
     ch.send(JSON.stringify({ t: 'cmd', c: b.dataset.c }));
     navigator.vibrate?.(15);
   }));
+  $('#remote').addEventListener('prompter-seek', (e) => { if (!v3.remoteLocked && ch?.readyState === 'open') ch.send(JSON.stringify({ t: 'cmd', c: 'seek:' + e.detail })); });
   lockScreen();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') lockScreen(); });
 }
@@ -2467,11 +2431,13 @@ function renderRemote(m) {
   $('#rEl').textContent = fmt(m.el);
   $('#rRem').textContent = fmt(m.rem);
   $('#rInfo').textContent = `语速 ${m.cpm} · 字号 ${m.fs}` + (m.rec ? ' · 录像中' : '') + (m.voice ? ' · 语音跟随' : '');
+  v3?.remote(m);
   const play = $('#rPlay');
   const running = inP && m.st !== 'paused';
-  play.textContent = !inP ? '▶ 开始提词' : running ? '❚❚ 暂停' : '▶ 播放';
+  play.setAttribute('aria-label', !inP ? '开始提词' : running ? '暂停' : '播放');
+  play.innerHTML = `<svg class="i"><use href="${running ? '#i-pause' : '#i-play'}"/></svg>`;
   play.classList.toggle('on', running);
-  document.querySelectorAll('.rbtn:not(.big)').forEach((b) => { b.disabled = !inP; });
+  document.querySelectorAll('.rbtn:not(.big)').forEach((b) => { b.disabled = !inP || !$('#rconn').classList.contains('ok') || !!v3?.remoteLocked; });
 }
 
 // ---------- 附近设备（只在安卓 App 里）：设备发现 + 6 位验证码配对 ----------
@@ -2734,6 +2700,7 @@ $('#remote').addEventListener('click', (e) => {
   ctrl.ws.send(JSON.stringify({ t: 'cmd', c: b.dataset.c }));
   navigator.vibrate?.(15);
 });
+$('#remote').addEventListener('prompter-seek', (e) => { if (!v3.remoteLocked && ctrl.ws?.readyState === 1) ctrl.ws.send(JSON.stringify({ t: 'cmd', c: 'seek:' + e.detail })); });
 
 // ---------- 安装成 App ----------
 let installEvt = null;
@@ -2753,10 +2720,19 @@ installBtn?.addEventListener('click', async () => {
     installBtn.textContent = '在 Safari 点「分享」→「添加到主屏幕」';
   }
 });
-if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !IS_NATIVE) {
+if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !IS_NATIVE && !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
+v3 = window.initPrompterV3({
+  library: () => library, current: curScript, scriptTitle, parse, fmt, settings: S,
+  openScript, createDocument, saveLibrary, store, ta, onTextChange, syncControls,
+  rename: (title) => { curScript().title = title; curScript().updated = Date.now(); saveLibrary(); renderLibrary(); },
+  removeCurrent: () => { const id = currentId; library = library.filter((x) => x.id !== id); if (!library.length) library.push({ id: newId(), text: '', updated: Date.now(), marks: [] }); currentId = library[0].id; marks = [...(curScript().marks || [])]; openScript(currentId); },
+  isNative: IS_NATIVE, voice, cam, voiceToggle, camToggle, enter, exit, applyStyle, layout,
+  isReading: () => !prompter.hidden, openPanel, closePanel, renderPanel, togglePip,
+  saveSettings: save, stop, poke, saveTakeManually,
+});
 syncControls();
 if (location.hash.startsWith('#d=')) directRemote(location.hash.slice(3));
 else if (qs.get('r') && location.hash.length > 1) remoteMode(qs.get('r'), location.hash.slice(1));

@@ -5,13 +5,16 @@
   "description": "提词器：分段重录、语音跟随、录像、手机遥控",
   "scripts": {
     "build:web": "node scripts/build-web.mjs",
-    "sync": "npm run build:web && cap sync android"
+    "sync": "npm run build:web && cap sync android",
+    "test": "node --test tests/*.test.cjs",
+    "dev": "node scripts/serve.mjs"
   },
   "dependencies": {
     "@capacitor/android": "7.6.10",
     "@capacitor/core": "7.6.10"
   },
   "devDependencies": {
-    "@capacitor/cli": "7.6.10"
+    "@capacitor/cli": "7.6.10",
+    "jsdom": "^26.1.0"
   }
 }

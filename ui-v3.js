@@ -302,7 +302,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
       const range = emphasisRange(start, end);
       if (range) { api.ta.setSelectionRange(range.start, range.end); replaceSelectionAtBuffer(range.inner); }
       else replaceSelectionAtBuffer('**' + selected + '**');
-    } else replaceSelectionAtBuffer('[' + (selected || '停顿') + ']');
+    } else if (cueMenu.hidden) openCueMenu(); else closeCueMenu(true);
   }));
   const lineStart = (index) => (index ? api.ta.value.lastIndexOf('\n', index - 1) + 1 : 0);
   // The **…** run on the selection's line that holds the whole selection, or null.
@@ -328,6 +328,42 @@ window.initPrompterV3 = function initPrompterV3(api) {
     api.ta.value = api.ta.value.slice(0, start) + value + api.ta.value.slice(end);
     api.ta.dispatchEvent(new Event('input', { bubbles: true })); renderRich(true); sourceCaret(start + value.length); caret();
   }
+
+  // Cue menu: a preset or custom cue goes in at the caret, or after the selection, which stays unchanged.
+  const cueTool = $('[data-format="cue"]'), cueMenu = $('#cueMenu'), cueForm = $('#cueCustomForm');
+  const cueItems = () => [...cueMenu.querySelectorAll('[role="menuitem"]')];
+  let cueAt = 0;
+  const cleanCue = (value) => [...value.replace(/[[\]【】\r\n]/g, '').trim()].slice(0, 12).join('');
+  function openCueMenu() {
+    cueAt = Math.max(api.ta.selectionStart, api.ta.selectionEnd);
+    cueForm.hidden = true; cueMenu.hidden = false; cueTool.setAttribute('aria-expanded', 'true');
+    const rect = cueTool.getBoundingClientRect();
+    cueMenu.style.left = Math.max(12, Math.min(innerWidth - 232, rect.left)) + 'px';
+    cueMenu.style.top = Math.max(12, rect.bottom + 8) + 'px';
+    cueItems()[0].focus();
+  }
+  function closeCueMenu(returnFocus) {
+    if (cueMenu.hidden) return;
+    cueMenu.hidden = true; cueTool.setAttribute('aria-expanded', 'false');
+    if (returnFocus) cueTool.focus();
+  }
+  function insertCue(value) {
+    const cue = cleanCue(value); closeCueMenu(false);
+    if (!cue) { sourceCaret(cueAt); return false; }
+    api.ta.setSelectionRange(cueAt, cueAt); replaceSelectionAtBuffer('[' + cue + ']'); return true;
+  }
+  cueMenu.querySelectorAll('[data-cue]').forEach((b) => b.addEventListener('click', () => insertCue(b.dataset.cue)));
+  on('#cueCustom', () => { cueForm.hidden = false; $('#cueCustomInput').value = ''; $('#cueCustomInput').focus(); });
+  cueForm.addEventListener('submit', (e) => { e.preventDefault(); insertCue($('#cueCustomInput').value); });
+  cueMenu.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeCueMenu(true); return; }
+    if (e.target.id === 'cueCustomInput') return;
+    const items = cueItems(), i = items.indexOf(document.activeElement);
+    const next = { ArrowDown: (i + 1) % items.length, ArrowUp: (i - 1 + items.length) % items.length, Home: 0, End: items.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault(); e.stopPropagation(); items[next].focus();
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#cueMenu, [data-format="cue"]')) closeCueMenu(false); });
 
   function closeMenu() { $('#docMenu').hidden = true; $('#docMore').setAttribute('aria-expanded', 'false'); }
   function menu() {

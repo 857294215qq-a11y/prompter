@@ -60,3 +60,63 @@ test('each format action is one undo step', () => {
   app.close();
 });
 
+
+test('cue menu inserts the chosen cue at the caret', () => {
+  const app = boot(DOC); select(app, 1, 3);
+  app.click('[data-format="cue"]');
+  assert.equal(app.$('#cueMenu').hidden, false);
+  assert.equal(app.$('[data-format="cue"]').getAttribute('aria-expanded'), 'true');
+  app.click('#cueMenu [data-cue="换气"]');
+  assert.equal(source(app), '# 开场\n大家好[换气]欢迎回来。\n**重点句**之后');
+  assert.equal(app.$('#cueMenu').hidden, true);
+  assert.equal(app.$('[data-format="cue"]').getAttribute('aria-expanded'), 'false');
+  app.close();
+});
+
+test('with a selection the cue goes after it and the selected words stay', () => {
+  const app = boot(DOC); select(app, 1, 0, 3);
+  app.click('[data-format="cue"]'); app.click('#cueMenu [data-cue="停顿"]');
+  assert.equal(source(app), '# 开场\n大家好[停顿]欢迎回来。\n**重点句**之后');
+  app.close();
+});
+
+test('cue menu works from the keyboard and Escape returns focus to the tool', () => {
+  const app = boot(DOC); select(app, 1, 3);
+  const tool = app.$('[data-format="cue"]'); tool.focus(); tool.click();
+  const key = (k) => app.w.document.activeElement.dispatchEvent(new app.w.KeyboardEvent('keydown', { key: k, bubbles: true }));
+  assert.equal(app.w.document.activeElement.dataset.cue, '停顿');
+  key('ArrowDown'); assert.equal(app.w.document.activeElement.dataset.cue, '换气');
+  key('ArrowUp'); key('ArrowUp'); assert.equal(app.w.document.activeElement.id, 'cueCustom', 'ArrowUp wraps');
+  key('Home'); assert.equal(app.w.document.activeElement.dataset.cue, '停顿');
+  key('End'); assert.equal(app.w.document.activeElement.id, 'cueCustom');
+  key('Escape');
+  assert.equal(app.$('#cueMenu').hidden, true); assert.equal(app.w.document.activeElement, tool);
+  app.close();
+});
+
+test('custom cue strips brackets and line breaks and caps at 12', () => {
+  const app = boot(DOC); select(app, 1, 3);
+  app.click('[data-format="cue"]'); app.click('#cueCustom');
+  const input = app.$('#cueCustomInput'); assert.equal(app.w.document.activeElement, input);
+  assert.equal(input.maxLength, 12);
+  input.value = '看]这\n里【一二三四五六七八九十'; submit(app, '#cueCustomForm');
+  // brackets and the line break are stripped, leaving 13 characters; the first 12 are kept
+  assert.equal(source(app), '# 开场\n大家好[看这里一二三四五六七八九]欢迎回来。\n**重点句**之后');
+  assert.equal(app.$('#richEditor').children[1].querySelector('.editor-cue')?.textContent, '看这里一二三四五六七八九');
+  app.close();
+});
+
+test('an empty custom cue inserts nothing', () => {
+  const app = boot(DOC), before = source(app); select(app, 1, 3);
+  app.click('[data-format="cue"]'); app.click('#cueCustom');
+  app.$('#cueCustomInput').value = ' ] '; submit(app, '#cueCustomForm');
+  assert.equal(source(app), before); assert.equal(app.$('#undoEdit').disabled, true);
+  app.close();
+});
+
+test('clicking outside the cue menu closes it without inserting', () => {
+  const app = boot(DOC), before = source(app); select(app, 1, 3);
+  app.click('[data-format="cue"]'); app.click('#documentTitle');
+  assert.equal(app.$('#cueMenu').hidden, true); assert.equal(source(app), before);
+  app.close();
+});

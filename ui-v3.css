@@ -186,6 +186,10 @@ input[type="checkbox"][role="switch"]:disabled { opacity: .5; cursor: default; }
 #toast { position: fixed; color: #fff; border-radius: 100px; }
 .reader-options { position: absolute; top: max(104px, calc(env(safe-area-inset-top) + 88px)); right: max(24px, calc((100vw - 850px) / 2)); background: var(--card); }
 .reader-options .ib .lbl-t { display: inline; }
+.reader-options [role^="menuitem"] { justify-content: flex-start; gap: 8px; width: 100%; }
+.reader-options .menu-key { margin-left: auto; font: 12px var(--ui); color: var(--muted); }
+.reader-options [role="menuitemcheckbox"]::before { content: ""; width: 12px; flex: 0 0 12px; }
+.reader-options [role="menuitemcheckbox"][aria-checked="true"]::before { content: "✓"; }
 #readerSettingsClose { display: none; }
 .reader-parameters #readerSettingsClose { display: inline-flex; position: absolute; top: 8px; right: 12px; }
 #prompter #settingsPanel.reader-parameters { position: absolute; display: flex; top: max(104px, calc(env(safe-area-inset-top) + 88px)); bottom: 100px; right: 24px; z-index: 8; background: #252527f5; }

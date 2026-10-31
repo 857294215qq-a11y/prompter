@@ -53,3 +53,58 @@ test('timer labels are 12px secondary text', () => {
     assert.match(r, /color:\s*var\(--muted\)/, r);
   }
 });
+
+const menuNames = (app) => [...app.$('#readerOptions').querySelectorAll('[role^="menuitem"]')].filter((b) => !b.hidden).map((b) => b.getAttribute('aria-label'));
+
+test('more menu holds only the agreed items, in groups', () => {
+  const app = desktopReader(); app.$('#pPip').hidden = false;
+  app.click('#readerMore');
+  assert.equal(app.$('#readerOptions').getAttribute('role'), 'menu');
+  assert.deepEqual(menuNames(app), ['水平镜像', '垂直镜像', '打开置顶小窗', '连接遥控器', '全屏', '阅读参数', '改字']);
+  assert.equal(app.$('#readerOptions').querySelectorAll('hr[role="separator"]').length, 2);
+  for (const id of ['pVoice', 'pCam', 'nParaUp', 'nSecUp', 'pMark', 'pList']) assert.equal(app.$('#readerOptions #' + id), null, id);
+  app.close();
+});
+
+test('vertical mirror toggles, shows a check, closes the menu, and stays checked', () => {
+  const app = desktopReader();
+  app.click('#readerMore');
+  const item = app.$('#pMy');
+  assert.equal(item.getAttribute('role'), 'menuitemcheckbox'); assert.equal(item.getAttribute('aria-checked'), 'false');
+  item.click();
+  assert.equal(app.w.testEngine.settings.mirrorY, true);
+  assert.equal(item.getAttribute('aria-checked'), 'true'); assert.equal(item.hasAttribute('aria-pressed'), false);
+  assert.equal(app.$('#readerOptions').hidden, true);
+  app.click('#readerMore'); assert.equal(app.$('#pMy').getAttribute('aria-checked'), 'true');
+  app.close();
+});
+
+test('menu shows shortcuts M, V and F', () => {
+  const app = desktopReader();
+  const key = (id) => app.$('#' + id + ' .menu-key')?.textContent;
+  assert.deepEqual([key('pMx'), key('pMy'), key('pFs')], ['M', 'V', 'F']);
+  assert.equal(app.$('#pMx').getAttribute('aria-keyshortcuts'), 'M');
+  app.close();
+});
+
+test('menu opens below the pill, right-aligned, and works from the keyboard', () => {
+  const app = desktopReader();
+  const more = app.$('#readerMore'); more.focus(); more.click();
+  const menu = app.$('#readerOptions');
+  assert.equal(menu.style.top, '96px'); assert.equal(menu.style.right, '311px');
+  const key = (k) => app.w.document.activeElement.dispatchEvent(new app.w.KeyboardEvent('keydown', { key: k, bubbles: true }));
+  assert.equal(app.w.document.activeElement.id, 'pMx');
+  key('ArrowDown'); assert.equal(app.w.document.activeElement.id, 'pMy');
+  key('End'); assert.equal(app.w.document.activeElement.id, 'pEdit');
+  key('ArrowDown'); assert.equal(app.w.document.activeElement.id, 'pMx', 'wraps');
+  key('Escape'); assert.equal(menu.hidden, true); assert.equal(app.w.document.activeElement, more);
+  app.close();
+});
+
+test('tablet menu contains no voice or camera', () => {
+  const app = boot({ settings: { countdown: 0 } }, { media: (q) => /max-width:\s*1199px/.test(q) });
+  app.click('#start'); app.click('#readerMore');
+  assert.ok(app.$('.topbar #pVoice')); assert.ok(app.$('.topbar #pCam'));
+  assert.equal(app.$('#readerOptions #pVoice'), null);
+  app.close();
+});

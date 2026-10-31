@@ -503,19 +503,44 @@ window.initPrompterV3 = function initPrompterV3(api) {
   const parameters = document.createElement('button'); parameters.id = 'readerParameters'; parameters.type = 'button'; parameters.className = 'text-btn'; parameters.append(icon('settings2'), document.createTextNode('阅读参数')); parameters.setAttribute('aria-pressed', 'false');
   const closeParameters = document.createElement('button'); closeParameters.id = 'readerSettingsClose'; closeParameters.type = 'button'; closeParameters.className = 'icon-btn'; closeParameters.setAttribute('aria-label', '关闭阅读参数'); closeParameters.append(icon('x')); settings.prepend(closeParameters);
   closeParameters.addEventListener('click', () => { returnSettings(); more.focus(); });
-  options.append(parameters);
-  for (const id of ['pMx', 'pMy', 'pEdit', 'pPip', 'pRemote', 'pFs']) { const b = $('#' + id); b.setAttribute('aria-label', b.title); options.append(b); }
+  // Menu groups: 画面 (mirrors, checked when on) · 窗口 · 调整. Each item keeps its icon and shows its shortcut.
+  options.setAttribute('role', 'menu'); options.setAttribute('aria-label', '更多阅读操作');
+  const menuItems = [['pMx', '水平镜像', 'M', true], ['pMy', '垂直镜像', 'V', true], null, ['pPip', '打开置顶小窗'], ['pRemote', '连接遥控器'], ['pFs', '全屏', 'F'], null, ['readerParameters', '阅读参数'], ['pEdit', '改字', '', true]];
+  for (const item of menuItems) {
+    if (!item) { const hr = document.createElement('hr'); hr.setAttribute('role', 'separator'); options.append(hr); continue; }
+    const [id, label, key, check] = item, b = id === 'readerParameters' ? parameters : $('#' + id);
+    b.setAttribute('role', check ? 'menuitemcheckbox' : 'menuitem'); b.setAttribute('aria-label', label); b.removeAttribute('title');
+    const text = b.querySelector('.lbl-t'); if (text) text.textContent = label;
+    if (key) { const k = document.createElement('kbd'); k.className = 'menu-key'; k.textContent = key; b.append(k); b.setAttribute('aria-keyshortcuts', key); }
+    options.append(b);
+    if (id !== 'readerParameters') b.addEventListener('click', () => { syncReaderMenu(); closeReaderOptions(true); });
+  }
   $('#prompter .topbar').append(more); $('#prompter').append(options);
-  const compactControls = ['pVoice', 'pCam'].map((id) => {
-    const button = $('#' + id), marker = document.createComment(id + ' desktop position'); button.before(marker); return { button, marker };
-  });
-  function compactReader() {
-    for (const { button, marker } of compactControls) {
-      if (tablet.matches) options.insertBefore(button, parameters);
-      else marker.after(button);
+  const readerItems = () => [...options.querySelectorAll('[role^="menuitem"]')].filter((b) => !b.hidden);
+  // Checkbox items report state with aria-checked; the engine's aria-pressed would contradict it.
+  function syncReaderMenu() {
+    // The engine marks edit mode with aria-pressed each time it changes; until then the last checked state holds.
+    const edit = $('#pEdit'), editOn = edit.hasAttribute('aria-pressed') ? edit.getAttribute('aria-pressed') === 'true' : edit.getAttribute('aria-checked') === 'true';
+    const on = { pMx: api.settings.mirrorX, pMy: api.settings.mirrorY, pEdit: editOn };
+    for (const b of readerItems()) {
+      if (b.getAttribute('role') === 'menuitemcheckbox') b.setAttribute('aria-checked', String(!!on[b.id]));
+      if (b !== parameters) b.removeAttribute('aria-pressed');
     }
   }
-  compactReader(); tablet.addEventListener('change', compactReader);
+  function openReaderMenu() {
+    returnSettings(); syncReaderMenu();
+    optionsOpen = true; options.hidden = false; more.setAttribute('aria-expanded', 'true');
+    const bar = $('#prompter .topbar').getBoundingClientRect();
+    options.style.top = Math.round(bar.bottom + 8) + 'px'; options.style.right = Math.round(innerWidth - bar.right) + 'px';
+    readerItems()[0]?.focus(); api.poke();
+  }
+  options.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeReaderOptions(true); return; }
+    const items = readerItems(), i = items.indexOf(document.activeElement);
+    const next = { ArrowDown: (i + 1) % items.length, ArrowUp: (i - 1 + items.length) % items.length, Home: 0, End: items.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault(); e.stopPropagation(); items[next].focus();
+  });
   const startMarker = document.createComment('phone start action'); $('#mobileStart').before(startMarker);
   const settingsMarker = document.createComment('sidebar toggle position'); $('#toggleSettings').before(settingsMarker);
   const parameterLabel = document.createElement('span'); parameterLabel.className = 'tablet-param-label'; parameterLabel.textContent = '提词参数'; $('#toggleSettings').append(parameterLabel);
@@ -524,8 +549,11 @@ window.initPrompterV3 = function initPrompterV3(api) {
     else { settingsMarker.after($('#toggleSettings')); startMarker.after($('#mobileStart')); }
   }
   tabletActions(); tablet.addEventListener('change', tabletActions); small.addEventListener('change', tabletActions);
-  function closeReaderOptions() { options.hidden = true; optionsOpen = false; more.setAttribute('aria-expanded', 'false'); }
-  more.addEventListener('click', () => { returnSettings(); optionsOpen = !optionsOpen; options.hidden = !optionsOpen; more.setAttribute('aria-expanded', String(optionsOpen)); api.poke(); });
+  function closeReaderOptions(returnFocus = false) {
+    const was = optionsOpen; options.hidden = true; optionsOpen = false; more.setAttribute('aria-expanded', 'false');
+    if (was && returnFocus) more.focus();
+  }
+  more.addEventListener('click', () => { if (optionsOpen) closeReaderOptions(); else openReaderMenu(); });
   parameters.addEventListener('click', () => {
     settingsMove++;
     closeReaderOptions(); parametersInReader = true; $('#prompter').append(settings); settings.classList.add('reader-parameters'); settings.inert = false;

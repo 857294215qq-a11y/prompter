@@ -88,5 +88,6 @@ function renderHint() {
   }[pauseReason] || '';
   h.innerHTML = html;
   h.hidden = !html;
+  if (html) placeHint();
 }
 

@@ -46,7 +46,9 @@ async () => {
   const pill = box($('.topbar')), bottom = box($('.bottombar'));
   const line = [...document.querySelectorAll('#content .s')].map((el) => { const r = el.getClientRects()[0]; return r && { x: r.left, y: r.top, w: r.width, h: r.height }; }).find((r) => r && r.w > 0);
   const reader = { pill, bottom, line };
-  if (!line || Math.abs(line.x - pill.x) > 1) failures.push(`reader column starts at ${line?.x}, pill at ${pill.x}`);
+  // Compare with the pill's resting box (layout width, centred): a paused entry animation would skew its screen rect.
+  const pillX = (innerWidth - $('.topbar').offsetWidth) / 2; reader.pillX = pillX;
+  if (!line || Math.abs(line.x - pillX) > 1) failures.push(`reader column starts at ${line?.x}, pill at ${pillX}`);
   const hint = $('#hint');
   if (hint && !hint.hidden) { reader.hint = box(hint); for (const [n, b] of [['top pill', pill], ['bottom bar', bottom]]) if (hit(reader.hint, b)) failures.push(`start hint overlaps the ${n}`); }
   $('#readerMore').click(); await frame();

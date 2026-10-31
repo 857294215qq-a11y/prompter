@@ -57,8 +57,9 @@ function build() {
 // 桌面宽度下阅读列与顶部胶囊对齐；用户设的边距更宽时以边距为准
 function readerInset() {
   if (innerWidth < 1200) return 0;
-  const bar = $('.topbar').getBoundingClientRect(), box = stage.getBoundingClientRect();
-  return bar.width ? Math.max(0, bar.left - box.left) : 0;
+  // 用排版宽度：顶栏入场动画会把它缩小一点，屏幕上的位置这时不准
+  const bar = $('.topbar').offsetWidth;
+  return bar ? Math.max(0, (stage.clientWidth - bar) / 2) : 0;
 }
 
 function applyStyle() {
@@ -165,7 +166,17 @@ function lowerBound(p) {
 
 function placeOverlays() {
   $('#cam').style.top = ($('.topbar').offsetHeight + 12) + 'px';
-  $('#hint').style.bottom = ($('.bottombar').offsetHeight + 14) + 'px';
+  placeHint();
+}
+
+// 开始提示放在阅读线下方；会碰到底栏时改放到阅读线上方
+function placeHint() {
+  const h = $('#hint'), gap = 24;
+  const barTop = $('.bottombar').getBoundingClientRect().top - prompter.getBoundingClientRect().top;
+  let top = guideY + lhPx / 2 + gap;
+  if (top + h.offsetHeight > barTop - 12) top = guideY - lhPx / 2 - gap - h.offsetHeight;
+  h.style.bottom = 'auto';
+  h.style.top = top + 'px';
 }
 
 function computeSpeed() {

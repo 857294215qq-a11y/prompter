@@ -11,8 +11,10 @@ const rect = (left, top, width, height) => ({ left, top, width, height, right: l
 function desktopReader(saved = {}) {
   const app = boot({ settings: { countdown: 0, ...saved } });
   Object.defineProperty(app.w, 'innerWidth', { value: 1440, configurable: true });
-  app.$('#stage').getBoundingClientRect = () => rect(0, 0, 1440, 900);
   app.$('.topbar').getBoundingClientRect = () => rect(311, 28, 818, 60);
+  // The pill is centred, so its layout width fixes the inset: (1440 − 818) / 2 = 311.
+  Object.defineProperty(app.$('#stage'), 'clientWidth', { value: 1440 });
+  Object.defineProperty(app.$('.topbar'), 'offsetWidth', { value: 818 });
   app.click('#start');
   return app;
 }
@@ -116,5 +118,30 @@ test('retake uses the same rotate-ccw icon in the reader and the phone remote', 
   assert.equal(href('#remote [data-c="retake"] use'), '#i-rotate-ccw');
   assert.notEqual(href('#remote [data-c="home"] use'), '#i-rotate-ccw', '回到开头 keeps its own icon');
   assert.match(app.$('#i-rotate-ccw').innerHTML, /M3 12a9 9 0 1 0 9-9 9\.75 9\.75 0 0 0-6\.74 2\.74L3 8/);
+  app.close();
+});
+
+// The guide element marks the reading line: its top and height are set by the engine's layout().
+const guideBox = (app) => { const g = app.$('#guide').style; return { top: parseFloat(g.top), height: parseFloat(g.height) }; };
+
+test('hint sits just below the reading line', () => {
+  const app = boot({ settings: { countdown: 0 } });
+  app.$('.bottombar').getBoundingClientRect = () => rect(200, 820, 1040, 60);
+  app.$('#prompter').getBoundingClientRect = () => rect(0, 0, 1440, 900);
+  app.click('#start');
+  const hint = app.$('#hint'), g = guideBox(app);
+  assert.equal(hint.hidden, false, 'ready hint shows before playing');
+  assert.equal(parseFloat(hint.style.top), g.top + g.height + 24);
+  assert.equal(hint.style.bottom, 'auto');
+  app.close();
+});
+
+test('hint flips above a low reading line', () => {
+  const app = boot({ settings: { countdown: 0, guide: 80 } });
+  app.$('.bottombar').getBoundingClientRect = () => rect(200, 700, 1040, 60);
+  app.$('#prompter').getBoundingClientRect = () => rect(0, 0, 1440, 900);
+  app.click('#start');
+  const hint = app.$('#hint'), g = guideBox(app);
+  assert.equal(parseFloat(hint.style.top), g.top - 24 - hint.offsetHeight);
   app.close();
 });

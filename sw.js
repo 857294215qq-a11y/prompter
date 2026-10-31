@@ -1,5 +1,5 @@
 // 离线缓存：每个版本整套装进自己的缓存。页面加载的脚本和样式地址带版本号，新旧版本互不顶替
-const VERSION = 'd17ffac976';
+const VERSION = 'bccff90eb0';
 const CACHE = 'prompter-' + VERSION;
 // 页面加载的本地脚本和样式（地址与 index.html 一致，缓存时加上 ?v=VERSION）
 const VERSIONED = [

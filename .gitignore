@@ -15,3 +15,4 @@ android/app/src/main/res/xml/config.xml
 *.jks
 signing/
 .DS_Store
+.superpowers/

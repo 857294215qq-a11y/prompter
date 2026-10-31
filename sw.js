@@ -1,5 +1,5 @@
 // 离线缓存：页面优先走网络（拿到最新版本），网络慢或断网时用缓存
-const CACHE = 'prompter-ui-v3-modules-1';
+const CACHE = 'prompter-ui-v3-modules-2';
 const ASSETS = [
   './',
   './index.html',
@@ -63,24 +63,25 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// 连着没有网络的热点时，网络请求可能很久才失败，所以最多等 2.5 秒就改用缓存
+function networkFirst(req, key) {
+  const net = fetch(req).then((res) => {
+    const copy = res.clone();
+    if (res.ok) caches.open(CACHE).then((c) => c.put(key, copy));
+    return res;
+  });
+  const timeout = new Promise((r) => setTimeout(() => r(null), 2500));
+  return Promise.race([net, timeout])
+    .catch(() => null)
+    .then((res) => res || caches.match(key).then((hit) => hit || net));
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   const isPage = req.mode === 'navigate' || req.destination === 'document';
-  if (isPage) {
-    // 连着没有网络的热点时，网络请求可能很久才失败，所以最多等 2.5 秒就改用缓存
-    const net = fetch(req).then((res) => {
-      const copy = res.clone();
-      if (res.ok) caches.open(CACHE).then((c) => c.put('./index.html', copy));
-      return res;
-    });
-    const timeout = new Promise((r) => setTimeout(() => r(null), 2500));
-    e.respondWith(
-      Promise.race([net, timeout])
-        .catch(() => null)
-        .then((res) => res || caches.match('./index.html').then((hit) => hit || net))
-    );
-  } else {
-    e.respondWith(caches.match(req).then((hit) => hit || fetch(req)));
-  }
+  // 脚本和样式也先走网络：引擎分成多个文件后，新页面配旧脚本会出错
+  if (isPage) e.respondWith(networkFirst(req, './index.html'));
+  else if (req.destination === 'script' || req.destination === 'style') e.respondWith(networkFirst(req, req));
+  else e.respondWith(caches.match(req).then((hit) => hit || fetch(req)));
 });

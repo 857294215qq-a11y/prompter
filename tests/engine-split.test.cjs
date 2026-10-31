@@ -88,3 +88,35 @@ test('web build ships the engine files', () => {
   execFileSync(process.execPath, ['scripts/build-web.mjs'], { cwd: root });
   assert.deepEqual(readdirSync(path.join(root, 'www/src/engine')).sort(), engineFiles());
 });
+
+// Load sw.js against fake browser APIs and return its fetch handler.
+function serviceWorker({ cached, network }) {
+  const handlers = {};
+  const store = new Map(Object.entries(cached));
+  const cache = { put: async (req, res) => store.set(new URL(req.url || req, 'https://prompter.test/').pathname, res), addAll: async () => {} };
+  const sandbox = {
+    self: { addEventListener: (type, fn) => { handlers[type] = fn; }, skipWaiting() {}, clients: { claim() {} } },
+    caches: { open: async () => cache, keys: async () => [], match: async (req) => store.get(new URL(req.url || req, 'https://prompter.test/').pathname) },
+    fetch: network, location: { origin: 'https://prompter.test' }, URL, setTimeout, Promise,
+  };
+  require('node:vm').runInNewContext(readFileSync(path.join(root, 'sw.js'), 'utf8'), sandbox);
+  return async (url, destination) => {
+    let reply;
+    handlers.fetch({ request: { method: 'GET', url, mode: 'no-cors', destination }, respondWith: (p) => { reply = p; } });
+    return { reply: await reply, store };
+  };
+}
+
+test('service worker serves fresh engine scripts when the network answers', async () => {
+  const fresh = { ok: true, body: 'new', clone() { return this; } };
+  const fetchFrom = serviceWorker({ cached: { '/src/engine/00-core.js': { body: 'old' } }, network: async () => fresh });
+  const { reply, store } = await fetchFrom('https://prompter.test/src/engine/00-core.js', 'script');
+  assert.equal(reply.body, 'new');
+  assert.equal(store.get('/src/engine/00-core.js').body, 'new');
+});
+
+test('service worker falls back to cached engine scripts offline', async () => {
+  const fetchFrom = serviceWorker({ cached: { '/src/engine/00-core.js': { body: 'old' } }, network: async () => { throw new TypeError('offline'); } });
+  const { reply } = await fetchFrom('https://prompter.test/src/engine/00-core.js', 'script');
+  assert.equal(reply.body, 'old');
+});

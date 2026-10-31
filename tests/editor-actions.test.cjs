@@ -254,3 +254,52 @@ test('app settings uses the gear icon, reader parameters keep the sliders icon',
   assert.match(app.$('#readerParameters img').getAttribute('src'), /settings2\.svg$/);
   app.close();
 });
+
+// Final review fixes
+const MID = { library: [{ id: 'm', text: 'foo **bar** baz\n第二行', updated: 1 }, { id: 'n', text: '另一份', updated: 2 }], current: 'm' };
+
+test('emphasis removes markers when the selection starts at the edge before the strong text', () => {
+  const app = boot(MID), line = app.$('#richEditor').children[0];
+  const before = line.firstChild, strong = line.querySelector('strong').firstChild;
+  app.w.getSelection().setBaseAndExtent(before, before.length, strong, strong.length);
+  app.$('#richEditor').dispatchEvent(new app.w.MouseEvent('mouseup'));
+  assert.equal(app.$('[data-format="emphasis"]').getAttribute('aria-pressed'), 'true');
+  app.click('[data-format="emphasis"]');
+  assert.equal(source(app), 'foo bar baz\n第二行');
+  app.close();
+});
+
+test('emphasis is unavailable for a selection across lines or partly over strong text', () => {
+  const app = boot(DOC), before = source(app), rich = app.$('#richEditor');
+  const a = rich.children[1].firstChild, b = rich.children[2].querySelector('strong').firstChild;
+  app.w.getSelection().setBaseAndExtent(a, 2, b, 1); rich.dispatchEvent(new app.w.MouseEvent('mouseup'));
+  assert.equal(app.$('[data-format="emphasis"]').getAttribute('aria-disabled'), 'true', 'across lines');
+  app.click('[data-format="emphasis"]'); assert.equal(source(app), before);
+  select(app, 2, 1, 4); // from inside 重点句 to after 之
+  assert.equal(app.$('[data-format="emphasis"]').getAttribute('aria-disabled'), 'true', 'partly over strong text');
+  app.click('[data-format="emphasis"]'); assert.equal(source(app), before);
+  app.close();
+});
+
+test('the start shortcut is ignored in text fields and closes open cue popovers', () => {
+  const app = boot(DOC), calls = startSpy(app); select(app, 1, 3);
+  app.click('[data-format="cue"]'); app.click('#cueCustom');
+  app.$('#cueCustomInput').dispatchEvent(new app.w.KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
+  assert.deepEqual(calls, [], 'not from the custom cue field');
+  app.$('#scriptSearch').dispatchEvent(new app.w.KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
+  assert.deepEqual(calls, [], 'not from the search field');
+  app.click('#cueMenu [data-cue="停顿"]'); // close and insert, caret is after the cue
+  app.click('[data-format="cue"]'); // menu open, focus on a menu item
+  app.w.document.activeElement.dispatchEvent(new app.w.KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
+  assert.deepEqual(calls, [true]); assert.equal(app.$('#cueMenu').hidden, true);
+  app.close();
+});
+
+test('switching documents leaves no caret even after pressing a format tool', () => {
+  const app = boot(MID); select(app, 0, 2);
+  app.click('[data-script-id="n"]');
+  app.$('[data-format="section"]').dispatchEvent(new app.w.MouseEvent('pointerdown', { bubbles: true, cancelable: true }));
+  app.$('#richEditor').dispatchEvent(new app.w.FocusEvent('blur'));
+  assert.equal(app.$('#startCaret').getAttribute('aria-disabled'), 'true');
+  app.close();
+});

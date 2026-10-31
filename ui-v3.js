@@ -287,7 +287,12 @@ window.initPrompterV3 = function initPrompterV3(api) {
     renderRich(); syncFormatState(); syncStartActions();
   }
   $('#scriptSearch').addEventListener('input', refresh);
-  function resetHistory() { caretDocument = null; history = [api.ta.value]; historyIndex = 0; renderRich(true); syncStartActions(); }
+  function resetHistory() {
+    caretDocument = null; history = [api.ta.value]; historyIndex = 0; renderRich(true);
+    // Re-rendering collapses the old selection onto the editor itself; drop it so it is not read as a new caret.
+    const sel = window.getSelection(); if (sel?.anchorNode && rich.contains(sel.anchorNode)) sel.removeAllRanges();
+    syncStartActions();
+  }
   api.ta.addEventListener('input', () => {
     if (!historyBusy) { history = history.slice(0, historyIndex + 1); history.push(api.ta.value); if (history.length > 100) history.shift(); historyIndex = history.length - 1; }
     syncHistory();
@@ -313,12 +318,12 @@ window.initPrompterV3 = function initPrompterV3(api) {
     } else if (cueMenu.hidden) openCueMenu(); else closeCueMenu(true);
   }));
   const lineStart = (index) => (index ? api.ta.value.lastIndexOf('\n', index - 1) + 1 : 0);
-  // The **…** run on the selection's line that holds the whole selection, or null.
+  // The **…** run on the selection's line that holds the whole selection (markers included), or null.
   function emphasisRange(start, end) {
     const value = api.ta.value, from = lineStart(start), stop = value.indexOf('\n', from);
     for (const m of value.slice(from, stop < 0 ? value.length : stop).matchAll(/\*\*([^\n]*?)\*\*/g)) {
       const s = from + m.index, e = s + m[0].length;
-      if ((start >= s + 2 && end <= e - 2) || (start === s && end === e)) return { start: s, end: e, inner: m[1] };
+      if (start >= s && end <= e) return { start: s, end: e, inner: m[1] };
     }
     return null;
   }
@@ -328,8 +333,12 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const section = /^#/.test(api.ta.value.slice(lineStart(start)));
     $('[data-format="section"]').setAttribute('aria-pressed', String(section));
     const emphasis = $('[data-format="emphasis"]');
-    emphasis.setAttribute('aria-disabled', String(start === end));
-    emphasis.setAttribute('aria-pressed', String(start !== end && !!emphasisRange(start, end)));
+    const inside = start !== end && emphasisRange(start, end);
+    // Wrapping across a line or half over another **…** run would leave stray markers.
+    const unsafe = api.ta.value.slice(start, end).includes('\n') || (!inside && [...api.ta.value.matchAll(/\*\*[^\n]*?\*\*/g)]
+      .some((m) => m.index < end && start < m.index + m[0].length));
+    emphasis.setAttribute('aria-disabled', String(start === end || unsafe));
+    emphasis.setAttribute('aria-pressed', String(!!inside));
   }
   function replaceSelectionAtBuffer(value) {
     const start = api.ta.selectionStart, end = api.ta.selectionEnd;
@@ -600,7 +609,14 @@ window.initPrompterV3 = function initPrompterV3(api) {
       else if (!$('#docMenu').hidden) { e.preventDefault(); closeMenu(); $('#docMore').focus(); }
       else if (mobileLeft || mobileRight) { e.preventDefault(); closeSheets(); }
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !api.isReading()) { e.preventDefault(); e.stopImmediatePropagation(); if (document.activeElement === rich) caret(); startFromCaret(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !api.isReading()) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      // In a text field the shortcut belongs to that field; the engine's own handler is stopped too.
+      if (e.target.closest?.('input, select, textarea')) return;
+      closeCueMenu(false); closeCueEditor();
+      if (document.activeElement === rich) caret();
+      startFromCaret();
+    }
   }, true);
 
   const motionSelector = '.modal, .popover, #panel, #hint, #cam, #uiToast, #prompter';

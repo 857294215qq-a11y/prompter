@@ -366,6 +366,11 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 .bar .times > #tPct::before { font-size: 12px; color: var(--muted); }
 .bar .times b { font-family: var(--ui); }
 .bar, #toast, input[type="checkbox"][role="switch"]::after { transition-timing-function: var(--ease); }
+/* Bars fade and move 8px: 240ms out when idle, 200ms back on any input. */
+#prompter .bar { transition: opacity 200ms var(--ease), translate 200ms var(--ease); }
+#prompter.idle .bar { transition-duration: 240ms; }
+#prompter.idle .topbar { translate: 0 -8px; }
+#prompter.idle .bottombar { translate: 0 8px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 
 

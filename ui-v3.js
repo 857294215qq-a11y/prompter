@@ -552,7 +552,11 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function closeReaderOptions(returnFocus = false) {
     const was = optionsOpen; options.hidden = true; optionsOpen = false; more.setAttribute('aria-expanded', 'false');
     if (was && returnFocus) more.focus();
+    if (was) api.poke();
   }
+  // The bars stay while someone is using them: the menu is open or keyboard focus is on a bar control.
+  const barsBusy = () => optionsOpen || !!document.activeElement?.closest?.('#prompter .bar');
+  $('#prompter').addEventListener('focusout', (e) => { if (e.target.closest('.bar')) api.poke(); });
   more.addEventListener('click', () => { if (optionsOpen) closeReaderOptions(); else openReaderMenu(); });
   parameters.addEventListener('click', () => {
     settingsMove++;
@@ -664,7 +668,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   refresh(); sync();
   return {
     startFromTop, startFromCaret, refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
-    confirmAction: ask,
+    confirmAction: ask, barsBusy,
     emptyDocument: () => { rich.focus(); notify('先写一段正文，再开始提词。小节标题不计入正文。'); },
     saved: (ok) => { text($('#saveState'), ok ? '已保存到本机' : '保存失败，请导出稿件以免丢失'); updateMeta(); },
     saving: () => { text($('#saveState'), '正在保存…'); updateMeta(); },

@@ -145,3 +145,44 @@ test('hint flips above a low reading line', () => {
   assert.equal(parseFloat(hint.style.top), g.top - 24 - hint.offsetHeight);
   app.close();
 });
+
+// Play with the engine's idle timer under test control: setTimeout calls are collected, not scheduled.
+function playing() {
+  const app = boot({ settings: { countdown: 0 } });
+  app.click('#start'); app.click('#pPlay');
+  const timers = [];
+  app.w.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
+  app.runIdle = () => { const t = timers.filter((x) => x.ms === 2500).at(-1); timers.length = 0; t?.fn(); };
+  return app;
+}
+const idle = (app) => app.$('#prompter').classList.contains('idle');
+
+test('bars hide after 2.5s of playing', () => {
+  const app = playing();
+  app.w.testEngine.poke(); app.runIdle();
+  assert.equal(idle(app), true);
+  app.close();
+});
+
+test('bars stay while the menu is open', () => {
+  const app = playing();
+  app.click('#readerMore'); app.runIdle();
+  assert.equal(idle(app), false);
+  app.close();
+});
+
+test('bars stay while focus is inside, and hide 2.5s after it leaves', () => {
+  const app = playing();
+  app.$('#pRetake').focus(); app.w.testEngine.poke(); app.runIdle();
+  assert.equal(idle(app), false, 'focus on a bar button keeps the bars');
+  app.$('#pRetake').blur(); app.runIdle();
+  assert.equal(idle(app), true, 'leaving the bar restarts the timer');
+  app.close();
+});
+
+test('idle bars move 8px on the shared curve: 240ms out, 200ms back', () => {
+  assert.match(css, /#prompter\.idle \.topbar \{ translate: 0 -8px; \}/);
+  assert.match(css, /#prompter\.idle \.bottombar \{ translate: 0 8px; \}/);
+  assert.match(css, /#prompter \.bar \{ transition: opacity 200ms var\(--ease\), translate 200ms var\(--ease\)/);
+  assert.match(css, /#prompter\.idle \.bar \{ transition-duration: 240ms; \}/);
+});

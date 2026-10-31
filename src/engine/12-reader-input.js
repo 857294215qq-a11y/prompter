@@ -90,7 +90,7 @@ function onKey(e) {
   if (e.defaultPrevented) return;
   if (!rdlg.hidden) { if (e.key === 'Escape') closeRemoteDlg(); return; }
   if (prompter.hidden) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); v3 ? v3.startFromSelection() : enter(false); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); v3 ? v3.startFromCaret() : enter(false); }
     return;
   }
   if (editing) {

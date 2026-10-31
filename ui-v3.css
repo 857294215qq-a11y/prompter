@@ -108,6 +108,7 @@ input[type="checkbox"][role="switch"]:disabled { opacity: .5; cursor: default; }
 .start-actions { display: grid; gap: 8px; flex-shrink: 0; padding-top: 8px; }
 .start-actions .btn { width: 100%; }
 .start-actions .primary { min-height: 40px; }
+.start-actions [aria-disabled="true"] { opacity: .45; cursor: default; }
 .settings-collapsed #settingsPanel { display: none; }
 .settings-collapsed .settings-toggle { background: var(--panel); }
 .sheet-backdrop { position: fixed; inset: 0; z-index: 14; border: 0; background: #0005; padding: 0; }
@@ -382,7 +383,6 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
   .library-panel { padding-top: 48px; }
 }
 
-.start-position { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; }
 #startPosition { min-width:0; height:32px; border:0; border-radius:8px; background:var(--panel); color:var(--fg); padding-inline:8px; }
 .format-help { display:none; position:fixed; top:60px; left:50%; transform:translateX(-50%); z-index:60; max-width:calc(100vw - 32px); padding:10px 16px; border-radius:12px; background:var(--fg); color:var(--bg); font-size:12px; box-shadow:var(--shadow); }
 .document-workspace:has([data-format="section"]:is(:hover,:focus-visible)) #format-section-help,

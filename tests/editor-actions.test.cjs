@@ -167,3 +167,49 @@ test('the delete control is an icon button with a name', () => {
   assert.match(app.$('#cueDelete img').getAttribute('src'), /trash-2\.svg$/);
   app.close();
 });
+
+function startSpy(app) { const calls = []; app.w.testEngine.enter = (c) => calls.push(c); return calls; }
+
+test('start from the top ignores the caret', () => {
+  const app = boot(DOC), calls = startSpy(app); select(app, 1, 3);
+  app.click('#start'); assert.deepEqual(calls, [false]);
+  app.click('#mobileStart'); assert.deepEqual(calls, [false, false]);
+  app.close();
+});
+
+test('start from the caret, by button or shortcut, starts once from the caret', () => {
+  const app = boot(DOC), calls = startSpy(app); select(app, 1, 3);
+  assert.equal(app.$('#startCaret').getAttribute('aria-disabled'), 'false');
+  app.click('#startCaret'); assert.deepEqual(calls, [true]);
+  const rich = app.$('#richEditor'); rich.focus();
+  rich.dispatchEvent(new app.w.KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
+  assert.deepEqual(calls, [true, true]);
+  app.close();
+});
+
+test('start from the caret is unavailable after switching documents and says why', () => {
+  const app = boot(), calls = startSpy(app);
+  const node = app.$('#richEditor').children[1].firstChild;
+  app.w.getSelection().setBaseAndExtent(node, 2, node, 2); app.$('#richEditor').dispatchEvent(new app.w.MouseEvent('mouseup'));
+  assert.equal(app.$('#startCaret').getAttribute('aria-disabled'), 'false');
+  app.click('[data-script-id="second"]');
+  const b = app.$('#startCaret');
+  assert.equal(b.getAttribute('aria-disabled'), 'true');
+  assert.match(app.$('#' + b.getAttribute('aria-describedby')).textContent, /光标/);
+  b.click(); assert.deepEqual(calls, []);
+  app.close();
+});
+
+test('shortcut without a valid caret explains and does not start', () => {
+  const app = boot(), calls = startSpy(app);
+  app.w.document.body.dispatchEvent(new app.w.KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true }));
+  assert.deepEqual(calls, []); assert.match(app.$('#uiToast').textContent, /光标/);
+  app.close();
+});
+
+test('an old saved start position is ignored and no picker remains', () => {
+  const app = boot({ startPosition: 'caret', ui: { startPosition: 'caret' } }), calls = startSpy(app);
+  assert.equal(app.$('#startPosition'), null);
+  app.click('#start'); assert.deepEqual(calls, [false]);
+  app.close();
+});

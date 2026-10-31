@@ -165,6 +165,6 @@ document.querySelectorAll('input[name="align"]').forEach((r) => r.addEventListen
 document.querySelectorAll('input[name="theme"]').forEach((r) => r.addEventListener('change', () => { S.theme = r.value; save(); }));
 $('#mx').addEventListener('click', () => setMirror('mirrorX', !S.mirrorX));
 $('#my').addEventListener('click', () => setMirror('mirrorY', !S.mirrorY));
-$('#start').addEventListener('click', () => v3 ? v3.startFromSelection() : enter(false));
+$('#start').addEventListener('click', () => v3 ? v3.startFromTop() : enter(false));
 
 

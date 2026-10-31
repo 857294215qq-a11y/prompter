@@ -326,20 +326,19 @@ test('layout motion animates tools rather than scaling editable text and rapid t
   } finally {app.close();}
 });
 
-test('start position routes desktop mobile and shortcut once and rejects a caret from another document', () => {
+test('start actions route from the top or the caret once and reject a caret from another document', () => {
   const app=boot({settings:{countdown:0}});
   try {
     const calls=[]; app.w.testEngine.enter=(fromCaret)=>calls.push(fromCaret);
-    const select=app.$('#startPosition'); assert.ok(select,'a visible start position choice is available');
     const rich=app.$('#richEditor'), node=rich.children[1].firstChild;
     app.w.getSelection().setBaseAndExtent(node,2,node,2); rich.dispatchEvent(new app.w.MouseEvent('mouseup'));
-    select.value='caret'; app.click('#start'); assert.deepEqual(calls,[true]);
-    app.click('#mobileStart'); assert.deepEqual(calls,[true,true]);
+    app.click('#startCaret'); assert.deepEqual(calls,[true]);
+    app.click('#start'); assert.deepEqual(calls,[true,false]);
+    app.click('#mobileStart'); assert.deepEqual(calls,[true,false,false]);
     rich.focus(); rich.dispatchEvent(new app.w.KeyboardEvent('keydown',{key:'Enter',ctrlKey:true,bubbles:true}));
-    assert.deepEqual(calls,[true,true,true]);
-    app.click('[data-script-id="second"]'); select.value='caret'; app.click('#start');
-    assert.equal(calls.at(-1),false); assert.match(app.$('#uiToast').textContent,/光标/);
-    select.value='start'; app.click('#start'); assert.equal(calls.at(-1),false);
+    assert.deepEqual(calls,[true,false,false,true]);
+    app.click('[data-script-id="second"]'); app.click('#startCaret');
+    assert.equal(calls.length,4); assert.equal(app.$('#startCaret').getAttribute('aria-disabled'),'true');
   } finally {app.close();}
 });
 

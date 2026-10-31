@@ -323,7 +323,7 @@ details.more > div { display: grid; gap: 8px; }
   .bar, #content .s, #toast { transition: none; }
 }
 </style>
-<link rel="stylesheet" href="ui-v3.css?v=e588e183a8">
+<link rel="stylesheet" href="ui-v3.css?v=ed2baf788d">
 </head>
 <body>
 
@@ -431,7 +431,7 @@ details.more > div { display: grid; gap: 8px; }
         <div class="group"><h3>本机录像</h3><label class="check switch-row">启用摄像头录像<input id="editorCamera" type="checkbox" role="switch"></label><p class="tip">提词时，每次从开始到暂停会保存为独立片段。</p></div><div class="group"><label class="check switch-row">录完自动下载<input id="autoSave" type="checkbox" role="switch"></label><div class="row"><span>录好的片段</span><button id="editorClips" class="btn" type="button">查看片段</button></div><p class="tip">也可使用外部摄像机独立拍摄。</p></div>
       </section>
     </div>
-    <footer class="start-actions"><label class="start-position" for="startPosition">开始位置<select id="startPosition"><option value="start">从头开始</option><option value="caret">从光标处开始</option></select></label><button id="start" class="btn primary" type="button">开始提词</button></footer>
+    <footer class="start-actions"><button id="startCaret" class="btn" type="button" aria-describedby="startCaretHelp">从光标处开始</button><p id="startCaretHelp" class="vh">在正文里点一下放好光标后可用。快捷键 ⌘/Ctrl+Enter。</p><button id="start" class="btn primary" type="button">开始提词</button></footer>
   </aside>
 </div>
 
@@ -670,26 +670,26 @@ details.more > div { display: grid; gap: 8px; }
   <p class="tip">这台手机只当遥控器用。保持这个页面开着，别锁屏。</p>
 </div>
 
-<script src="src/boot/guard.js?v=e588e183a8"></script>
-<script src="ui-v3.js?v=e588e183a8"></script>
-<script src="src/engine/00-core.js?v=e588e183a8"></script>
-<script src="src/engine/01-script.js?v=e588e183a8"></script>
-<script src="src/engine/02-editor.js?v=e588e183a8"></script>
-<script src="src/engine/03-reader.js?v=e588e183a8"></script>
-<script src="src/engine/04-playback.js?v=e588e183a8"></script>
-<script src="src/engine/05-voice.js?v=e588e183a8"></script>
-<script src="src/engine/06-recorder.js?v=e588e183a8"></script>
-<script src="src/engine/07-controls.js?v=e588e183a8"></script>
-<script src="src/engine/08-marks.js?v=e588e183a8"></script>
-<script src="src/engine/09-loop.js?v=e588e183a8"></script>
-<script src="src/engine/10-inline-edit.js?v=e588e183a8"></script>
-<script src="src/engine/11-session.js?v=e588e183a8"></script>
-<script src="src/engine/12-reader-input.js?v=e588e183a8"></script>
-<script src="src/engine/13-pip.js?v=e588e183a8"></script>
-<script src="src/engine/14-remote.js?v=e588e183a8"></script>
-<script src="src/engine/15-remote-lan.js?v=e588e183a8"></script>
-<script src="src/engine/16-nearby.js?v=e588e183a8"></script>
-<script src="src/engine/17-install.js?v=e588e183a8"></script>
-<script src="src/boot/ready.js?v=e588e183a8"></script>
+<script src="src/boot/guard.js?v=ed2baf788d"></script>
+<script src="ui-v3.js?v=ed2baf788d"></script>
+<script src="src/engine/00-core.js?v=ed2baf788d"></script>
+<script src="src/engine/01-script.js?v=ed2baf788d"></script>
+<script src="src/engine/02-editor.js?v=ed2baf788d"></script>
+<script src="src/engine/03-reader.js?v=ed2baf788d"></script>
+<script src="src/engine/04-playback.js?v=ed2baf788d"></script>
+<script src="src/engine/05-voice.js?v=ed2baf788d"></script>
+<script src="src/engine/06-recorder.js?v=ed2baf788d"></script>
+<script src="src/engine/07-controls.js?v=ed2baf788d"></script>
+<script src="src/engine/08-marks.js?v=ed2baf788d"></script>
+<script src="src/engine/09-loop.js?v=ed2baf788d"></script>
+<script src="src/engine/10-inline-edit.js?v=ed2baf788d"></script>
+<script src="src/engine/11-session.js?v=ed2baf788d"></script>
+<script src="src/engine/12-reader-input.js?v=ed2baf788d"></script>
+<script src="src/engine/13-pip.js?v=ed2baf788d"></script>
+<script src="src/engine/14-remote.js?v=ed2baf788d"></script>
+<script src="src/engine/15-remote-lan.js?v=ed2baf788d"></script>
+<script src="src/engine/16-nearby.js?v=ed2baf788d"></script>
+<script src="src/engine/17-install.js?v=ed2baf788d"></script>
+<script src="src/boot/ready.js?v=ed2baf788d"></script>
 </body>
 </html>

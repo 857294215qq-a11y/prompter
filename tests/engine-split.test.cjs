@@ -5,22 +5,9 @@ const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 const { boot, root } = require('./helpers/boot.cjs');
 
-// Inline engine from index.html lines 662–2743 at 8021127, the last commit before the split.
-// Kept as a fixture because CI checks out a shallow clone without that commit.
-const ORIGINAL = path.join(root, 'tests/fixtures/engine-8021127.txt');
 const engineFiles = () => readdirSync(path.join(root, 'src/engine')).filter((f) => f.endsWith('.js')).sort();
 const pageScripts = () => [...readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/<script\b([^>]*)>/g)]
   .map((m) => (m[1].match(/\bsrc="([^"]+)"/) || [])[1] ?? null);
-
-test('engine files reproduce the original inline script byte for byte', () => {
-  const original = readFileSync(ORIGINAL, 'utf8');
-  const joined = engineFiles()
-    .map((f) => readFileSync(path.join(root, 'src/engine', f), 'utf8').replace(/^'use strict';\n/, ''))
-    .join('')
-    .replace(/\bstopPlayback\b/g, 'stop')
-    .replace('stop: stop,', 'stop,');
-  assert.equal(joined, original);
-});
 
 test('index.html loads the input guard, ui-v3.js, every engine file in order, then the ready script', () => {
   const scripts = pageScripts();

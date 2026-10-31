@@ -202,7 +202,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     caretDocument = api.current().id;
     const result = readRich(sel.anchorNode, sel.anchorOffset, sel.focusNode, sel.focusOffset);
     api.ta.setSelectionRange(Math.min(result.start, result.end), Math.max(result.start, result.end));
-    syncFormatState();
+    syncFormatState(); syncStartActions();
   }
   function richInput() {
     caretDocument = api.current().id;
@@ -211,7 +211,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     api.ta.value = result.source; renderedSource = result.source;
     api.ta.setSelectionRange(Math.min(result.start, result.end), Math.max(result.start, result.end));
     api.ta.dispatchEvent(new Event('input', { bubbles: true }));
-    syncFormatState();
+    syncFormatState(); syncStartActions();
   }
   function sourceCaret(index) {
     // Build source offsets from the rendered tree, including hidden markdown syntax.
@@ -276,10 +276,10 @@ window.initPrompterV3 = function initPrompterV3(api) {
       b.append(title, meta); b.addEventListener('click', () => { api.openScript(doc.id); resetHistory(); mobileLeft = false; layout(); }); list.append(b);
     }
     if (!list.children.length) { const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = '没有找到稿件'; list.append(empty); }
-    renderRich(); syncFormatState();
+    renderRich(); syncFormatState(); syncStartActions();
   }
   $('#scriptSearch').addEventListener('input', refresh);
-  function resetHistory() { caretDocument = null; history = [api.ta.value]; historyIndex = 0; renderRich(true); }
+  function resetHistory() { caretDocument = null; history = [api.ta.value]; historyIndex = 0; renderRich(true); syncStartActions(); }
   api.ta.addEventListener('input', () => {
     if (!historyBusy) { history = history.slice(0, historyIndex + 1); history.push(api.ta.value); if (history.length > 100) history.shift(); historyIndex = history.length - 1; }
     syncHistory();
@@ -453,20 +453,21 @@ window.initPrompterV3 = function initPrompterV3(api) {
     container.append(video, save); showDialog('helpDialog');
   }
   on('#aboutBtn', () => help('关于提词器', [['Prompter · V3', '分段录制、语音跟随与手机遥控。'], ['本机保存', '稿件和设置保存在当前浏览器或 App 中。'], ['平台', 'Web / PWA 与 Android；桌面客户端将另行开发。'], ['语音与录像', '取决于浏览器能力与设备授权。']]));
-  on('#shortcutsBtn', () => help('快捷键与翻页笔', [['空格', '播放 / 暂停'], ['← → / PgUp PgDn', '上一页 / 下一页'], ['A / D', '上一段 / 下一段'], ['Q / E', '上一节 / 下一节'], ['R', '重录本节'], ['B / 1–9', '添加书签 / 跳到书签'], ['G / C', '语音跟随 / 录像'], ['M / V', '水平 / 垂直镜像'], ['+ − / [ ]', '语速 / 字号'], ['L / F / Esc', '目录 / 全屏 / 返回编辑'], ['Ctrl / ⌘ + Enter', '开始提词']]));
+  on('#shortcutsBtn', () => help('快捷键与翻页笔', [['空格', '播放 / 暂停'], ['← → / PgUp PgDn', '上一页 / 下一页'], ['A / D', '上一段 / 下一段'], ['Q / E', '上一节 / 下一节'], ['R', '重录本节'], ['B / 1–9', '添加书签 / 跳到书签'], ['G / C', '语音跟随 / 录像'], ['M / V', '水平 / 垂直镜像'], ['+ − / [ ]', '语速 / 字号'], ['L / F / Esc', '目录 / 全屏 / 返回编辑'], ['Ctrl / ⌘ + Enter', '从光标处开始提词']]));
 
   $('#readerTheme').addEventListener('change', (e) => { api.settings.theme = e.target.value; api.saveSettings(); if (api.isReading()) api.layout(true); });
   $('#editorVoice').addEventListener('change', () => { api.voiceToggle(); sync(); });
   $('#editorCamera').addEventListener('change', async () => { await api.camToggle(); sync(); });
   on('#editorClips', () => { api.enter(false); api.openPanel(); });
-  function startFromSelection() {
-    const useCaret = $('#startPosition').value === 'caret';
-    if (useCaret && caretDocument !== api.current().id) {
-      notify('当前稿件没有有效光标位置，已从开头开始。'); api.enter(false); return;
-    }
-    api.enter(useCaret);
+  // Two start actions: from the top always works; from the caret needs a caret placed in this document.
+  const caretReady = () => caretDocument === api.current().id;
+  function startFromTop() { api.enter(false); }
+  function startFromCaret() {
+    if (!caretReady()) { notify('当前稿件还没有光标位置，请先在正文里点一下。'); return false; }
+    api.enter(true); return true;
   }
-  on('#mobileStart', startFromSelection);
+  function syncStartActions() { $('#startCaret').setAttribute('aria-disabled', String(!caretReady())); }
+  on('#startCaret', startFromCaret); on('#mobileStart', startFromTop);
   settings.addEventListener('input', () => { if (api.isReading()) api.layout(true); });
   settings.addEventListener('change', () => { if (api.isReading()) api.layout(true); });
   function sync() {
@@ -591,7 +592,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
       else if (!$('#docMenu').hidden) { e.preventDefault(); closeMenu(); $('#docMore').focus(); }
       else if (mobileLeft || mobileRight) { e.preventDefault(); closeSheets(); }
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.activeElement === rich) { e.preventDefault(); e.stopImmediatePropagation(); caret(); startFromSelection(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !api.isReading()) { e.preventDefault(); e.stopImmediatePropagation(); if (document.activeElement === rich) caret(); startFromCaret(); }
   }, true);
 
   const motionSelector = '.modal, .popover, #panel, #hint, #cam, #uiToast, #prompter';
@@ -610,7 +611,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
   refresh(); sync();
   return {
-    startFromSelection, refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
+    startFromTop, startFromCaret, refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
     confirmAction: ask,
     emptyDocument: () => { rich.focus(); notify('先写一段正文，再开始提词。小节标题不计入正文。'); },
     saved: (ok) => { text($('#saveState'), ok ? '已保存到本机' : '保存失败，请导出稿件以免丢失'); updateMeta(); },

@@ -42,3 +42,16 @@ In-app browser: page identity, nonblank content, no relevant console warnings/er
 No Mac/Windows wrapper, fake OS controls, cloud backend, or fabricated bidirectional document-sync/conflict state. Full physical-device network, voice and video testing remains an acceptance step. These are stated capability/test boundaries rather than simulated success states.
 
 final result: passed
+
+## 2026-10-31 编辑空间与动作
+
+- 隔离分支codex/v3-editor-space；基线23项测试，当前28项通过。新增滚动补偿、DOM选区/组合事件保持、快速切换、开始位置多入口与失效光标、格式解释、减少动态效果用例。
+- IAB实际1440×900：双展开正文848px，收起后上限960px；两开关x16/x1380、y8、44×44，工具胶囊y8。1920×1080达到960px上限。
+- 中文160字段落长稿：右栏展开时完整可见5段800字；收起时6段960字，增加20%；同段高度118.375px降至88.78125px，字号不变。该计数仅计完整可见段落，非全部部分可见文字。
+- 长稿中段缩栏：首个可见第49段保持，顶部-0.65625px变-0.5625px。滚动值补偿6668/6638.5，而非归零。DOM回归覆盖选区与composition事件；真实操作系统中文IME候选窗未测试。
+- 375/767/768/1199/1200/1440/1920宽度检查；768处发现启动按钮裁切，已让窄平板工具栏分行。844×390参数面板的启动按钮底部365px，可达。手机深色、桌面深色及设置关闭主题/侧栏保持已检查。
+- Figma Mac/Windows原生参考同步70状态；原生Windows紧凑标题栏保留，Web不模拟。两侧开关移至独立固定层，正文848/960px。开始位置两态组件2153:78/2153:82；一个专用Motion演示画板2153:9657，正式画板不自动播放验证动画。
+- Figma Motion指定曲线与240ms数据读回，导出两秒视频并抽查起始/中间/关闭/返回阶段。文件在docs/design/2026-10-31-editor-space/；该视频只验证面板运动，真实文字重排在IAB验证。
+- 构建npm run build:web通过，缓存版本更新editor-space-2。Android真机、麦克风、摄像头与双设备同步不在本轮布局验证范围。
+- 独立审阅后修正顶层Text选区导致布局异常和手输Markdown普通移焦不格式化；两项先复现失败再修复，最终30项测试通过。布局按钮之间的移焦和composition期间保留编辑DOM。
+- 独立审阅为代码检查，没有独立复播IAB或Figma；实际OS中文输入法候选窗口、Android真机仍未测。窄平板参数面板打开时将入口锚在面板标题内，避免覆盖页签。

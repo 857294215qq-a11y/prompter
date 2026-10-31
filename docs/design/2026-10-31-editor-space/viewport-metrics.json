@@ -1,0 +1,86 @@
+[
+  {
+    "bodyWidth": 960,
+    "height": 1080,
+    "horizontalOverflow": false,
+    "rightButton": {
+      "bottom": 52,
+      "right": 1904,
+      "x": 1860,
+      "y": 8
+    },
+    "width": 1920
+  },
+  {
+    "bodyWidth": 848,
+    "height": 900,
+    "horizontalOverflow": false,
+    "rightButton": {
+      "bottom": 52,
+      "right": 1424,
+      "x": 1380,
+      "y": 8
+    },
+    "width": 1440
+  },
+  {
+    "bodyWidth": 608,
+    "height": 900,
+    "horizontalOverflow": false,
+    "rightButton": {
+      "bottom": 52,
+      "right": 1184,
+      "x": 1140,
+      "y": 8
+    },
+    "width": 1200
+  },
+  {
+    "bodyWidth": 720,
+    "height": 900,
+    "horizontalOverflow": false,
+    "rightButton": {
+      "bottom": 62,
+      "right": 1051,
+      "x": 975,
+      "y": 22
+    },
+    "width": 1199
+  },
+  {
+    "bodyWidth": 472,
+    "height": 900,
+    "horizontalOverflow": false,
+    "rightButton": {
+      "bottom": 108,
+      "right": 568,
+      "x": 492,
+      "y": 68
+    },
+    "width": 768
+  },
+  {
+    "bodyWidth": 624,
+    "height": 812,
+    "horizontalOverflow": false,
+    "rightButton": {
+      "bottom": 60,
+      "right": 703,
+      "x": 659,
+      "y": 16
+    },
+    "width": 767
+  },
+  {
+    "bodyWidth": 335,
+    "height": 812,
+    "horizontalOverflow": false,
+    "rightButton": {
+      "bottom": 60,
+      "right": 311,
+      "x": 267,
+      "y": 16
+    },
+    "width": 375
+  }
+]

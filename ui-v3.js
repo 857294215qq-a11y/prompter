@@ -7,6 +7,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   const systemDark = matchMedia('(prefers-color-scheme: dark)');
   const ui = Object.assign({ appearance: 'system', left: true, right: true, tab: 'Play' }, api.store.get('ui', {}));
   let mobileLeft = false, mobileRight = false, focusRestore = null, notifyTimer;
+  let caretDocument = null;
   let history = [api.ta.value], historyIndex = 0, historyBusy = false, action = null, actionOpener;
   let optionsOpen = false, parametersInReader = false, latestRemote = null, remoteLocked = false;
   let settingsMove = 0;
@@ -15,7 +16,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   const icon = (name) => { const img = document.createElement('img'); img.src = 'assets/v3/' + name + '.svg'; img.className = 'v3-icon'; img.alt = ''; return img; };
   const text = (el, value) => { if (el.textContent !== value) el.textContent = value; };
   const motionJobs = new WeakMap();
-  let previousLayout = null;
+  let previousLayout = null, toolbarMotion = null;
   function animateSurface(el, show, display = 'block') {
     motionJobs.get(el)?.cancel();
     if (typeof el.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -47,7 +48,24 @@ window.initPrompterV3 = function initPrompterV3(api) {
   appearance(); systemDark.addEventListener('change', appearance);
   $('#appearance').addEventListener('change', (e) => { ui.appearance = e.target.value; uiSave(); appearance(); });
 
+  function captureEditorAnchor() {
+    const content = $('.document-content'), rich = $('#richEditor');
+    if (!content || !rich || editor.hidden) return null;
+    const sel = window.getSelection();
+    let element = sel?.anchorNode && rich.contains(sel.anchorNode) ? sel.anchorNode : null;
+    if (element?.nodeType === Node.TEXT_NODE) element = element.parentElement;
+    while (element && element !== rich && element.parentNode !== rich) element = element.parentElement;
+    const bounds = content.getBoundingClientRect();
+    if (!element || element.getBoundingClientRect().bottom <= bounds.top || element.getBoundingClientRect().top >= bounds.bottom)
+      element = [...rich.children].find(n => n.getBoundingClientRect().bottom > bounds.top) || rich;
+    return { element, top: element.getBoundingClientRect().top, scrollTop: content.scrollTop };
+  }
+  function restoreEditorAnchor(anchor) {
+    if (anchor?.element.isConnected) $('.document-content').scrollTop = anchor.scrollTop + anchor.element.getBoundingClientRect().top - anchor.top;
+  }
   function layout() {
+    const anchor = captureEditorAnchor();
+    const toolbar = $('.document-toolbar'), beforeTools = toolbar.getBoundingClientRect();
     const left = small.matches ? mobileLeft : ui.left;
     const right = tablet.matches ? mobileRight : ui.right;
     editor.classList.toggle('library-collapsed', !left);
@@ -63,6 +81,12 @@ window.initPrompterV3 = function initPrompterV3(api) {
       if (right !== previousLayout.right) animateSurface(settings, right, 'flex');
     }
     previousLayout = { left, right };
+    restoreEditorAnchor(anchor);
+    toolbarMotion?.cancel();
+    if (previousLayout && typeof toolbar.animate === 'function' && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const after = toolbar.getBoundingClientRect(), dx = beforeTools.left - after.left;
+      if (dx) toolbarMotion = toolbar.animate([{translate: dx + 'px 0'}, {translate:'0 0'}], {duration:240,easing:'cubic-bezier(.32,.72,0,1)'});
+    }
     updateMeta();
   }
   function closeSheets() { mobileLeft = mobileRight = false; closeMenu(); closeReaderOptions(); layout(); }
@@ -93,7 +117,9 @@ window.initPrompterV3 = function initPrompterV3(api) {
   on('#focusEditor', () => {
     if (!focusRestore) { focusRestore = { left: ui.left, right: ui.right }; ui.left = ui.right = false; }
     else { Object.assign(ui, focusRestore); focusRestore = null; }
-    $('#focusEditor').setAttribute('aria-pressed', String(!!focusRestore)); layout();
+    $('#focusEditor').setAttribute('aria-pressed', String(!!focusRestore));
+    $('#focusEditor').setAttribute('aria-label', focusRestore ? '退出专注编辑' : '专注编辑');
+    $('#focusEditor').title = focusRestore ? '退出专注编辑，恢复原侧栏' : '专注编辑，隐藏两侧栏（不进入系统全屏）'; layout();
   });
 
   function tab(name) {
@@ -173,10 +199,12 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function caret() {
     const sel = window.getSelection();
     if (!sel?.anchorNode || !rich.contains(sel.anchorNode)) return;
+    caretDocument = api.current().id;
     const result = readRich(sel.anchorNode, sel.anchorOffset, sel.focusNode, sel.focusOffset);
     api.ta.setSelectionRange(Math.min(result.start, result.end), Math.max(result.start, result.end));
   }
   function richInput() {
+    caretDocument = api.current().id;
     const sel = window.getSelection();
     const result = readRich(sel?.anchorNode, sel?.anchorOffset, sel?.focusNode, sel?.focusOffset);
     api.ta.value = result.source; renderedSource = result.source;
@@ -210,14 +238,21 @@ window.initPrompterV3 = function initPrompterV3(api) {
     renderRich(true); sourceCaret(start + value.length); caret();
   }
   rich.addEventListener('input', richInput);
-  rich.addEventListener('keyup', caret); rich.addEventListener('mouseup', caret); rich.addEventListener('blur', () => { caret(); renderRich(true); });
+  rich.addEventListener('keyup', caret); rich.addEventListener('mouseup', caret); rich.addEventListener('blur', (e) => {
+    caret();
+    const layoutControl = e.relatedTarget?.closest?.('#toggleLibrary, #toggleSettings, #focusEditor');
+    renderRich(!layoutControl && !composing);
+  });
+  let composing = false;
+  rich.addEventListener('compositionstart', () => { composing = true; });
+  rich.addEventListener('compositionend', () => { composing = false; });
   rich.addEventListener('paste', (e) => { e.preventDefault(); replaceSelection(e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n')); });
   rich.addEventListener('beforeinput', (e) => { if (['insertParagraph', 'insertLineBreak'].includes(e.inputType)) { e.preventDefault(); replaceSelection('\n'); } });
   rich.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.isComposing) { e.preventDefault(); replaceSelection('\n'); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey ? 1 : -1); }
   });
-  document.querySelectorAll('[data-format], #startCaret').forEach((b) => b.addEventListener('pointerdown', (e) => { caret(); e.preventDefault(); }));
+  document.querySelectorAll('[data-format]').forEach((b) => b.addEventListener('pointerdown', (e) => { caret(); e.preventDefault(); }));
 
   function updateMeta() {
     const date = new Date(api.current().updated);
@@ -242,7 +277,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     renderRich();
   }
   $('#scriptSearch').addEventListener('input', refresh);
-  function resetHistory() { history = [api.ta.value]; historyIndex = 0; renderRich(true); }
+  function resetHistory() { caretDocument = null; history = [api.ta.value]; historyIndex = 0; renderRich(true); }
   api.ta.addEventListener('input', () => {
     if (!historyBusy) { history = history.slice(0, historyIndex + 1); history.push(api.ta.value); if (history.length > 100) history.shift(); historyIndex = history.length - 1; }
     syncHistory();
@@ -331,7 +366,14 @@ window.initPrompterV3 = function initPrompterV3(api) {
   $('#editorVoice').addEventListener('change', () => { api.voiceToggle(); sync(); });
   $('#editorCamera').addEventListener('change', async () => { await api.camToggle(); sync(); });
   on('#editorClips', () => { api.enter(false); api.openPanel(); });
-  on('#mobileStart', () => api.enter(false));
+  function startFromSelection() {
+    const useCaret = $('#startPosition').value === 'caret';
+    if (useCaret && caretDocument !== api.current().id) {
+      notify('当前稿件没有有效光标位置，已从开头开始。'); api.enter(false); return;
+    }
+    api.enter(useCaret);
+  }
+  on('#mobileStart', startFromSelection);
   settings.addEventListener('input', () => { if (api.isReading()) api.layout(true); });
   settings.addEventListener('change', () => { if (api.isReading()) api.layout(true); });
   function sync() {
@@ -456,7 +498,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
       else if (!$('#docMenu').hidden) { e.preventDefault(); closeMenu(); $('#docMore').focus(); }
       else if (mobileLeft || mobileRight) { e.preventDefault(); closeSheets(); }
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.activeElement === rich) { e.preventDefault(); e.stopImmediatePropagation(); caret(); api.enter(false); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.activeElement === rich) { e.preventDefault(); e.stopImmediatePropagation(); caret(); startFromSelection(); }
   }, true);
 
   const motionSelector = '.modal, .popover, #panel, #hint, #cam, #uiToast, #prompter';
@@ -475,7 +517,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
   refresh(); sync();
   return {
-    refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
+    startFromSelection, refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
     confirmAction: ask,
     emptyDocument: () => { rich.focus(); notify('先写一段正文，再开始提词。小节标题不计入正文。'); },
     saved: (ok) => { text($('#saveState'), ok ? '已保存到本机' : '保存失败，请导出稿件以免丢失'); updateMeta(); },

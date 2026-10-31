@@ -64,3 +64,16 @@ test('stopPlayback does not replace window.stop', () => {
     assert.equal(app.w.testEngine.stop, app.w.stopPlayback);
   } finally { app.close(); }
 });
+
+test('service worker caches every local script and stylesheet the page loads', () => {
+  const html = readFileSync(path.join(root, 'index.html'), 'utf8');
+  const styles = [...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+  const local = [...pageScripts(), ...styles].filter((s) => s && !s.includes('://'));
+  const assets = readFileSync(path.join(root, 'sw.js'), 'utf8').match(/const ASSETS = \[([\s\S]*?)\];/)[1];
+  for (const file of local) assert.ok(assets.includes(`'./${file}'`), 'Missing offline asset ' + file);
+});
+
+test('web build ships the engine files', () => {
+  execFileSync(process.execPath, ['scripts/build-web.mjs'], { cwd: root });
+  assert.deepEqual(readdirSync(path.join(root, 'www/src/engine')).sort(), engineFiles());
+});

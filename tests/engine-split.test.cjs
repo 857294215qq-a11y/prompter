@@ -29,32 +29,42 @@ test('index.html loads every engine file once, in order, after ui-v3.js', () => 
   assert.deepEqual(local, ['ui-v3.js', ...engineFiles().map((f) => 'src/engine/' + f)]);
 });
 
-test('boots in the browser without errors', () => {
+test('boots in the browser without errors', async () => {
   const app = boot();
   try {
-    assert.deepEqual(app.errors, []);
+    assert.deepEqual(await app.settle(), []);
     assert.ok(app.$('#ta').value.length > 0);
   } finally { app.close(); }
 });
 
-test('boots as the Android app without errors', () => {
+test('boots as the Android app without errors', async () => {
   const app = boot({}, { native: true });
   try {
-    assert.deepEqual(app.errors, []);
+    assert.deepEqual(await app.settle(), []);
     const appOnly = [...app.w.document.querySelectorAll('.app-only')];
     assert.ok(appOnly.length > 0);
     assert.ok(appOnly.every((el) => el.hidden === false));
   } finally { app.close(); }
 });
 
-test('boots from a direct remote link without errors', () => {
-  const app = boot({}, { url: 'https://prompter.test/#d=abc' });
-  try { assert.deepEqual(app.errors, []); } finally { app.close(); }
+test('boots as the Android app with nearby devices on without errors', async () => {
+  const app = boot({ settings: { nearOn: true } }, { native: true });
+  try { assert.deepEqual(await app.settle(), []); } finally { app.close(); }
 });
 
-test('boots from a relay remote link without errors', () => {
+test('boots with the relay remote already on without errors', async () => {
+  const app = boot({ settings: { remoteOn: true } });
+  try { assert.deepEqual(await app.settle(), []); } finally { app.close(); }
+});
+
+test('boots from a direct remote link without errors', async () => {
+  const app = boot({}, { url: 'https://prompter.test/#d=abc' });
+  try { assert.deepEqual(await app.settle(), []); } finally { app.close(); }
+});
+
+test('boots from a relay remote link without errors', async () => {
   const app = boot({}, { url: 'https://prompter.test/?r=room#key' });
-  try { assert.deepEqual(app.errors, []); } finally { app.close(); }
+  try { assert.deepEqual(await app.settle(), []); } finally { app.close(); }
 });
 
 test('stopPlayback does not replace window.stop', () => {

@@ -9,11 +9,16 @@ const legacy = [
   { id: 'second', text: '# 另一份稿件\n不应丢失的正文。', updated: 2000 },
 ];
 
+// Promise rejections inside jsdom reach Node, not the window; route them to every app still open.
+const live = new Set();
+process.on('unhandledRejection', (reason) => { for (const errors of live) errors.push(String(reason?.message || reason)); });
+
 // 安卓 App 里 Capacitor 注入的原生插件：每个方法都返回成功
 const fakeLink = () => new Proxy({}, { get: (_, k) => (k === 'then' ? undefined : () => Promise.resolve({})) });
 
 function boot(saved = {}, { native = false, url = 'https://prompter.test/' } = {}) {
   const errors = [];
+  live.add(errors);
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', (e) => errors.push(e.message));
   const dom = new JSDOM(readFileSync(path.join(root, 'index.html'), 'utf8'), {
@@ -46,7 +51,9 @@ function boot(saved = {}, { native = false, url = 'https://prompter.test/' } = {
   const $ = (s) => w.document.querySelector(s);
   const click = (s) => { const el = $(s); assert.ok(el, 'Missing control ' + s); el.click(); };
   const input = (s, value) => { $(s).value = value; $(s).dispatchEvent(new w.Event('input', { bubbles: true })); };
-  return { w, $, click, input, errors, close: () => w.close(), stored: (k) => JSON.parse(w.localStorage.getItem('prompter:' + k)) };
+  // Let timers, microtasks and load handlers run, then report everything that went wrong.
+  const settle = async (ms = 100) => { await new Promise((r) => setTimeout(r, ms)); return errors; };
+  return { w, $, click, input, errors, settle, close: () => { live.delete(errors); w.close(); }, stored: (k) => JSON.parse(w.localStorage.getItem('prompter:' + k)) };
 }
 
 module.exports = { boot, legacy, root };

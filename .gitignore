@@ -14,3 +14,4 @@ android/app/src/main/res/xml/config.xml
 *.keystore
 *.jks
 signing/
+.DS_Store

@@ -365,6 +365,37 @@ window.initPrompterV3 = function initPrompterV3(api) {
   });
   document.addEventListener('click', (e) => { if (!e.target.closest('#cueMenu, [data-format="cue"]')) closeCueMenu(false); });
 
+  // Editing an existing cue: change its words (brackets kept), or delete it; Escape leaves it alone.
+  const cueEditor = $('#cueEditor'), cueInput = $('#cueEditInput');
+  let editing = null;
+  function cueRange(cue) {
+    const t = cue.firstChild, inner = readRich(t, 0, t, t.length);
+    return { start: inner.start - 1, end: inner.end + 1, open: cue.dataset.cue === '【' ? '【' : '[' };
+  }
+  function openCueEditor(cue) {
+    editing = cueRange(cue);
+    const rect = cue.getBoundingClientRect();
+    cueEditor.hidden = false;
+    cueEditor.style.left = Math.max(12, Math.min(innerWidth - 232, rect.left)) + 'px';
+    cueEditor.style.top = Math.max(12, rect.bottom + 8) + 'px';
+    cueInput.value = cue.textContent; cueInput.focus(); cueInput.select();
+  }
+  function closeCueEditor(caretAt) {
+    if (cueEditor.hidden) return;
+    cueEditor.hidden = true; editing = null;
+    if (caretAt !== undefined) sourceCaret(caretAt);
+  }
+  function rewriteCue(value) {
+    const range = editing, cue = cleanCue(value); closeCueEditor();
+    api.ta.setSelectionRange(range.start, range.end);
+    replaceSelectionAtBuffer(cue ? range.open + cue + (range.open === '【' ? '】' : ']') : '');
+  }
+  rich.addEventListener('click', (e) => { const cue = e.target.closest?.('.editor-cue'); if (cue?.firstChild) openCueEditor(cue); });
+  cueEditor.addEventListener('submit', (e) => { e.preventDefault(); if (editing) rewriteCue(cueInput.value); });
+  on('#cueDelete', () => { if (editing) rewriteCue(''); });
+  cueInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeCueEditor(editing.end); } });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#cueEditor, .editor-cue')) closeCueEditor(); });
+
   function closeMenu() { $('#docMenu').hidden = true; $('#docMore').setAttribute('aria-expanded', 'false'); }
   function menu() {
     const el = $('#docMenu'); el.hidden = !el.hidden; $('#docMore').setAttribute('aria-expanded', String(!el.hidden));

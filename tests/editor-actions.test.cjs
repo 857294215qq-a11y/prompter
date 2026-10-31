@@ -120,3 +120,50 @@ test('clicking outside the cue menu closes it without inserting', () => {
   assert.equal(app.$('#cueMenu').hidden, true); assert.equal(source(app), before);
   app.close();
 });
+
+const cueAt = (app, line) => app.$('#richEditor').children[line].querySelector('.editor-cue');
+
+test('clicking a cue opens its editor with the cue text', () => {
+  const app = boot(CUES); cueAt(app, 0).click();
+  assert.equal(app.$('#cueEditor').hidden, false);
+  assert.equal(app.$('#cueEditInput').value, '停顿'); assert.equal(app.w.document.activeElement, app.$('#cueEditInput'));
+  assert.equal(app.$('#cueEditInput').maxLength, 12);
+  app.close();
+});
+
+test('Enter replaces the cue text in one undo step', () => {
+  const app = boot(CUES), original = source(app); cueAt(app, 0).click();
+  app.$('#cueEditInput').value = '换气'; submit(app, '#cueEditor');
+  assert.equal(source(app), '开场[换气]正文\n结尾【微笑】好'); assert.equal(app.$('#cueEditor').hidden, true);
+  app.click('#undoEdit'); assert.equal(source(app), original); assert.equal(app.$('#undoEdit').disabled, true);
+  app.close();
+});
+
+test('editing a full-width cue keeps its brackets', () => {
+  const app = boot(CUES); cueAt(app, 1).click();
+  app.$('#cueEditInput').value = '看镜头'; submit(app, '#cueEditor');
+  assert.equal(source(app), '开场[停顿]正文\n结尾【看镜头】好');
+  app.close();
+});
+
+test('delete, or an emptied cue, removes the whole cue and leaves the words', () => {
+  let app = boot(CUES); cueAt(app, 0).click(); app.click('#cueDelete');
+  assert.equal(source(app), '开场正文\n结尾【微笑】好'); assert.equal(app.$('#cueEditor').hidden, true); app.close();
+  app = boot(CUES); cueAt(app, 0).click(); app.$('#cueEditInput').value = ''; submit(app, '#cueEditor');
+  assert.equal(source(app), '开场正文\n结尾【微笑】好'); app.close();
+});
+
+test('Escape closes the cue editor without changes', () => {
+  const app = boot(CUES), before = source(app); cueAt(app, 0).click();
+  app.$('#cueEditInput').value = '改了';
+  app.$('#cueEditInput').dispatchEvent(new app.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.equal(app.$('#cueEditor').hidden, true); assert.equal(source(app), before);
+  app.close();
+});
+
+test('the delete control is an icon button with a name', () => {
+  const app = boot(CUES);
+  assert.equal(app.$('#cueDelete').getAttribute('aria-label'), '删除提示');
+  assert.match(app.$('#cueDelete img').getAttribute('src'), /trash-2\.svg$/);
+  app.close();
+});

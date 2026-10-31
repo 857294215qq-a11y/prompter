@@ -323,7 +323,7 @@ details.more > div { display: grid; gap: 8px; }
   .bar, #content .s, #toast { transition: none; }
 }
 </style>
-<link rel="stylesheet" href="ui-v3.css?v=fc2a23310c">
+<link rel="stylesheet" href="ui-v3.css?v=e588e183a8">
 </head>
 <body>
 
@@ -386,6 +386,10 @@ details.more > div { display: grid; gap: 8px; }
     <p id="format-section-help" class="format-help" role="tooltip">切换当前行的小节标题与正文。</p>
     <p id="format-emphasis-help" class="format-help" role="tooltip">为选中文字添加或取消重点；没有选中文字时不可用。</p>
     <p id="format-cue-help" class="format-help" role="tooltip">在光标处插入停顿等提示，提示不计入朗读字数。</p>
+    <form id="cueEditor" class="popover cue-editor" aria-label="编辑提示" hidden>
+      <label class="vh" for="cueEditInput">提示文字</label><input id="cueEditInput" maxlength="12" autocomplete="off">
+      <button id="cueDelete" class="icon-btn danger" type="button" aria-label="删除提示"><img class="v3-icon" src="assets/v3/trash-2.svg" alt=""></button>
+    </form>
     <div id="cueMenu" class="popover cue-menu" role="menu" aria-label="插入提示" hidden>
       <p class="menu-heading">插入到光标处</p>
       <button type="button" role="menuitem" data-cue="停顿">停顿</button>
@@ -666,26 +670,26 @@ details.more > div { display: grid; gap: 8px; }
   <p class="tip">这台手机只当遥控器用。保持这个页面开着，别锁屏。</p>
 </div>
 
-<script src="src/boot/guard.js?v=fc2a23310c"></script>
-<script src="ui-v3.js?v=fc2a23310c"></script>
-<script src="src/engine/00-core.js?v=fc2a23310c"></script>
-<script src="src/engine/01-script.js?v=fc2a23310c"></script>
-<script src="src/engine/02-editor.js?v=fc2a23310c"></script>
-<script src="src/engine/03-reader.js?v=fc2a23310c"></script>
-<script src="src/engine/04-playback.js?v=fc2a23310c"></script>
-<script src="src/engine/05-voice.js?v=fc2a23310c"></script>
-<script src="src/engine/06-recorder.js?v=fc2a23310c"></script>
-<script src="src/engine/07-controls.js?v=fc2a23310c"></script>
-<script src="src/engine/08-marks.js?v=fc2a23310c"></script>
-<script src="src/engine/09-loop.js?v=fc2a23310c"></script>
-<script src="src/engine/10-inline-edit.js?v=fc2a23310c"></script>
-<script src="src/engine/11-session.js?v=fc2a23310c"></script>
-<script src="src/engine/12-reader-input.js?v=fc2a23310c"></script>
-<script src="src/engine/13-pip.js?v=fc2a23310c"></script>
-<script src="src/engine/14-remote.js?v=fc2a23310c"></script>
-<script src="src/engine/15-remote-lan.js?v=fc2a23310c"></script>
-<script src="src/engine/16-nearby.js?v=fc2a23310c"></script>
-<script src="src/engine/17-install.js?v=fc2a23310c"></script>
-<script src="src/boot/ready.js?v=fc2a23310c"></script>
+<script src="src/boot/guard.js?v=e588e183a8"></script>
+<script src="ui-v3.js?v=e588e183a8"></script>
+<script src="src/engine/00-core.js?v=e588e183a8"></script>
+<script src="src/engine/01-script.js?v=e588e183a8"></script>
+<script src="src/engine/02-editor.js?v=e588e183a8"></script>
+<script src="src/engine/03-reader.js?v=e588e183a8"></script>
+<script src="src/engine/04-playback.js?v=e588e183a8"></script>
+<script src="src/engine/05-voice.js?v=e588e183a8"></script>
+<script src="src/engine/06-recorder.js?v=e588e183a8"></script>
+<script src="src/engine/07-controls.js?v=e588e183a8"></script>
+<script src="src/engine/08-marks.js?v=e588e183a8"></script>
+<script src="src/engine/09-loop.js?v=e588e183a8"></script>
+<script src="src/engine/10-inline-edit.js?v=e588e183a8"></script>
+<script src="src/engine/11-session.js?v=e588e183a8"></script>
+<script src="src/engine/12-reader-input.js?v=e588e183a8"></script>
+<script src="src/engine/13-pip.js?v=e588e183a8"></script>
+<script src="src/engine/14-remote.js?v=e588e183a8"></script>
+<script src="src/engine/15-remote-lan.js?v=e588e183a8"></script>
+<script src="src/engine/16-nearby.js?v=e588e183a8"></script>
+<script src="src/engine/17-install.js?v=e588e183a8"></script>
+<script src="src/boot/ready.js?v=e588e183a8"></script>
 </body>
 </html>

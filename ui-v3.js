@@ -25,7 +25,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const animations = [];
     const options = { duration: 240, easing: 'cubic-bezier(.32,.72,0,1)' };
     if (target !== el) animations.push(el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], options));
-    const from = { opacity: 0, translate: '0 12px', scale: '.98' }, to = { opacity: 1, translate: '0 0', scale: '1' };
+    const x = target.id === 'hint' ? '-50%' : '0';
+    const from = { opacity: 0, translate: x + ' 12px', scale: '.98' }, to = { opacity: 1, translate: x + ' 0', scale: '1' };
     animations.push(target.animate(show ? [from, to] : [to, from], options));
     let active = true;
     const restore = () => { if (!active) return; active = false; animations.forEach(a => a.cancel()); if (!show) { if (oldDisplay) el.style.setProperty('display', oldDisplay, priority); else el.style.removeProperty('display'); } motionJobs.delete(el); };

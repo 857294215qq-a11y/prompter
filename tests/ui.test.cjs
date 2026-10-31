@@ -319,3 +319,103 @@ test('dialogs animate both directions with the specified ease and respect reduce
     assert.equal(app.$('#appDialog').hidden, false);
   } finally { app.close(); }
 });
+
+test('sidebar reflow keeps the visible paragraph anchored without replacing selection or IME nodes', () => {
+  const app = boot();
+  try {
+    const rich = app.$('#richEditor'), line = rich.children[1], node = line.firstChild;
+    const sel = app.w.getSelection(); sel.setBaseAndExtent(node, 1, node, 4);
+    const content = app.$('.document-content'); content.scrollTop = 300;
+    content.getBoundingClientRect = () => ({top: 40, bottom: 700});
+    line.getBoundingClientRect = () => ({top: app.$('#editor').classList.contains('library-collapsed') ? 80 : 140, bottom: 180});
+    const value = app.$('#ta').value;
+    rich.dispatchEvent(new app.w.CompositionEvent('compositionstart', {bubbles:true}));
+    app.click('#toggleLibrary');
+    assert.equal(content.scrollTop, 240);
+    assert.equal(rich.children[1], line);
+    assert.equal(sel.anchorNode, node); assert.equal(sel.anchorOffset, 1);
+    assert.equal(sel.focusNode, node); assert.equal(sel.focusOffset, 4);
+    assert.equal(app.$('#ta').value, value);
+  } finally { app.close(); }
+});
+
+test('layout motion animates tools rather than scaling editable text and rapid toggles settle correctly', async () => {
+  const app = boot();
+  try {
+    const calls=[];
+    app.w.HTMLElement.prototype.animate=function(frames,options){calls.push({el:this,frames,options});return {cancel(){},finished:Promise.resolve()};};
+    const tools=app.$('.document-toolbar');
+    tools.getBoundingClientRect=()=>({left:app.$('#editor').classList.contains('library-collapsed')?64:264,top:8});
+    app.click('#toggleLibrary'); app.click('#toggleLibrary'); app.click('#toggleLibrary');
+    app.click('#toggleSettings'); app.click('#toggleSettings');
+    await Promise.resolve(); await Promise.resolve();
+    assert.ok(calls.some(c=>c.el===tools&&c.options.easing==='cubic-bezier(.32,.72,0,1)'&&c.options.duration===240));
+    assert.ok(!calls.some(c=>c.el===app.$('#richEditor')));
+    assert.equal(app.$('#toggleLibrary').getAttribute('aria-expanded'),'false');
+    assert.equal(app.$('#libraryPanel').inert,true);
+    assert.equal(app.$('#toggleSettings').getAttribute('aria-expanded'),'true');
+    assert.equal(app.$('#settingsPanel').inert,false);
+  } finally {app.close();}
+});
+
+test('start position routes desktop mobile and shortcut once and rejects a caret from another document', () => {
+  const app=boot({settings:{countdown:0}});
+  try {
+    const calls=[]; app.w.testEngine.enter=(fromCaret)=>calls.push(fromCaret);
+    const select=app.$('#startPosition'); assert.ok(select,'a visible start position choice is available');
+    const rich=app.$('#richEditor'), node=rich.children[1].firstChild;
+    app.w.getSelection().setBaseAndExtent(node,2,node,2); rich.dispatchEvent(new app.w.MouseEvent('mouseup'));
+    select.value='caret'; app.click('#start'); assert.deepEqual(calls,[true]);
+    app.click('#mobileStart'); assert.deepEqual(calls,[true,true]);
+    rich.focus(); rich.dispatchEvent(new app.w.KeyboardEvent('keydown',{key:'Enter',ctrlKey:true,bubbles:true}));
+    assert.deepEqual(calls,[true,true,true]);
+    app.click('[data-script-id="second"]'); select.value='caret'; app.click('#start');
+    assert.equal(calls.at(-1),false); assert.match(app.$('#uiToast').textContent,/光标/);
+    select.value='start'; app.click('#start'); assert.equal(calls.at(-1),false);
+  } finally {app.close();}
+});
+
+test('format tools explain their scope to keyboard users and focus has an explicit exit name', () => {
+  const app=boot();
+  try {
+    for(const [format,label] of [['section','小节标题'],['emphasis','标记重点'],['cue','插入提示']]){
+      const b=app.$('[data-format="'+format+'"]'); assert.equal(b.getAttribute('aria-label'),label);
+      const hint=app.w.document.getElementById(b.getAttribute('aria-describedby'));assert.ok(hint?.textContent);
+      b.focus();assert.equal(app.w.document.activeElement,b);
+    }
+    assert.match(app.$('#paneText').textContent,/仅影响提词画面/);
+    app.click('#focusEditor');assert.match(app.$('#focusEditor').getAttribute('aria-label'),/退出/);
+  }finally{app.close();}
+});
+
+test('reduced motion skips sidebar and tool animations while changing accessible state', () => {
+ const app=boot();try {
+   app.w.matchMedia=q=>({matches:q.includes('prefers-reduced-motion'),addEventListener(){}});
+   let animations=0;app.w.HTMLElement.prototype.animate=()=>{animations++;return {cancel(){},finished:Promise.resolve()};};
+   app.click('#toggleLibrary');app.click('#toggleSettings');
+   assert.equal(animations,0);assert.equal(app.$('#libraryPanel').inert,true);assert.equal(app.$('#settingsPanel').inert,true);
+ }finally{app.close();}
+});
+
+test('direct contenteditable text nodes do not break sidebar reflow',()=>{
+ const app=boot();try{
+  const rich=app.$('#richEditor');rich.textContent='直接输入的新正文';
+  app.w.getSelection().setBaseAndExtent(rich.firstChild,2,rich.firstChild,2);
+  rich.dispatchEvent(new app.w.Event('input',{bubbles:true}));
+  const errors=[];app.w.addEventListener('error',e=>{errors.push(e.message);e.preventDefault();});
+  app.click('#toggleLibrary');
+  assert.equal(errors.length,0);assert.equal(app.$('#editor').classList.contains('library-collapsed'),true);
+ }finally{app.close();}
+});
+
+test('typed markdown formats on ordinary blur but layout controls preserve raw editing nodes',()=>{
+ const app=boot();try{
+  const rich=app.$('#richEditor');rich.innerHTML='<div class="editor-line">**新重点**</div>';
+  app.w.getSelection().setBaseAndExtent(rich.firstChild.firstChild,3,rich.firstChild.firstChild,3);
+  rich.dispatchEvent(new app.w.Event('input',{bubbles:true}));
+  const line=rich.firstChild;rich.dispatchEvent(new app.w.FocusEvent('blur',{relatedTarget:app.$('#toggleSettings')}));
+  assert.equal(rich.firstChild,line);
+  rich.dispatchEvent(new app.w.FocusEvent('blur',{relatedTarget:app.$('#scriptSearch')}));
+  assert.equal(rich.querySelector('strong')?.textContent,'新重点');assert.equal(app.$('#ta').value,'**新重点**');
+ }finally{app.close();}
+});

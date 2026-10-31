@@ -373,9 +373,9 @@ details.more > div { display: grid; gap: 8px; }
   <main class="document-workspace">
     <header class="document-toolbar">
       <div class="tool-pill format-tools" role="toolbar" aria-label="正文工具">
-        <button class="text-btn" type="button" data-format="section" title="插入小节标题"><img class="v3-icon" src="assets/v3/list.svg" alt=""><span>小节</span></button>
-        <button class="text-btn" type="button" data-format="emphasis" title="标记重点"><img class="v3-icon" src="assets/v3/highlighter.svg" alt=""><span>重点</span></button>
-        <button class="text-btn" type="button" data-format="cue" title="插入提示"><img class="v3-icon" src="assets/v3/type.svg" alt=""><span>提示</span></button>
+        <button class="text-btn" type="button" data-format="section" aria-label="小节标题" aria-describedby="format-section-help" title="插入小节标题"><img class="v3-icon" src="assets/v3/list.svg" alt=""><span>小节标题</span></button>
+        <button class="text-btn" type="button" data-format="emphasis" aria-label="标记重点" aria-describedby="format-emphasis-help" title="标记重点"><img class="v3-icon" src="assets/v3/highlighter.svg" alt=""><span>标记重点</span></button>
+        <button class="text-btn" type="button" data-format="cue" aria-label="插入提示" aria-describedby="format-cue-help" title="插入提示"><img class="v3-icon" src="assets/v3/type.svg" alt=""><span>插入提示</span></button>
       </div>
       <div class="toolbar-trailing">
         <div class="tool-pill history-tools"><button id="undoEdit" class="icon-btn" type="button" aria-label="撤销" title="撤销"><img class="v3-icon" src="assets/v3/undo2.svg" alt=""></button><button id="redoEdit" class="icon-btn" type="button" aria-label="重做" title="重做"><img class="v3-icon" src="assets/v3/redo2.svg" alt=""></button></div>
@@ -383,6 +383,9 @@ details.more > div { display: grid; gap: 8px; }
         <button id="mobileDocMore" class="icon-btn mobile-only" type="button" aria-label="稿件更多"><img class="v3-icon" src="assets/v3/ellipsis.svg" alt=""></button>
       </div>
     </header>
+    <p id="format-section-help" class="format-help" role="tooltip">切换当前行的小节标题与正文。</p>
+    <p id="format-emphasis-help" class="format-help" role="tooltip">为选中文字添加重点标记。</p>
+    <p id="format-cue-help" class="format-help" role="tooltip">插入停顿等提示，提示不计入朗读字数。</p>
     <section class="document-content" aria-label="稿件编辑">
       <h1 id="documentTitle">未命名稿件</h1><p id="documentMeta" class="document-meta"></p>
       <label for="ta" class="vh">稿件正文</label>
@@ -402,7 +405,7 @@ details.more > div { display: grid; gap: 8px; }
         <div class="group"><h3>分段录制</h3><label class="check switch-row">每节读完暂停<input id="secStop" type="checkbox" role="switch"></label><label class="check switch-row">语音跟随<input id="editorVoice" type="checkbox" role="switch"></label><p class="tip" id="voiceNote">提词时跟随语音，需要浏览器支持并允许麦克风。</p></div>
         <div id="mirrorControls" class="group"><div class="row"><span>镜像</span><div class="pair"><button id="mx" class="icon-btn" type="button" aria-label="水平镜像" aria-pressed="false" title="水平镜像"><img class="v3-icon" src="assets/v3/flip-horizontal2.svg" alt=""></button><button id="my" class="icon-btn" type="button" aria-label="垂直镜像" aria-pressed="false" title="垂直镜像"><img class="v3-icon" src="assets/v3/flip-vertical2.svg" alt=""></button></div></div><p class="tip">按反射玻璃的方向选择镜像。</p></div>
       </section>
-      <section id="paneText" role="tabpanel" aria-labelledby="tabText" hidden>
+      <section id="paneText" role="tabpanel" aria-labelledby="tabText" hidden><p class="tip">以下参数仅影响提词画面，不改变编辑文字大小。</p>
         <div class="group"><h3>文字</h3><div class="row"><label for="fs">字号</label><output id="fsVal" for="fs"></output></div><input id="fs" type="range" min="20" max="200" step="2"><div class="row"><label for="lh">行距</label><output id="lhVal" for="lh"></output></div><input id="lh" type="range" min="1.1" max="2.4" step="0.05"><div class="row"><label for="mg">左右留白</label><output id="mgVal" for="mg"></output></div><input id="mg" type="range" min="0" max="30" step="1">
           <div class="row"><span>对齐</span><div class="seg align-seg" role="radiogroup" aria-label="对齐"><label title="左对齐"><input type="radio" name="align" value="left" aria-label="左对齐"><span><img class="v3-icon" src="assets/v3/align-left.svg" alt=""></span></label><label title="居中"><input type="radio" name="align" value="center" aria-label="居中"><span><img class="v3-icon" src="assets/v3/align-center.svg" alt=""></span></label></div></div>
           <div class="row"><label for="readerTheme">阅读配色</label><select id="readerTheme"><option value="dark">白字黑底</option><option value="amber">黄字黑底</option><option value="light">黑字白底</option></select></div><label class="check switch-row">读过的句子变暗<input id="dim" type="checkbox" role="switch"></label>
@@ -413,7 +416,7 @@ details.more > div { display: grid; gap: 8px; }
         <div class="group"><h3>本机录像</h3><label class="check switch-row">启用摄像头录像<input id="editorCamera" type="checkbox" role="switch"></label><p class="tip">提词时，每次从开始到暂停会保存为独立片段。</p></div><div class="group"><label class="check switch-row">录完自动下载<input id="autoSave" type="checkbox" role="switch"></label><div class="row"><span>录好的片段</span><button id="editorClips" class="btn" type="button">查看片段</button></div><p class="tip">也可使用外部摄像机独立拍摄。</p></div>
       </section>
     </div>
-    <footer class="start-actions"><button id="startCaret" class="btn" type="button">从当前编辑位置开始</button><button id="start" class="btn primary" type="button">开始提词</button></footer>
+    <footer class="start-actions"><label class="start-position" for="startPosition">开始位置<select id="startPosition"><option value="start">从头开始</option><option value="caret">从光标处开始</option></select></label><button id="start" class="btn primary" type="button">开始提词</button></footer>
   </aside>
 </div>
 
@@ -928,8 +931,8 @@ document.querySelectorAll('input[name="align"]').forEach((r) => r.addEventListen
 document.querySelectorAll('input[name="theme"]').forEach((r) => r.addEventListener('change', () => { S.theme = r.value; save(); }));
 $('#mx').addEventListener('click', () => setMirror('mirrorX', !S.mirrorX));
 $('#my').addEventListener('click', () => setMirror('mirrorY', !S.mirrorY));
-$('#start').addEventListener('click', () => enter(false));
-$('#startCaret').addEventListener('click', () => enter(true));
+$('#start').addEventListener('click', () => v3 ? v3.startFromSelection() : enter(false));
+
 
 // ---------- 提词页 ----------
 const prompter = $('#prompter');
@@ -1855,7 +1858,7 @@ function onKey(e) {
   if (e.defaultPrevented) return;
   if (!rdlg.hidden) { if (e.key === 'Escape') closeRemoteDlg(); return; }
   if (prompter.hidden) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); enter(false); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); v3 ? v3.startFromSelection() : enter(false); }
     return;
   }
   if (editing) {

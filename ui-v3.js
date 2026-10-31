@@ -513,7 +513,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const text = b.querySelector('.lbl-t'); if (text) text.textContent = label;
     if (key) { const k = document.createElement('kbd'); k.className = 'menu-key'; k.textContent = key; b.append(k); b.setAttribute('aria-keyshortcuts', key); }
     options.append(b);
-    if (id !== 'readerParameters') b.addEventListener('click', () => { syncReaderMenu(); closeReaderOptions(true); });
+    // Keyboard activation (detail 0) returns focus to 更多; a mouse click leaves focus off the bars so they can hide.
+    if (id !== 'readerParameters') b.addEventListener('click', (e) => { syncReaderMenu(); closeReaderOptions(!e.detail); });
   }
   $('#prompter .topbar').append(more); $('#prompter').append(options);
   const readerItems = () => [...options.querySelectorAll('[role^="menuitem"]')].filter((b) => !b.hidden);
@@ -534,12 +535,16 @@ window.initPrompterV3 = function initPrompterV3(api) {
     options.style.top = Math.round(bar.bottom + 8) + 'px'; options.style.right = Math.round(innerWidth - bar.right) + 'px';
     readerItems()[0]?.focus(); api.poke();
   }
+  // Every key but Tab stays in the menu, so reading shortcuts (Space, arrows, M/V/F) cannot fire behind it.
   options.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeReaderOptions(true); return; }
+    if (e.key === 'Tab') return;
+    e.stopPropagation();
+    if (e.key === 'Escape') { e.preventDefault(); closeReaderOptions(true); return; }
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); document.activeElement?.closest('#readerOptions [role^="menuitem"]')?.click(); return; }
     const items = readerItems(), i = items.indexOf(document.activeElement);
     const next = { ArrowDown: (i + 1) % items.length, ArrowUp: (i - 1 + items.length) % items.length, Home: 0, End: items.length - 1 }[e.key];
     if (next === undefined) return;
-    e.preventDefault(); e.stopPropagation(); items[next].focus();
+    e.preventDefault(); items[next].focus();
   });
   const startMarker = document.createComment('phone start action'); $('#mobileStart').before(startMarker);
   const settingsMarker = document.createComment('sidebar toggle position'); $('#toggleSettings').before(settingsMarker);

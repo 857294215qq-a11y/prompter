@@ -56,7 +56,7 @@ function build() {
 
 // 桌面宽度下阅读列与顶部胶囊对齐；用户设的边距更宽时以边距为准
 function readerInset() {
-  if (innerWidth < 1200) return 0;
+  if (pipWin || innerWidth < 1200) return 0;
   // 用排版宽度：顶栏入场动画会把它缩小一点，屏幕上的位置这时不准
   const bar = $('.topbar').offsetWidth;
   return bar ? Math.max(0, (stage.clientWidth - bar) / 2) : 0;
@@ -65,7 +65,8 @@ function readerInset() {
 function applyStyle() {
   content.style.fontSize = fsEff() + 'px';
   content.style.lineHeight = S.lineHeight;
-  const pad = Math.max(S.margin * innerWidth / 100, readerInset()) + 'px';
+  // 边距按阅读画面所在的窗口算：置顶小窗里用小窗的宽度
+  const pad = Math.max(S.margin * (pipWin || window).innerWidth / 100, readerInset()) + 'px';
   content.style.paddingLeft = pad; content.style.paddingRight = pad;
   content.style.textAlign = S.align;
   content.classList.toggle('dim', S.dimRead);

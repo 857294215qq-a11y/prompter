@@ -186,3 +186,47 @@ test('idle bars move 8px on the shared curve: 240ms out, 200ms back', () => {
   assert.match(css, /#prompter \.bar \{ transition: opacity 200ms var\(--ease\), translate 200ms var\(--ease\)/);
   assert.match(css, /#prompter\.idle \.bar \{ transition-duration: 240ms; \}/);
 });
+
+// Final review fixes
+const { JSDOM } = require('jsdom');
+
+test('picture-in-picture margin follows the small window, not the main one', async () => {
+  const app = desktopReader();
+  const pip = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'https://prompter.test/', pretendToBeVisual: true });
+  Object.defineProperty(pip.window, 'innerWidth', { value: 560, configurable: true });
+  app.w.documentPictureInPicture = { requestWindow: async () => pip.window };
+  const content = app.$('#content'); // the stage moves into the PiP document
+  await app.w.testEngine.togglePip(); app.w.testEngine.layout(true);
+  assert.deepEqual([content.style.paddingLeft, content.style.paddingRight], ['56px', '56px'], '10% of the 560px window, no pill inset');
+  pip.window.close(); app.close();
+});
+
+test('speed and font values keep a fixed width so the pill does not change size', () => {
+  const rule = css.match(/\.bar \.stepper output \{[^}]*\}/g).at(-1);
+  assert.match(rule, /width:\s*3ch/); assert.match(rule, /font-variant-numeric:\s*tabular-nums/);
+  assert.doesNotMatch(rule, /min-width:\s*0/);
+});
+
+test('a mouse trip through the menu leaves no focus on the bars', () => {
+  const app = playing();
+  app.$('#readerMore').dispatchEvent(new app.w.MouseEvent('click', { bubbles: true, detail: 1 }));
+  app.$('#pMy').dispatchEvent(new app.w.MouseEvent('click', { bubbles: true, detail: 1 }));
+  assert.equal(app.$('#readerOptions').hidden, true);
+  assert.equal(app.w.document.activeElement?.closest?.('#prompter .bar') ?? null, null);
+  app.runIdle(); assert.equal(idle(app), true);
+  app.close();
+});
+
+test('keys inside the menu stay in the menu: Space toggles the item, not playback', () => {
+  const app = desktopReader();
+  const more = app.$('#readerMore'); more.focus(); more.click();
+  const state = app.$('#pPlay').getAttribute('aria-label');
+  const key = (k) => app.w.document.activeElement.dispatchEvent(new app.w.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+  key(' ');
+  assert.equal(app.w.testEngine.settings.mirrorX, true, 'Space activates the focused item');
+  assert.equal(app.$('#pPlay').getAttribute('aria-label'), state, 'playback untouched');
+  assert.equal(app.w.document.activeElement, more, 'keyboard activation returns focus to 更多');
+  more.click(); key('m');
+  assert.equal(app.w.testEngine.settings.mirrorX, true, 'M inside the menu is not the mirror shortcut');
+  app.close();
+});

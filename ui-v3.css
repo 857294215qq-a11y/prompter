@@ -350,7 +350,8 @@ input[type="range"]::-moz-range-progress { height: 4px; border-radius: 2px; back
 input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 0 .5px #0003, 0 1px 4px #0003; }
 #dur, #cdSel, #lang, #readerTheme, #appearance { -webkit-appearance: none; appearance: none; padding-right: 24px; background-repeat: no-repeat; background-position: right 8px center; background-size: 10px 14px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='14' fill='none' stroke='%236e6e73' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5l3-3 3 3M2 9l3 3 3-3'/%3E%3C/svg%3E"); }
 #dur { background-image: none; padding-right: 8px; text-align: right; }
-.bar .stepper output { min-width: 0; padding: 0 2px; font-size: 22px; line-height: 1; }
+/* Fixed width: a value gaining a digit must not resize the pill the reading column aligns to. */
+.bar .stepper output { width: 3ch; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; padding: 0 2px; font-size: 22px; line-height: 1; }
 #spOut::after, #fsOut::after { font-size: 10px; color: var(--muted); margin-left: 3px; }
 #spOut::after { content: "字/分"; }
 #fsOut::after { content: "px"; }

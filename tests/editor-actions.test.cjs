@@ -213,3 +213,27 @@ test('an old saved start position is ignored and no picker remains', () => {
   app.click('#start'); assert.deepEqual(calls, [false]);
   app.close();
 });
+
+test('toggle icons and names follow the sidebar state', () => {
+  const app = boot();
+  const check = (id, icon, label) => {
+    assert.match(app.$('#' + id + ' img').getAttribute('src'), new RegExp(icon + '\\.svg$'));
+    assert.equal(app.$('#' + id).getAttribute('aria-label'), label);
+  };
+  check('toggleLibrary', 'panel-left-close', '收起稿件栏'); check('toggleSettings', 'panel-right-close', '收起提词参数');
+  app.click('#toggleLibrary'); check('toggleLibrary', 'panel-left-open', '展开稿件栏');
+  app.click('#toggleSettings'); check('toggleSettings', 'panel-right-open', '展开提词参数');
+  app.click('#focusEditor'); app.click('#focusEditor'); // the round trip restores both collapsed
+  check('toggleLibrary', 'panel-left-open', '展开稿件栏'); check('toggleSettings', 'panel-right-open', '展开提词参数');
+  app.click('#toggleLibrary'); check('toggleLibrary', 'panel-left-close', '收起稿件栏');
+  app.close();
+});
+
+test('toggles keep sheet behaviour below 1200px', () => {
+  const app = boot({}, { media: (q) => /max-width/.test(q) }); // phone: every max-width query matches
+  app.click('#toggleSettings');
+  assert.equal(app.$('#sheetBackdrop').hidden, false);
+  assert.match(app.$('#toggleSettings img').getAttribute('src'), /settings2\.svg$/);
+  assert.equal(app.$('#toggleSettings').getAttribute('aria-label'), '提词参数');
+  app.close();
+});

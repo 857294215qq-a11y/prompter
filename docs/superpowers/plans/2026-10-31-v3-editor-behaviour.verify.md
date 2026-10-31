@@ -1,0 +1,19 @@
+# 第 2 组布局核对（内置浏览器，1440×900）
+
+用 `tests/browser/editor-layout.js` 在页面里切换侧栏状态并测量。jsdom 没有布局，这部分不进 CI。
+
+## 侧栏开关（任务 5）
+
+| 状态 | 左开关 x, y | 右开关 x | 左图标 | 右图标 | 工具胶囊 y, 高 |
+|---|---|---|---|---|---|
+| 两侧打开 | 8, 8 | 1388 | panel-left-close | panel-right-close | 8, 36 |
+| 仅左收起 | 8, 8 | 1388 | panel-left-open | panel-right-close | 8, 36 |
+| 仅右收起 | 8, 8 | 1388 | panel-left-close | panel-right-open | 8, 36 |
+| 两侧收起 | 8, 8 | 1388 | panel-left-open | panel-right-open | 8, 36 |
+| 专注 | 8, 8 | 1388 | panel-left-open | panel-right-open | 8, 36 |
+| 专注退出 | 8, 8 | 1388 | panel-left-close | panel-right-close | 8, 36 |
+
+- 两个开关都是 36×36，中线与工具胶囊中线相同（都在 y=26），`failures` 为空。
+- 右开关 x=1388 与画板 2168:1078 一致；左开关按设计决策 4 的 Web 版放在距左 8px（画板里的 x=96 是给 macOS 红黄绿按钮留的位置）。
+- `elementFromPoint` 在两个开关中心取到的都是开关本身，没有被侧栏盖住。
+- 反向核对：临时把左开关改成 44×44，检查报出“尺寸不对”和“中线偏离”，说明检查能发现问题。

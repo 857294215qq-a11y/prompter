@@ -74,7 +74,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     settings.inert = !right && !parametersInReader;
     $('#toggleLibrary').setAttribute('aria-expanded', String(left));
     $('#toggleSettings').setAttribute('aria-expanded', String(right || parametersInReader));
-    $('#toggleSettings img').src = 'assets/v3/' + (small.matches ? 'settings2' : 'panel-right-close') + '.svg';
+    toggleState('left', left); toggleState('right', right);
     $('#sheetBackdrop').hidden = !(small.matches && left || tablet.matches && right);
     if (previousLayout) {
       if (left !== previousLayout.left) animateSurface(library, left, 'flex');
@@ -88,6 +88,14 @@ window.initPrompterV3 = function initPrompterV3(api) {
       if (dx) toolbarMotion = toolbar.animate([{translate: dx + 'px 0'}, {translate:'0 0'}], {duration:240,easing:'cubic-bezier(.32,.72,0,1)'});
     }
     updateMeta();
+  }
+  // Desktop toggles say what they will do; below 1200px the right one opens the reader parameters sheet.
+  function toggleState(side, open) {
+    const button = $(side === 'left' ? '#toggleLibrary' : '#toggleSettings'), sheet = side === 'right' && tablet.matches;
+    const label = sheet ? '提词参数' : (open ? '收起' : '展开') + (side === 'left' ? '稿件栏' : '提词参数');
+    const name = sheet && small.matches ? 'settings2' : 'panel-' + side + '-' + (open ? 'close' : 'open');
+    button.querySelector('img').src = 'assets/v3/' + name + '.svg';
+    button.setAttribute('aria-label', label); button.title = label;
   }
   function closeSheets() { mobileLeft = mobileRight = false; closeMenu(); closeReaderOptions(); layout(); }
   function returnSettings() {

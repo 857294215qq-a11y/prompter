@@ -16,7 +16,7 @@ process.on('unhandledRejection', (reason) => { for (const errors of live) errors
 // 安卓 App 里 Capacitor 注入的原生插件：每个方法都返回成功
 const fakeLink = () => new Proxy({}, { get: (_, k) => (k === 'then' ? undefined : () => Promise.resolve({})) });
 
-function boot(saved = {}, { native = false, url = 'https://prompter.test/', between } = {}) {
+function boot(saved = {}, { native = false, url = 'https://prompter.test/', between, media = () => false } = {}) {
   const errors = [];
   live.add(errors);
   const virtualConsole = new VirtualConsole();
@@ -26,7 +26,7 @@ function boot(saved = {}, { native = false, url = 'https://prompter.test/', betw
   });
   const w = dom.window;
   w.addEventListener('error', (e) => errors.push(e.message));
-  w.matchMedia = (q) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} });
+  w.matchMedia = (q) => ({ matches: media(q), media: q, addEventListener() {}, removeEventListener() {} });
   w.requestAnimationFrame = (callback) => { w.runFrame = callback; return 1; };
   w.cancelAnimationFrame = () => {};
   if (native) w.Capacitor = { isNativePlatform: () => true, Plugins: { Link: fakeLink() } };

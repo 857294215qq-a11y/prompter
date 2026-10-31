@@ -372,18 +372,18 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
   .document-workspace { margin-left: var(--left-space); margin-right: var(--right-space); }
   .document-toolbar, .document-content, .document-footer { width: 100%; max-width: 960px; margin-inline: auto; }
   .document-toolbar { min-height: 44px; padding: 0; align-items: flex-start; }
-  .document-toolbar .tool-pill { min-height: 44px; }
+  /* Pills and both sidebar toggles share one 36px row at top 8px, so their centres line up. */
+  .document-toolbar .tool-pill { height: 36px; min-height: 36px; padding-block: 1px; }
   .document-content { padding-top: 24px; overflow-anchor: none; }
   #documentTitle, #richEditor { width: 100%; max-width: none; flex-shrink: 0; }
-  .library-toggle, .settings-toggle, .settings-collapsed .settings-toggle { top: 8px; width: 44px; height: 44px; min-height: 44px; }
-  .library-toggle { left: 16px; }
+  .library-toggle, .settings-toggle, .settings-collapsed .settings-toggle { top: 8px; width: 36px; height: 36px; min-height: 36px; padding: 0; border-radius: 18px; }
+  .library-toggle { left: 8px; }
   .settings-toggle, .settings-collapsed .settings-toggle { right: 16px; }
   .library-toggle .v3-icon, .settings-toggle .v3-icon { width: 20px; height: 20px; }
   .settings-heading { min-height: 44px; padding-right: 44px; margin-top: -16px; }
   .library-panel { padding-top: 48px; }
 }
 
-#startPosition { min-width:0; height:32px; border:0; border-radius:8px; background:var(--panel); color:var(--fg); padding-inline:8px; }
 .format-help { display:none; position:fixed; top:60px; left:50%; transform:translateX(-50%); z-index:60; max-width:calc(100vw - 32px); padding:10px 16px; border-radius:12px; background:var(--fg); color:var(--bg); font-size:12px; box-shadow:var(--shadow); }
 .document-workspace:has([data-format="section"]:is(:hover,:focus-visible)) #format-section-help,
 .document-workspace:has([data-format="emphasis"]:is(:hover,:focus-visible)) #format-emphasis-help,

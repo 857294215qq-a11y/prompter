@@ -5,6 +5,8 @@ const ASSETS = [
   './index.html',
   './ui-v3.css',
   './ui-v3.js',
+  './src/boot/guard.js',
+  './src/boot/ready.js',
   './src/engine/00-core.js',
   './src/engine/01-script.js',
   './src/engine/02-editor.js',

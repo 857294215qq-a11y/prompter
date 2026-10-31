@@ -16,7 +16,7 @@ process.on('unhandledRejection', (reason) => { for (const errors of live) errors
 // 安卓 App 里 Capacitor 注入的原生插件：每个方法都返回成功
 const fakeLink = () => new Proxy({}, { get: (_, k) => (k === 'then' ? undefined : () => Promise.resolve({})) });
 
-function boot(saved = {}, { native = false, url = 'https://prompter.test/' } = {}) {
+function boot(saved = {}, { native = false, url = 'https://prompter.test/', between } = {}) {
   const errors = [];
   live.add(errors);
   const virtualConsole = new VirtualConsole();
@@ -36,6 +36,9 @@ function boot(saved = {}, { native = false, url = 'https://prompter.test/' } = {
   Object.defineProperty(w.HTMLElement.prototype, 'offsetTop', { get() { return +(this.dataset.i || 0) * 120; } });
   for (const [key, value] of Object.entries({ library: legacy, current: 'first', ...saved }))
     w.localStorage.setItem('prompter:' + key, JSON.stringify(value));
+  const $ = (s) => w.document.querySelector(s);
+  const click = (s) => { const el = $(s); assert.ok(el, 'Missing control ' + s); el.click(); };
+  const input = (s, value) => { $(s).value = value; $(s).dispatchEvent(new w.Event('input', { bubbles: true })); };
   // Run each script as a real classic script so top-level let/const are shared across files, as in a browser.
   const context = dom.getInternalVMContext();
   for (const script of w.document.scripts) {
@@ -47,10 +50,9 @@ function boot(saved = {}, { native = false, url = 'https://prompter.test/' } = {
       const init = w.initPrompterV3;
       w.initPrompterV3 = (api) => { w.testEngine = api; w.testView = init(api); return w.testView; };
     }
+    // A browser handles input and frames while it waits for the next external script.
+    if (between && src) between({ w, $, errors }, src);
   }
-  const $ = (s) => w.document.querySelector(s);
-  const click = (s) => { const el = $(s); assert.ok(el, 'Missing control ' + s); el.click(); };
-  const input = (s, value) => { $(s).value = value; $(s).dispatchEvent(new w.Event('input', { bubbles: true })); };
   // Let timers, microtasks and load handlers run, then report everything that went wrong.
   const settle = async (ms = 100) => { await new Promise((r) => setTimeout(r, ms)); return errors; };
   return { w, $, click, input, errors, settle, close: () => { live.delete(errors); w.close(); }, stored: (k) => JSON.parse(w.localStorage.getItem('prompter:' + k)) };

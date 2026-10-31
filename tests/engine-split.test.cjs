@@ -22,11 +22,11 @@ test('engine files reproduce the original inline script byte for byte', () => {
   assert.equal(joined, original);
 });
 
-test('index.html loads every engine file once, in order, after ui-v3.js', () => {
+test('index.html loads the input guard, ui-v3.js, every engine file in order, then the ready script', () => {
   const scripts = pageScripts();
   assert.equal(scripts.filter((s) => s === null).length, 0, 'inline scripts remain');
   const local = scripts.filter((s) => !s.startsWith('vendor/'));
-  assert.deepEqual(local, ['ui-v3.js', ...engineFiles().map((f) => 'src/engine/' + f)]);
+  assert.deepEqual(local, ['src/boot/guard.js', 'ui-v3.js', ...engineFiles().map((f) => 'src/engine/' + f), 'src/boot/ready.js']);
 });
 
 test('boots in the browser without errors', async () => {
@@ -65,6 +65,31 @@ test('boots from a direct remote link without errors', async () => {
 test('boots from a relay remote link without errors', async () => {
   const app = boot({}, { url: 'https://prompter.test/?r=room#key' });
   try { assert.deepEqual(await app.settle(), []); } finally { app.close(); }
+});
+
+test('input and frames while later scripts are still loading throw nothing', async () => {
+  const failed = [];
+  const app = boot({}, {
+    between: ({ w, $, errors }, src) => {
+      if (src === 'src/boot/ready.js') return;
+      const before = errors.length;
+      for (const b of w.document.querySelectorAll('button')) b.click();
+      for (const key of [' ', 'Enter', 'Escape', 'ArrowDown', 'Home', 'd', 'm']) w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key, bubbles: true }));
+      w.runFrame?.(0);
+      if (errors.length > before) failed.push(src + ': ' + errors.slice(before).join(' | '));
+    },
+  });
+  assert.deepEqual(failed, []);
+  assert.deepEqual(await app.settle(), []);
+  app.close();
+});
+
+test('input is accepted again once every script has loaded', () => {
+  const app = boot({}, { between: ({ w }, src) => { if (src !== 'src/boot/ready.js') w.document.querySelector('#start').click(); } });
+  assert.equal(app.$('#prompter').hidden, true, 'clicks during loading must not start the reader');
+  app.click('#start');
+  assert.equal(app.$('#prompter').hidden, false);
+  app.close();
 });
 
 test('stopPlayback does not replace window.stop', () => {

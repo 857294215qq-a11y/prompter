@@ -1,5 +1,6 @@
 /* V3 values follow the selected Figma frames; native window chrome belongs to the OS. */
 :root {
+  --ease: cubic-bezier(.32,.72,0,1);
   color-scheme: light;
   --bg: #fff; --panel: #f4f4f6; --raise: #e9e9eb; --line: #dadadd;
   --fg: #1d1d1f; --muted: #6e6e73; --accent: #0088ff; --accent-ink: #fff;
@@ -318,7 +319,6 @@ body:has(#remote:not([hidden])) { background: #080809; }
   .v3-remote-pad [data-c="pageUp"], .v3-remote-pad [data-c="pageDown"] { width: 56px; height: 56px; }
   .remote-stepper { height: 56px; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
 
 /* ---- polish pass: match the Figma controls ---- */
 input[type="range"] { -webkit-appearance: none; appearance: none; --p: 50%; }
@@ -344,3 +344,6 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 .bar .times > #tPct { font-size: 18px; line-height: 1.2; color: var(--fg); }
 .bar .times > #tPct::before { font-size: 10px; color: var(--muted); }
 .bar .times b { font-family: var(--ui); }
+.bar, #toast, input[type="checkbox"][role="switch"]::after { transition-timing-function: var(--ease); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+

@@ -1,5 +1,5 @@
 // 离线缓存：页面优先走网络（拿到最新版本），网络慢或断网时用缓存
-const CACHE = 'prompter-ui-v3-1-p1';
+const CACHE = 'prompter-ui-v3-polish-motion-1';
 const ASSETS = [
   './',
   './index.html',

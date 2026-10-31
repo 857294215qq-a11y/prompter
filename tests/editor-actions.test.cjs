@@ -237,3 +237,20 @@ test('toggles keep sheet behaviour below 1200px', () => {
   assert.equal(app.$('#toggleSettings').getAttribute('aria-label'), '提词参数');
   app.close();
 });
+
+test('target duration explains that it recalculates speed, and changing it does', () => {
+  const app = boot(DOC);
+  const hint = app.$('#durHint');
+  assert.equal(hint.classList.contains('vh'), false); assert.equal(hint.textContent, '改目标时长会按字数自动换算语速。');
+  const before = app.$('#cpmOut').textContent;
+  app.$('#dur').value = '00:05'; app.$('#dur').dispatchEvent(new app.w.Event('change', { bubbles: true }));
+  assert.notEqual(app.$('#cpmOut').textContent, before);
+  app.close();
+});
+
+test('app settings uses the gear icon, reader parameters keep the sliders icon', () => {
+  const app = boot();
+  assert.match(app.$('#appSettings img').getAttribute('src'), /settings\.svg$/);
+  assert.match(app.$('#readerParameters img').getAttribute('src'), /settings2\.svg$/);
+  app.close();
+});

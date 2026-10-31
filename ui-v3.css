@@ -66,8 +66,10 @@ button:disabled { cursor: default; opacity: .35; }
 #richEditor { flex: 1; min-height: 160px; max-width: 624px; padding: 0 0 60px; font-size: 17px; line-height: 1.85; overflow-wrap: anywhere; outline: 0; white-space: pre-wrap; cursor: text; }
 #richEditor:empty::before { content: "在这里写下你的稿件。"; color: var(--muted); }
 .editor-line { min-height: 1.85em; }
-.editor-line:empty, .editor-line:has(> br:only-child) { min-height: .6em; line-height: .6em; }
-.editor-section { margin-top: 12px; font-size: 16px; font-weight: 500; }
+/* An empty source line is one 16px paragraph gap. */
+.editor-line:empty, .editor-line:has(> br:only-child) { height: 16px; min-height: 16px; line-height: 16px; }
+/* Section headings sit 3px above body text (17 → 20 on desktop, 18 → 21 on phones). */
+.editor-section { margin-top: 12px; font-size: 20px; font-weight: 600; }
 .editor-section:first-child { margin-top: 0; }
 .editor-cue { display: inline-block; font-size: 11px; line-height: 1.5; padding: 2px 14px; border-radius: 12px; background: var(--panel); color: var(--muted); }
 #richEditor strong { font-weight: 600; }
@@ -284,10 +286,9 @@ body:has(#remote:not([hidden])) { background: #080809; }
   .document-meta { font-size: 11px; margin: 10px 0 16px; }
   #richEditor { font-size: 18px; line-height: 1.55; padding-bottom: 110px; }
   .editor-line { min-height: 1.55em; }
-  .editor-section { font-size: 17px; margin-top: 10px; }
+  .editor-section { font-size: 21px; margin-top: 10px; }
   .format-tools { position: absolute; left: 20px; right: 20px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 3; min-height: 48px; padding: 5px 12px; background: var(--card); box-shadow: 0 6px 20px #0002; }
   .format-tools .text-btn { flex: 1; min-height: 36px; background: var(--raise); font-size: 13px; margin-inline: 3px; }
-  .format-tools .v3-icon { display: none; }
   .document-footer { min-height: 60px; padding: 8px 0 0; }
   .stats { gap: 4px 6px; font-size: 11px; }
   .stats span:nth-child(2) { display: none; }

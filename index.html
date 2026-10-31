@@ -323,7 +323,7 @@ details.more > div { display: grid; gap: 8px; }
   .bar, #content .s, #toast { transition: none; }
 }
 </style>
-<link rel="stylesheet" href="ui-v3.css?v=b3d0073521">
+<link rel="stylesheet" href="ui-v3.css?v=1b0bcbe66b">
 </head>
 <body>
 
@@ -379,7 +379,7 @@ details.more > div { display: grid; gap: 8px; }
       </div>
       <div class="toolbar-trailing">
         <div class="tool-pill history-tools"><button id="undoEdit" class="icon-btn" type="button" aria-label="撤销" title="撤销"><img class="v3-icon" src="assets/v3/undo2.svg" alt=""></button><button id="redoEdit" class="icon-btn" type="button" aria-label="重做" title="重做"><img class="v3-icon" src="assets/v3/redo2.svg" alt=""></button></div>
-        <div class="tool-pill app-tools"><button id="remoteBtn" class="text-btn" type="button" aria-label="设备与遥控" title="设备与遥控"><img class="v3-icon" src="assets/v3/monitor-smartphone.svg" alt=""><span>设备</span></button><button id="focusEditor" class="icon-btn" type="button" aria-label="专注编辑" aria-pressed="false" title="专注编辑"><img class="v3-icon" src="assets/v3/maximize.svg" alt=""></button><button id="appSettings" class="icon-btn" type="button" aria-label="应用设置" aria-haspopup="dialog" title="应用设置"><img class="v3-icon" src="assets/v3/settings2.svg" alt=""></button></div>
+        <div class="tool-pill app-tools"><button id="remoteBtn" class="text-btn" type="button" aria-label="设备与遥控" title="设备与遥控"><img class="v3-icon" src="assets/v3/monitor-smartphone.svg" alt=""><span>设备</span></button><button id="focusEditor" class="icon-btn" type="button" aria-label="专注编辑" aria-pressed="false" title="专注编辑"><img class="v3-icon" src="assets/v3/maximize.svg" alt=""></button><button id="appSettings" class="icon-btn" type="button" aria-label="应用设置" aria-haspopup="dialog" title="应用设置"><img class="v3-icon" src="assets/v3/settings.svg" alt=""></button></div>
         <button id="mobileDocMore" class="icon-btn mobile-only" type="button" aria-label="稿件更多"><img class="v3-icon" src="assets/v3/ellipsis.svg" alt=""></button>
       </div>
     </header>
@@ -416,7 +416,7 @@ details.more > div { display: grid; gap: 8px; }
     </div>
     <div class="parameter-scroll">
       <section id="panePlay" role="tabpanel" aria-labelledby="tabPlay">
-        <div class="group"><h3>速度与时长</h3><div class="row"><label for="cpm">语速</label><output id="cpmOut" for="cpm"></output></div><input id="cpm" type="range" min="30" max="900" step="10"><div class="row"><label for="dur">目标时长</label><input id="dur" inputmode="numeric" autocomplete="off" placeholder="03:00" aria-describedby="durHint"></div><p class="vh" id="durHint">输入分:秒，自动计算语速。</p><div class="row"><label for="cdSel">开始前倒数</label><select id="cdSel"><option value="0">不倒数</option><option value="3">3 秒</option><option value="5">5 秒</option><option value="10">10 秒</option></select></div></div>
+        <div class="group"><h3>速度与时长</h3><div class="row"><label for="cpm">语速</label><output id="cpmOut" for="cpm"></output></div><input id="cpm" type="range" min="30" max="900" step="10"><div class="row"><label for="dur">目标时长</label><input id="dur" inputmode="numeric" autocomplete="off" placeholder="03:00" aria-describedby="durHint"></div><p class="tip" id="durHint">改目标时长会按字数自动换算语速。</p><div class="row"><label for="cdSel">开始前倒数</label><select id="cdSel"><option value="0">不倒数</option><option value="3">3 秒</option><option value="5">5 秒</option><option value="10">10 秒</option></select></div></div>
         <div class="group"><h3>分段录制</h3><label class="check switch-row">每节读完暂停<input id="secStop" type="checkbox" role="switch"></label><label class="check switch-row">语音跟随<input id="editorVoice" type="checkbox" role="switch"></label><p class="tip" id="voiceNote">提词时跟随语音，需要浏览器支持并允许麦克风。</p></div>
         <div id="mirrorControls" class="group"><div class="row"><span>镜像</span><div class="pair"><button id="mx" class="icon-btn" type="button" aria-label="水平镜像" aria-pressed="false" title="水平镜像"><img class="v3-icon" src="assets/v3/flip-horizontal2.svg" alt=""></button><button id="my" class="icon-btn" type="button" aria-label="垂直镜像" aria-pressed="false" title="垂直镜像"><img class="v3-icon" src="assets/v3/flip-vertical2.svg" alt=""></button></div></div><p class="tip">按反射玻璃的方向选择镜像。</p></div>
       </section>
@@ -670,26 +670,26 @@ details.more > div { display: grid; gap: 8px; }
   <p class="tip">这台手机只当遥控器用。保持这个页面开着，别锁屏。</p>
 </div>
 
-<script src="src/boot/guard.js?v=b3d0073521"></script>
-<script src="ui-v3.js?v=b3d0073521"></script>
-<script src="src/engine/00-core.js?v=b3d0073521"></script>
-<script src="src/engine/01-script.js?v=b3d0073521"></script>
-<script src="src/engine/02-editor.js?v=b3d0073521"></script>
-<script src="src/engine/03-reader.js?v=b3d0073521"></script>
-<script src="src/engine/04-playback.js?v=b3d0073521"></script>
-<script src="src/engine/05-voice.js?v=b3d0073521"></script>
-<script src="src/engine/06-recorder.js?v=b3d0073521"></script>
-<script src="src/engine/07-controls.js?v=b3d0073521"></script>
-<script src="src/engine/08-marks.js?v=b3d0073521"></script>
-<script src="src/engine/09-loop.js?v=b3d0073521"></script>
-<script src="src/engine/10-inline-edit.js?v=b3d0073521"></script>
-<script src="src/engine/11-session.js?v=b3d0073521"></script>
-<script src="src/engine/12-reader-input.js?v=b3d0073521"></script>
-<script src="src/engine/13-pip.js?v=b3d0073521"></script>
-<script src="src/engine/14-remote.js?v=b3d0073521"></script>
-<script src="src/engine/15-remote-lan.js?v=b3d0073521"></script>
-<script src="src/engine/16-nearby.js?v=b3d0073521"></script>
-<script src="src/engine/17-install.js?v=b3d0073521"></script>
-<script src="src/boot/ready.js?v=b3d0073521"></script>
+<script src="src/boot/guard.js?v=1b0bcbe66b"></script>
+<script src="ui-v3.js?v=1b0bcbe66b"></script>
+<script src="src/engine/00-core.js?v=1b0bcbe66b"></script>
+<script src="src/engine/01-script.js?v=1b0bcbe66b"></script>
+<script src="src/engine/02-editor.js?v=1b0bcbe66b"></script>
+<script src="src/engine/03-reader.js?v=1b0bcbe66b"></script>
+<script src="src/engine/04-playback.js?v=1b0bcbe66b"></script>
+<script src="src/engine/05-voice.js?v=1b0bcbe66b"></script>
+<script src="src/engine/06-recorder.js?v=1b0bcbe66b"></script>
+<script src="src/engine/07-controls.js?v=1b0bcbe66b"></script>
+<script src="src/engine/08-marks.js?v=1b0bcbe66b"></script>
+<script src="src/engine/09-loop.js?v=1b0bcbe66b"></script>
+<script src="src/engine/10-inline-edit.js?v=1b0bcbe66b"></script>
+<script src="src/engine/11-session.js?v=1b0bcbe66b"></script>
+<script src="src/engine/12-reader-input.js?v=1b0bcbe66b"></script>
+<script src="src/engine/13-pip.js?v=1b0bcbe66b"></script>
+<script src="src/engine/14-remote.js?v=1b0bcbe66b"></script>
+<script src="src/engine/15-remote-lan.js?v=1b0bcbe66b"></script>
+<script src="src/engine/16-nearby.js?v=1b0bcbe66b"></script>
+<script src="src/engine/17-install.js?v=1b0bcbe66b"></script>
+<script src="src/boot/ready.js?v=1b0bcbe66b"></script>
 </body>
 </html>

@@ -38,5 +38,8 @@ async () => {
   const body = [...document.querySelectorAll('#richEditor .editor-line:not(.editor-section)')].find((l) => l.textContent);
   const empty = [...document.querySelectorAll('#richEditor .editor-line')].find((l) => !l.textContent);
   const fonts = { section: fontSize($('#richEditor .editor-section')), body: fontSize(body), emptyLine: empty && empty.getBoundingClientRect().height };
+  if (fonts.section !== 20) failures.push(`section heading is ${fonts.section}px, expected 20px`);
+  if (fonts.body !== 17) failures.push(`body text is ${fonts.body}px, expected 17px`);
+  if (empty && Math.abs(fonts.emptyLine - 16) > 0.5) failures.push(`empty line is ${fonts.emptyLine}px tall, expected 16px`);
   return { combos, fonts, failures };
 }

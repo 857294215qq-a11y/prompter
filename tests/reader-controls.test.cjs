@@ -108,3 +108,13 @@ test('tablet menu contains no voice or camera', () => {
   assert.equal(app.$('#readerOptions #pVoice'), null);
   app.close();
 });
+
+test('retake uses the same rotate-ccw icon in the reader and the phone remote', () => {
+  const app = boot();
+  const href = (sel) => app.$(sel)?.getAttribute('href');
+  assert.equal(href('#pRetake use'), '#i-rotate-ccw');
+  assert.equal(href('#remote [data-c="retake"] use'), '#i-rotate-ccw');
+  assert.notEqual(href('#remote [data-c="home"] use'), '#i-rotate-ccw', '回到开头 keeps its own icon');
+  assert.match(app.$('#i-rotate-ccw').innerHTML, /M3 12a9 9 0 1 0 9-9 9\.75 9\.75 0 0 0-6\.74 2\.74L3 8/);
+  app.close();
+});

@@ -572,7 +572,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const b = cmd(c), label = b.textContent; b.setAttribute('aria-label', label); b.textContent = '';
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'i');
     const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-    use.setAttribute('href', '#i-' + ({ pageUp: 'up2', pageDown: 'down2', paraUp: 'up1', paraDown: 'down1', secUp: 'secup', secDown: 'secdown', mark: 'mark', home: 'retake', retake: 'retake' }[c]));
+    use.setAttribute('href', '#i-' + ({ pageUp: 'up2', pageDown: 'down2', paraUp: 'up1', paraDown: 'down1', secUp: 'secup', secDown: 'secdown', mark: 'mark', home: 'retake', retake: 'rotate-ccw' }[c]));
     svg.append(use); const span = document.createElement('span'); span.textContent = label; b.append(svg, span);
   }
   const speed = document.createElement('div'); speed.className = 'remote-stepper';

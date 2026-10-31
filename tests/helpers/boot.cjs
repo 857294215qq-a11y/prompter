@@ -42,7 +42,8 @@ function boot(saved = {}, { native = false, url = 'https://prompter.test/', betw
   // Run each script as a real classic script so top-level let/const are shared across files, as in a browser.
   const context = dom.getInternalVMContext();
   for (const script of w.document.scripts) {
-    const src = script.getAttribute('src');
+    // Versioned URLs (?v=…) name the same file on disk.
+    const src = script.getAttribute('src')?.replace(/\?.*$/, '');
     if (src && src.includes('://')) continue;
     const code = src ? readFileSync(path.join(root, src), 'utf8') : script.textContent;
     new vm.Script(code, { filename: src || 'index.html' }).runInContext(context);

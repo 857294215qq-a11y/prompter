@@ -263,7 +263,7 @@ test('picture-in-picture carries external V3 styles into the reading window', as
     app.click('#start'); await app.w.testEngine.togglePip();
     const style = pip.window.document.querySelector('link[rel="stylesheet"]');
     assert.ok(style, 'PiP must include the new external stylesheet');
-    assert.equal(style.href, 'https://prompter.test/ui-v3.css');
+    assert.match(style.href, /^https:\/\/prompter\.test\/ui-v3\.css\?v=[0-9a-f]+$/);
     assert.ok(pip.window.document.querySelector('#stage'));
   } finally { pip.window.close(); app.close(); }
 });

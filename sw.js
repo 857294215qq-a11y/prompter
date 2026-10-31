@@ -1,12 +1,11 @@
-// 离线缓存：页面优先走网络（拿到最新版本），网络慢或断网时用缓存
-const CACHE = 'prompter-ui-v3-modules-2';
-const ASSETS = [
-  './',
-  './index.html',
+// 离线缓存：每个版本整套装进自己的缓存。页面加载的脚本和样式地址带版本号，新旧版本互不顶替
+const VERSION = '0b3e98fe23';
+const CACHE = 'prompter-' + VERSION;
+// 页面加载的本地脚本和样式（地址与 index.html 一致，缓存时加上 ?v=VERSION）
+const VERSIONED = [
   './ui-v3.css',
-  './ui-v3.js',
   './src/boot/guard.js',
-  './src/boot/ready.js',
+  './ui-v3.js',
   './src/engine/00-core.js',
   './src/engine/01-script.js',
   './src/engine/02-editor.js',
@@ -25,6 +24,12 @@ const ASSETS = [
   './src/engine/15-remote-lan.js',
   './src/engine/16-nearby.js',
   './src/engine/17-install.js',
+  './src/boot/ready.js',
+];
+const ASSETS = [
+  './',
+  './index.html',
+  ...VERSIONED.map((f) => f + '?v=' + VERSION),
   './assets/v3/panel-left-close.svg',
   './assets/v3/flip-vertical2.svg',
   './assets/v3/flip-horizontal2.svg',
@@ -65,25 +70,19 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// 连着没有网络的热点时，网络请求可能很久才失败，所以最多等 2.5 秒就改用缓存
-function networkFirst(req, key) {
-  const net = fetch(req).then((res) => {
-    const copy = res.clone();
-    if (res.ok) caches.open(CACHE).then((c) => c.put(key, copy));
-    return res;
-  });
+// 页面先走网络；断网、超时（连着没有网络的热点时可能很久才失败）或服务器出错时，用安装时缓存的页面。
+// 页面不写回缓存：缓存里的页面只随整套版本一起更新，离线打开时页面和脚本才是同一版本
+function page(req) {
+  const net = fetch(req);
+  const good = net.then((res) => (res.ok ? res : null), () => null);
   const timeout = new Promise((r) => setTimeout(() => r(null), 2500));
-  return Promise.race([net, timeout])
-    .catch(() => null)
-    .then((res) => res || caches.match(key).then((hit) => hit || net));
+  return Promise.race([good, timeout]).then((res) => res || caches.match('./index.html').then((hit) => hit || net));
 }
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  const isPage = req.mode === 'navigate' || req.destination === 'document';
-  // 脚本和样式也先走网络：引擎分成多个文件后，新页面配旧脚本会出错
-  if (isPage) e.respondWith(networkFirst(req, './index.html'));
-  else if (req.destination === 'script' || req.destination === 'style') e.respondWith(networkFirst(req, req));
+  if (req.mode === 'navigate' || req.destination === 'document') e.respondWith(page(req));
+  // 带版本号的地址按完整地址查缓存，别的版本不会命中
   else e.respondWith(caches.match(req).then((hit) => hit || fetch(req)));
 });

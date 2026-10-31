@@ -202,6 +202,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     caretDocument = api.current().id;
     const result = readRich(sel.anchorNode, sel.anchorOffset, sel.focusNode, sel.focusOffset);
     api.ta.setSelectionRange(Math.min(result.start, result.end), Math.max(result.start, result.end));
+    syncFormatState();
   }
   function richInput() {
     caretDocument = api.current().id;
@@ -210,6 +211,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     api.ta.value = result.source; renderedSource = result.source;
     api.ta.setSelectionRange(Math.min(result.start, result.end), Math.max(result.start, result.end));
     api.ta.dispatchEvent(new Event('input', { bubbles: true }));
+    syncFormatState();
   }
   function sourceCaret(index) {
     // Build source offsets from the rendered tree, including hidden markdown syntax.
@@ -274,7 +276,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
       b.append(title, meta); b.addEventListener('click', () => { api.openScript(doc.id); resetHistory(); mobileLeft = false; layout(); }); list.append(b);
     }
     if (!list.children.length) { const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = '没有找到稿件'; list.append(empty); }
-    renderRich();
+    renderRich(); syncFormatState();
   }
   $('#scriptSearch').addEventListener('input', refresh);
   function resetHistory() { caretDocument = null; history = [api.ta.value]; historyIndex = 0; renderRich(true); }
@@ -295,8 +297,32 @@ window.initPrompterV3 = function initPrompterV3(api) {
       const line = api.ta.value.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
       const prefix = api.ta.value.slice(line).match(/^#+[ \t]*/)?.[0] || '';
       api.ta.setSelectionRange(line, line + prefix.length); replaceSelectionAtBuffer(prefix ? '' : '# ');
-    } else replaceSelectionAtBuffer(button.dataset.format === 'emphasis' ? '**' + (selected || '重点') + '**' : '[' + (selected || '停顿') + ']');
+    } else if (button.dataset.format === 'emphasis') {
+      if (button.getAttribute('aria-disabled') === 'true') return;
+      const range = emphasisRange(start, end);
+      if (range) { api.ta.setSelectionRange(range.start, range.end); replaceSelectionAtBuffer(range.inner); }
+      else replaceSelectionAtBuffer('**' + selected + '**');
+    } else replaceSelectionAtBuffer('[' + (selected || '停顿') + ']');
   }));
+  const lineStart = (index) => (index ? api.ta.value.lastIndexOf('\n', index - 1) + 1 : 0);
+  // The **…** run on the selection's line that holds the whole selection, or null.
+  function emphasisRange(start, end) {
+    const value = api.ta.value, from = lineStart(start), stop = value.indexOf('\n', from);
+    for (const m of value.slice(from, stop < 0 ? value.length : stop).matchAll(/\*\*([^\n]*?)\*\*/g)) {
+      const s = from + m.index, e = s + m[0].length;
+      if ((start >= s + 2 && end <= e - 2) || (start === s && end === e)) return { start: s, end: e, inner: m[1] };
+    }
+    return null;
+  }
+  // Section shows the current line's state; emphasis only acts on a selection.
+  function syncFormatState() {
+    const start = api.ta.selectionStart, end = api.ta.selectionEnd;
+    const section = /^#/.test(api.ta.value.slice(lineStart(start)));
+    $('[data-format="section"]').setAttribute('aria-pressed', String(section));
+    const emphasis = $('[data-format="emphasis"]');
+    emphasis.setAttribute('aria-disabled', String(start === end));
+    emphasis.setAttribute('aria-pressed', String(start !== end && !!emphasisRange(start, end)));
+  }
   function replaceSelectionAtBuffer(value) {
     const start = api.ta.selectionStart, end = api.ta.selectionEnd;
     api.ta.value = api.ta.value.slice(0, start) + value + api.ta.value.slice(end);

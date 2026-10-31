@@ -2,10 +2,10 @@
 
 ## 1. 模块拆分（不改行为）
 
-- [ ] 1.1 先跑 npm test 与 build:web 记录基线；手动冒烟播放、跳段、配对遥控、录像、置顶小窗并记录。
-- [ ] 1.2 把 index.html 内联脚本按分区移到 src/engine/*.js（ES 模块），index.html 改为模块入口，对外 api 不变；ui-v3.js 拆到 src/ui/*.js。
-- [ ] 1.3 build-web.mjs 复制 src，sw.js 缓存清单由构建生成并提升版本；测试改为加载模块入口。
-- [ ] 1.4 30 项测试、build:web、Capacitor 同步通过；重复 1.1 的冒烟；单独提交。
+- [x] 1.1 先跑 npm test 与 build:web 记录基线；手动冒烟播放、跳段、配对遥控并记录（录像与置顶小窗需真机，留到 7.2）。
+- [x] 1.2 把 index.html 内联脚本按分区逐字移到 src/engine/NN-name.js（按原顺序加载的普通脚本），对外 api 不变；ui-v3.js 暂不拆分，新组件各自成文件。
+- [x] 1.3 build-web.mjs 复制 src，sw.js 缓存清单列出引擎文件并提升版本；测试按普通脚本语义加载各文件，并覆盖安卓与遥控链接启动。
+- [x] 1.4 测试、build:web、Capacitor 同步通过；重复 1.1 的冒烟，并与拆分前逐键对比一致；单独提交。
 
 ## 2. 编辑区行为
 

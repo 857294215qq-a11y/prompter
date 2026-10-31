@@ -41,5 +41,18 @@ async () => {
   if (fonts.section !== 20) failures.push(`section heading is ${fonts.section}px, expected 20px`);
   if (fonts.body !== 17) failures.push(`body text is ${fonts.body}px, expected 17px`);
   if (empty && Math.abs(fonts.emptyLine - 16) > 0.5) failures.push(`empty line is ${fonts.emptyLine}px tall, expected 16px`);
-  return { combos, fonts, failures };
+  // Reader: column edge on the top pill, hint and menu clear of both bars.
+  $('#start').click(); await frame(); await frame();
+  const pill = box($('.topbar')), bottom = box($('.bottombar'));
+  const line = [...document.querySelectorAll('#content .s')].map((el) => { const r = el.getClientRects()[0]; return r && { x: r.left, y: r.top, w: r.width, h: r.height }; }).find((r) => r && r.w > 0);
+  const reader = { pill, bottom, line };
+  if (!line || Math.abs(line.x - pill.x) > 1) failures.push(`reader column starts at ${line?.x}, pill at ${pill.x}`);
+  const hint = $('#hint');
+  if (hint && !hint.hidden) { reader.hint = box(hint); for (const [n, b] of [['top pill', pill], ['bottom bar', bottom]]) if (hit(reader.hint, b)) failures.push(`start hint overlaps the ${n}`); }
+  $('#readerMore').click(); await frame();
+  const menu = $('#readerOptions');
+  if (menu && !menu.hidden) { reader.menu = box(menu); if (hit(reader.menu, pill)) failures.push('more menu covers the top pill'); if (reader.menu.y < pill.y + pill.h + 7) failures.push('more menu is not below the pill'); }
+  $('#readerMore').click();
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await frame();
+  return { combos, fonts, reader, failures };
 }

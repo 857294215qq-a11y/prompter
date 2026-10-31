@@ -54,10 +54,18 @@ function build() {
   pastIdx = 0;
 }
 
+// 桌面宽度下阅读列与顶部胶囊对齐；用户设的边距更宽时以边距为准
+function readerInset() {
+  if (innerWidth < 1200) return 0;
+  const bar = $('.topbar').getBoundingClientRect(), box = stage.getBoundingClientRect();
+  return bar.width ? Math.max(0, bar.left - box.left) : 0;
+}
+
 function applyStyle() {
   content.style.fontSize = fsEff() + 'px';
   content.style.lineHeight = S.lineHeight;
-  content.style.paddingInline = S.margin + 'vw';
+  const pad = Math.max(S.margin * innerWidth / 100, readerInset()) + 'px';
+  content.style.paddingLeft = pad; content.style.paddingRight = pad;
   content.style.textAlign = S.align;
   content.classList.toggle('dim', S.dimRead);
   stage.className = 't-' + S.theme;

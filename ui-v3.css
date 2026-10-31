@@ -353,13 +353,13 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 .bar.bottombar .lbl-t { display: none; }
 .bar.bottombar .track::before, .bar.bottombar .fill { height: 6px; }
 .bar .times { gap: 16px; align-items: flex-end; }
-.bar .times > span:not(.tally):not(.recbadge):not(.heard):not(.where), .bar .times > #tPct { display: flex; flex-direction: column; align-items: flex-start; font-size: 10px; line-height: 1.2; color: var(--muted); }
+.bar .times > span:not(.tally):not(.recbadge):not(.heard):not(.where), .bar .times > #tPct { display: flex; flex-direction: column; align-items: flex-start; font-size: 12px; line-height: 1.2; color: var(--muted); }
 .bar .times b, #tPct { font-size: 18px; line-height: 1.2; font-weight: 400; color: var(--fg); }
-#tPct::before { content: "进度"; font-size: 10px; color: var(--muted); }
+#tPct::before { content: "进度"; font-size: 12px; color: var(--muted); }
 #tPct { display: flex; flex-direction: column; }
 .bar .times { font-family: var(--ui); font-variant-numeric: tabular-nums; }
 .bar .times > #tPct { font-size: 18px; line-height: 1.2; color: var(--fg); }
-.bar .times > #tPct::before { font-size: 10px; color: var(--muted); }
+.bar .times > #tPct::before { font-size: 12px; color: var(--muted); }
 .bar .times b { font-family: var(--ui); }
 .bar, #toast, input[type="checkbox"][role="switch"]::after { transition-timing-function: var(--ease); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

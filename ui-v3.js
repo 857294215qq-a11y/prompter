@@ -38,14 +38,19 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const x = Math.round(trigger.left + trigger.width / 2 - box.left), y = trigger.top >= box.bottom ? Math.round(box.height) : 0;
     return `${x}px ${y}px`;
   }
+  // Live system preference: reduced motion keeps only a short opacity fade.
+  const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fadeOnly = (show) => (show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }]);
   function animateSurface(el, show, display = 'block') {
     motionJobs.get(el)?.cancel();
-    if (typeof el.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (typeof el.animate !== 'function') return;
     const oldDisplay = el.style.getPropertyValue('display'), priority = el.style.getPropertyPriority('display');
     if (!show) el.style.setProperty('display', display, 'important');
     const target = el.matches('.modal') ? el.querySelector('.card') : el;
     const animations = [];
-    if (el.matches('.popover')) {
+    if (reducedMotion()) {
+      animations.push(el.animate(fadeOnly(show), { duration: motion('--dur-reduced'), easing: 'linear' }));
+    } else if (el.matches('.popover')) {
       // Popovers grow from their trigger: scale .96 → 1 with opacity, 200ms in, 150ms out.
       if (show) el.style.transformOrigin = popoverOrigin(el);
       const options = { duration: motion(show ? '--dur-popover-in' : '--dur-popover-out'), easing: motion('--ease') };
@@ -112,7 +117,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     previousLayout = { left, right };
     restoreEditorAnchor(anchor);
     toolbarMotion?.cancel();
-    if (previousLayout && typeof toolbar.animate === 'function' && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (previousLayout && typeof toolbar.animate === 'function' && !reducedMotion()) {
       const after = toolbar.getBoundingClientRect(), dx = beforeTools.left - after.left;
       if (dx) toolbarMotion = toolbar.animate([{translate: dx + 'px 0'}, {translate:'0 0'}], { duration: motion('--dur-surface'), easing: motion('--ease') });
     }
@@ -362,7 +367,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     for (const el of rich.querySelectorAll('.editor-cue, strong')) {
       const t = el.firstChild; if (!t || typeof el.animate !== 'function') continue;
       const inner = readRich(t, 0, t, t.length), end = inner.end + (el.tagName === 'STRONG' ? 2 : 1);
-      if (end === index) { el.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: motion('--dur-text'), easing: motion('--ease') }); return; }
+      if (end === index) { el.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: motion(reducedMotion() ? '--dur-reduced' : '--dur-text'), easing: motion('--ease') }); return; }
     }
   }
   function syncFormatState() {
@@ -702,7 +707,9 @@ window.initPrompterV3 = function initPrompterV3(api) {
   new MutationObserver(() => {
     beat?.cancel(); beat = null;
     if (countdownEl.hidden || typeof countdownEl.animate !== 'function') return;
-    beat = countdownEl.animate([{ scale: 1.15, opacity: 0 }, { scale: 1, opacity: 1 }], { duration: motion('--dur-beat'), easing: motion('--ease') });
+    beat = reducedMotion()
+      ? countdownEl.animate(fadeOnly(true), { duration: motion('--dur-reduced'), easing: 'linear' })
+      : countdownEl.animate([{ scale: 1.15, opacity: 0 }, { scale: 1, opacity: 1 }], { duration: motion('--dur-beat'), easing: motion('--ease') });
   }).observe(countdownEl, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
   const motionSelector = '.modal, .popover, #panel, #hint, #cam, #uiToast, #prompter';
   const visibility = new WeakMap();
@@ -721,7 +728,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   refresh(); sync();
   return {
     startFromTop, startFromCaret, refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
-    confirmAction: ask, barsBusy, motion,
+    confirmAction: ask, barsBusy, motion, reducedMotion,
     emptyDocument: () => { rich.focus(); notify('先写一段正文，再开始提词。小节标题不计入正文。'); },
     saved: (ok) => { text($('#saveState'), ok ? '已保存到本机' : '保存失败，请导出稿件以免丢失'); updateMeta(); },
     saving: () => { text($('#saveState'), '正在保存…'); updateMeta(); },

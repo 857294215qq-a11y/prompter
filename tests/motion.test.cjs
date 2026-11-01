@@ -173,3 +173,50 @@ test('adding emphasis flashes the new bold run', () => {
   assert.equal(flashes.length, 1); assert.equal(flashes[0].tagName, 'STRONG'); assert.equal(flashes[0].textContent, '大家好');
   app.close();
 });
+
+// Task 4: reduced motion keeps a 120ms fade
+const reduced = (q) => q.includes('prefers-reduced-motion');
+
+test('reduced motion fades surfaces and popovers only', async () => {
+  const app = boot({ library: CUE.library, current: 'a' }, { media: reduced });
+  const calls = []; app.w.HTMLElement.prototype.animate = function (frames, options) { calls.push({ frames, options }); return { finished: Promise.resolve(), cancel() {} }; };
+  app.click('#appSettings'); await tick(); app.click('[data-close="appDialog"]'); await tick();
+  app.click('#toggleLibrary'); await tick();
+  app.click('[data-format="cue"]'); await tick();
+  assert.ok(calls.length >= 3, 'still animates: ' + calls.length);
+  for (const c of calls) {
+    for (const f of c.frames) assert.deepEqual(Object.keys(f), ['opacity'], JSON.stringify(c.frames));
+    assert.equal(c.options.duration, 120);
+  }
+  app.close();
+});
+
+test('reduced motion is read live', () => {
+  const app = boot({ settings: { countdown: 0 } }); app.click('#start');
+  app.w.matchMedia = (q) => ({ matches: reduced(q), media: q, addEventListener() {}, removeEventListener() {} });
+  const target = Math.round(app.w.eval('maxPos') / 2);
+  app.w.jumpTo(target);
+  assert.equal(app.w.eval('anim'), null); assert.equal(app.w.eval('pos'), target);
+  app.close();
+});
+
+test('final states match after rapid toggles in both modes', async () => {
+  const run = async (media) => {
+    const app = boot({ library: CUE.library, current: 'a', settings: { countdown: 0 } }, { media });
+    app.w.HTMLElement.prototype.animate = () => ({ finished: Promise.resolve(), cancel() {} });
+    for (let i = 0; i < 3; i++) { app.click('#toggleLibrary'); app.click('#toggleSettings'); }
+    app.click('[data-format="cue"]'); app.click('[data-format="cue"]'); await tick();
+    app.click('#start'); app.click('#readerMore'); app.click('#readerMore'); app.click('#readerMore'); await tick();
+    const state = { lib: app.$('#libraryPanel').inert, set: app.$('#settingsPanel').inert, cue: app.$('#cueMenu').hidden, menu: app.$('#readerOptions').hidden, expanded: app.$('#readerMore').getAttribute('aria-expanded') };
+    app.close(); return state;
+  };
+  assert.deepEqual(await run(reduced), await run(() => false));
+});
+
+test('reduced-motion CSS keeps a 120ms opacity fade instead of switching motion off', () => {
+  const block = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{(?:[^{}]|\{[^{}]*\})*\}/g).join('\n');
+  assert.match(block, /transition-property:\s*opacity !important/);
+  assert.match(block, /transition-duration:\s*var\(--dur-reduced\) !important/);
+  assert.doesNotMatch(block, /transition:\s*none/);
+  assert.doesNotMatch(read('index.html'), /prefers-reduced-motion: reduce\)\s*\{\s*\.bar, #content \.s, #toast \{ transition: none; \}/);
+});

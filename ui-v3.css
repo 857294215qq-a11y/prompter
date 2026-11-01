@@ -376,7 +376,12 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 #prompter.idle .bar { transition-duration: var(--dur-surface); }
 #prompter.idle .topbar { translate: 0 -8px; }
 #prompter.idle .bottombar { translate: 0 8px; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+/* Reduced motion: every change is at most a 120ms fade; nothing moves or scales, and every state is still reached. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-property: opacity !important; transition-duration: var(--dur-reduced) !important; animation-duration: var(--dur-reduced) !important; scroll-behavior: auto !important; }
+  #prompter.idle .topbar, #prompter.idle .bottombar { translate: none; }
+  .icon-btn:active, .text-btn:active, .btn:active, .ib:active { scale: none; }
+}
 
 
 /* Adaptive desktop editing: switches stay in viewport space, content reflows once. */

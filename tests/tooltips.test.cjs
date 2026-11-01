@@ -93,6 +93,8 @@ const tip = (app) => app.$('#tooltip');
 const shown = (app) => !tip(app).hidden;
 const hover = (app, el) => el.dispatchEvent(new app.w.MouseEvent('pointerover', { bubbles: true }));
 const leave = (app, el) => el.dispatchEvent(new app.w.MouseEvent('pointerout', { bubbles: true }));
+// A keyboard user reaches a button with Tab: the keydown comes first, then the focus.
+const kbFocus = (app, el) => { app.w.document.dispatchEvent(new app.w.KeyboardEvent('keydown', { key: 'Tab', bubbles: true })); el.focus(); };
 
 test('hover shows name and shortcut after 500ms and hides on leave', () => {
   const app = withTimers(boot(DOC)); mac(app);
@@ -106,7 +108,7 @@ test('hover shows name and shortcut after 500ms and hides on leave', () => {
 
 test('keyboard focus shows at once; blur hides', () => {
   const app = withTimers(boot(DOC)); app.click('#start');
-  const next = app.$('#nParaDn'); next.focus();
+  const next = app.$('#nParaDn'); kbFocus(app, next);
   assert.equal(shown(app), true); assert.equal(tip(app).textContent, '下一段  D');
   next.blur(); assert.equal(shown(app), false);
   app.close();
@@ -122,7 +124,7 @@ test('a click cancels a pending hover tooltip', () => {
 
 test('Escape hides the tooltip and still reaches the app', () => {
   const app = withTimers(boot(DOC)); app.click('#start');
-  app.$('#pRetake').focus(); assert.equal(shown(app), true);
+  kbFocus(app, app.$('#pRetake')); assert.equal(shown(app), true);
   app.w.document.body.dispatchEvent(new app.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
   assert.equal(shown(app), false); assert.equal(app.$('#prompter').hidden, true, 'Escape still returns to the editor');
   app.close();
@@ -156,9 +158,9 @@ test('existing descriptions are kept', () => {
 test("tooltip follows the toggle's new name", () => {
   const app = withTimers(boot(DOC));
   const t = app.$('#toggleLibrary');
-  t.focus(); assert.equal(tip(app).textContent, '收起稿件栏');
+  kbFocus(app, t); assert.equal(tip(app).textContent, '收起稿件栏');
   t.click(); assert.equal(shown(app), false, 'a click hides it');
-  t.blur(); t.focus(); assert.equal(tip(app).textContent, '展开稿件栏');
+  t.blur(); kbFocus(app, t); assert.equal(tip(app).textContent, '展开稿件栏');
   app.close();
 });
 
@@ -208,5 +210,54 @@ test('no menu item carries aria-pressed', () => {
   const app = boot(DOC); app.click('#start'); app.click('#readerMore');
   for (const item of app.$('#readerOptions').querySelectorAll('[role^="menuitem"]')) assert.equal(item.hasAttribute('aria-pressed'), false, item.id);
   app.click('#readerParameters'); assert.equal(app.$('#readerParameters').hasAttribute('aria-pressed'), false);
+  app.close();
+});
+
+// Final review fixes
+test('a mouse press inside a popover that takes no focus (Safari, Firefox) does not close it', () => {
+  const app = boot(DOC); app.click('#start');
+  app.$('#readerMore').click();
+  app.w.document.activeElement.blur(); // Safari: mousedown on a button blurs the old focus, relatedTarget null
+  assert.equal(app.$('#readerOptions').hidden, false, 'menu stays open for the click');
+  app.$('#pMy').click(); assert.equal(app.w.testEngine.settings.mirrorY, true);
+  app.close();
+  const ed = boot({ library: [{ id: 'c', text: '开场[停顿]正文', updated: 1 }], current: 'c' });
+  ed.$('#richEditor .editor-cue').click(); ed.$('#cueEditInput').blur();
+  ed.click('#cueDelete'); assert.equal(ed.$('#ta').value, '开场正文', 'delete still works');
+  ed.close();
+});
+
+test('the 更多 button closes its own menu', () => {
+  const app = boot(DOC); app.click('#start');
+  const more = app.$('#readerMore'); more.click();
+  more.focus(); more.click(); // Chrome: mousedown focuses the button, then the click toggles
+  assert.equal(app.$('#readerOptions').hidden, true);
+  app.close();
+});
+
+test('after a click the tooltip stays away until the pointer leaves the button', () => {
+  const app = withTimers(boot(DOC));
+  const b = app.$('#appSettings');
+  hover(app, b); b.dispatchEvent(new app.w.MouseEvent('pointerdown', { bubbles: true })); b.click();
+  hover(app, b.querySelector('img')); app.runTimers(); assert.equal(shown(app), false, 'moving onto the icon does not bring it back');
+  leave(app, b); hover(app, b); app.runTimers(); assert.equal(shown(app), true, 'a fresh hover works');
+  app.close();
+});
+
+test('focus that did not come from the keyboard shows no tooltip', () => {
+  const app = withTimers(boot(DOC));
+  const t = app.$('#toggleLibrary');
+  t.dispatchEvent(new app.w.MouseEvent('pointerdown', { bubbles: true })); t.focus(); t.click();
+  const now = app.w.Date.now; app.w.Date.now = () => now() + 5000; // come back from another app 5s later
+  t.blur(); t.focus(); // window refocus long after the click
+  assert.equal(shown(app), false);
+  app.close();
+});
+
+test('the tooltip hides when the reader bars fade', async () => {
+  const app = withTimers(boot(DOC)); app.click('#start');
+  hover(app, app.$('#pPlay')); app.runTimers(); assert.equal(shown(app), true);
+  app.$('#prompter').classList.add('idle'); await new Promise((r) => setImmediate(r));
+  assert.equal(shown(app), false);
   app.close();
 });

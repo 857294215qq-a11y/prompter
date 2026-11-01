@@ -70,7 +70,9 @@
   // 悬停 500ms 出现，键盘聚焦立即出现；移开、点击、Esc、失焦时立即消失；触屏不显示
   const tip = document.createElement('div'); tip.id = 'tooltip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true;
   document.body.append(tip);
-  let timer = 0, owner = null, pending = null, lastPointerDown = 0;
+  // lastInput: focus shows a tooltip only after keyboard input, like :focus-visible (a window refocus after a click does not)
+  // suppressed: the button just pressed keeps its tooltip away until the pointer really leaves it
+  let timer = 0, owner = null, pending = null, suppressed = null, lastInput = 'pointer';
   const touchOnly = () => matchMedia('(hover: none)').matches;
   const target = (node) => { const el = node?.closest?.('button'); return el && row(el.id) ? el : null; };
   const visible = (el) => !el.hidden && !el.closest('[hidden]');
@@ -87,15 +89,18 @@
   }
   document.addEventListener('pointerover', (e) => {
     // pointerover also fires moving between a button's own icon and label: keep the running delay
-    const el = target(e.target); if (!el || el === owner || el === pending || touchOnly()) return;
+    const el = target(e.target); if (!el || el === owner || el === pending || el === suppressed || touchOnly() || e.pointerType === 'touch') return;
     hide(); pending = el; timer = setTimeout(() => { pending = null; show(el); }, 500);
   });
-  document.addEventListener('pointerout', (e) => { const el = target(e.target); if (el && !el.contains(e.relatedTarget)) hide(); });
-  document.addEventListener('pointerdown', () => { lastPointerDown = Date.now(); hide(); }, true);
+  document.addEventListener('pointerout', (e) => { const el = target(e.target); if (el && !el.contains(e.relatedTarget)) { if (el === suppressed) suppressed = null; hide(); } });
+  document.addEventListener('pointerdown', (e) => { lastInput = 'pointer'; suppressed = target(e.target); hide(); }, true);
   document.addEventListener('click', hide, true);
-  document.addEventListener('focusin', (e) => { const el = target(e.target); if (el && Date.now() - lastPointerDown > 300) { hide(); show(el); } });
+  document.addEventListener('focusin', (e) => { const el = target(e.target); if (el && lastInput === 'keyboard') { hide(); show(el); } });
   document.addEventListener('focusout', (e) => { if (target(e.target) === owner) hide(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); }, true);
+  document.addEventListener('keydown', (e) => { lastInput = 'keyboard'; if (e.key === 'Escape') hide(); }, true);
+  // Faded reader bars take no pointer events, so no pointerout comes: hide with them
+  const reader = document.getElementById('prompter');
+  if (reader) new MutationObserver(() => { if (reader.classList.contains('idle') && owner?.closest('#prompter')) hide(); }).observe(reader, { attributes: true, attributeFilter: ['class'] });
   addEventListener('scroll', hide, true); addEventListener('resize', hide);
 
   window.prompterTooltips = { copy, label, show, hide };

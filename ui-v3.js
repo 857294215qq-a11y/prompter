@@ -17,6 +17,11 @@ window.initPrompterV3 = function initPrompterV3(api) {
   const text = (el, value) => { if (el.textContent !== value) el.textContent = value; };
   const motionJobs = new WeakMap();
   let previousLayout = null, toolbarMotion = null;
+  // Focus arriving on a control outside a popover (Tab, or focus moved elsewhere) closes it. A mouse press that
+  // moves no focus (Safari, Firefox) or lands on the popover's own toggle leaves the click to decide.
+  function closeOnFocusElsewhere(box, toggle, close) {
+    document.addEventListener('focusin', (e) => { if (!box.hidden && !box.contains(e.target) && e.target !== toggle) close(); });
+  }
   function animateSurface(el, show, display = 'block') {
     motionJobs.get(el)?.cancel();
     if (typeof el.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -411,8 +416,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
   on('#cueDelete', () => { if (editing) rewriteCue(''); });
   cueInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeCueEditor(editing.end); } });
   document.addEventListener('click', (e) => { if (!e.target.closest('#cueEditor, .editor-cue')) closeCueEditor(); });
-  for (const [box, close] of [[cueMenu, () => closeCueMenu(false)], [cueEditor, () => closeCueEditor()]])
-    box.addEventListener('focusout', (e) => { if (!box.contains(e.relatedTarget)) close(); });
+  closeOnFocusElsewhere(cueMenu, cueTool, () => closeCueMenu(false));
+  closeOnFocusElsewhere(cueEditor, null, () => closeCueEditor());
 
   function closeMenu() { $('#docMenu').hidden = true; $('#docMore').setAttribute('aria-expanded', 'false'); }
   function menu() {
@@ -536,9 +541,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     options.style.top = Math.round(bar.bottom + 8) + 'px'; options.style.right = Math.round(innerWidth - bar.right) + 'px';
     readerItems()[0]?.focus(); api.poke();
   }
-  // Focus leaving a popover closes it (Tab, or a click elsewhere that takes focus).
-  const closeOnLeave = (box, close) => box.addEventListener('focusout', (e) => { if (!box.contains(e.relatedTarget)) close(); });
-  closeOnLeave(options, () => { if (optionsOpen) closeReaderOptions(); });
+  closeOnFocusElsewhere(options, more, () => { if (optionsOpen) closeReaderOptions(); });
   // Every key but Tab stays in the menu, so reading shortcuts (Space, arrows, M/V/F) cannot fire behind it.
   options.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') return;

@@ -54,9 +54,9 @@ function build() {
   pastIdx = 0;
 }
 
-// 桌面宽度下阅读列与顶部胶囊对齐；用户设的边距更宽时以边距为准
+// 平板和桌面宽度下阅读列与顶部胶囊对齐；用户设的边距更宽时以边距为准
 function readerInset() {
-  if (pipWin || innerWidth < 1200) return 0;
+  if (pipWin || innerWidth < 768) return 0;
   // 用排版宽度：顶栏入场动画会把它缩小一点，屏幕上的位置这时不准
   const bar = $('.topbar').offsetWidth;
   return bar ? Math.max(0, (stage.clientWidth - bar) / 2) : 0;

@@ -57,9 +57,9 @@ button:disabled { cursor: default; opacity: .35; }
 .tool-pill .icon-btn { width: 32px; }
 .tool-pill .text-btn { padding: 0 6px; font-size: 12px; }
 .tool-pill .v3-icon { width: 18px; height: 18px; flex-basis: 18px; }
-.format-tools [aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.format-tools [aria-pressed="true"], .format-tools [aria-expanded="true"] { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
 /* Tints the black icon export to the accent (#0088ff / #0a85ff). */
-.format-tools [aria-pressed="true"] .v3-icon { filter: brightness(0) invert(37%) sepia(93%) saturate(2747%) hue-rotate(194deg) brightness(102%) contrast(104%); }
+.format-tools [aria-pressed="true"] .v3-icon, .format-tools [aria-expanded="true"] .v3-icon { filter: brightness(0) invert(37%) sepia(93%) saturate(2747%) hue-rotate(194deg) brightness(102%) contrast(104%); }
 .format-tools [aria-disabled="true"] { opacity: .4; cursor: default; }
 .toolbar-trailing { display: flex; align-items: center; gap: 8px; }
 .document-content { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: auto; padding-top: 24px; scrollbar-width: thin; }
@@ -523,3 +523,6 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 .popover[role="menu"] > [role^="menuitem"].danger { color: #d9363e; }
 #deviceSend[aria-disabled="true"] { opacity: .45; cursor: default; }
 .device-note { margin: 0; font-size: 11px; color: var(--pop-ink-2); }
+
+/* macOS focus ring on text fields (Figma Text Field · Focused, 2173:1462). */
+.cue-editor input:focus, .cue-custom input:focus, #dialogInput:focus { outline: 3px solid color-mix(in srgb, var(--accent) 50%, transparent); outline-offset: 0; border-color: var(--accent); }

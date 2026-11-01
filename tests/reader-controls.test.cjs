@@ -38,11 +38,13 @@ test('user margin wins when wider than the pill inset', () => {
   app.close();
 });
 
-test('below 1200px the column keeps the user margin', () => {
+test('below 768px (phones) the column keeps the user margin', () => {
   const app = boot({ settings: { countdown: 0 } });
-  Object.defineProperty(app.w, 'innerWidth', { value: 1000, configurable: true });
+  Object.defineProperty(app.w, 'innerWidth', { value: 700, configurable: true });
+  Object.defineProperty(app.$('#stage'), 'clientWidth', { value: 700 });
+  Object.defineProperty(app.$('.topbar'), 'offsetWidth', { value: 500 }); // would give a 100px inset if it applied
   app.click('#start');
-  assert.deepEqual(padding(app), ['100px', '100px']);
+  assert.deepEqual(padding(app), ['70px', '70px'], '10vw of 700');
   app.close();
 });
 

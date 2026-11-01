@@ -323,7 +323,7 @@ details.more > div { display: grid; gap: 8px; }
   .bar, #content .s, #toast { transition: none; }
 }
 </style>
-<link rel="stylesheet" href="ui-v3.css?v=d45a761c73">
+<link rel="stylesheet" href="ui-v3.css?v=366391f17c">
 </head>
 <body>
 
@@ -357,9 +357,9 @@ details.more > div { display: grid; gap: 8px; }
 <!-- ============ 编辑页 ============ -->
 <div id="editor">
   <button id="sheetBackdrop" class="sheet-backdrop" type="button" aria-label="关闭侧栏" hidden></button>
-  <button id="toggleLibrary" class="icon-btn library-toggle" type="button" aria-label="稿件侧栏" aria-controls="libraryPanel" aria-expanded="true" title="稿件侧栏"><img class="v3-icon" src="assets/v3/panel-left-close.svg" alt=""></button>
+  <button id="toggleLibrary" class="icon-btn library-toggle" type="button" aria-label="稿件侧栏" aria-controls="libraryPanel" aria-expanded="true"><img class="v3-icon" src="assets/v3/panel-left-close.svg" alt=""></button>
   <aside id="libraryPanel" class="library-panel" aria-label="稿件导航">
-    <div class="library-heading"><span>稿件</span><button id="newScript" class="icon-btn" type="button" aria-label="新建稿件" title="新建稿件"><img class="v3-icon" src="assets/v3/plus.svg" alt=""></button></div>
+    <div class="library-heading"><span>稿件</span><button id="newScript" class="icon-btn" type="button" aria-label="新建稿件"><img class="v3-icon" src="assets/v3/plus.svg" alt=""></button></div>
     <label class="search-box"><span class="vh">搜索稿件</span><input id="scriptSearch" type="search" placeholder="搜索稿件" autocomplete="off"></label>
     <p class="section-label">最近使用</p>
     <nav id="scriptList" aria-label="稿件列表"></nav>
@@ -379,8 +379,8 @@ details.more > div { display: grid; gap: 8px; }
         <button class="text-btn" type="button" data-format="cue" aria-label="插入提示" aria-describedby="format-cue-help" aria-haspopup="menu" aria-controls="cueMenu" aria-expanded="false" title="插入提示"><img class="v3-icon" src="assets/v3/type.svg" alt=""><span>插入提示</span></button>
       </div>
       <div class="toolbar-trailing">
-        <div class="tool-pill history-tools"><button id="undoEdit" class="icon-btn" type="button" aria-label="撤销" title="撤销"><img class="v3-icon" src="assets/v3/undo2.svg" alt=""></button><button id="redoEdit" class="icon-btn" type="button" aria-label="重做" title="重做"><img class="v3-icon" src="assets/v3/redo2.svg" alt=""></button></div>
-        <div class="tool-pill app-tools"><button id="remoteBtn" class="text-btn" type="button" aria-label="设备与遥控" title="设备与遥控"><img class="v3-icon" src="assets/v3/monitor-smartphone.svg" alt=""><span>设备</span></button><button id="focusEditor" class="icon-btn" type="button" aria-label="专注编辑" aria-pressed="false" title="专注编辑"><img class="v3-icon" src="assets/v3/maximize.svg" alt=""></button><button id="appSettings" class="icon-btn" type="button" aria-label="应用设置" aria-haspopup="dialog" title="应用设置"><img class="v3-icon" src="assets/v3/settings.svg" alt=""></button></div>
+        <div class="tool-pill history-tools"><button id="undoEdit" class="icon-btn" type="button" aria-label="撤销"><img class="v3-icon" src="assets/v3/undo2.svg" alt=""></button><button id="redoEdit" class="icon-btn" type="button" aria-label="重做"><img class="v3-icon" src="assets/v3/redo2.svg" alt=""></button></div>
+        <div class="tool-pill app-tools"><button id="remoteBtn" class="text-btn" type="button" aria-label="设备与遥控" title="设备与遥控"><img class="v3-icon" src="assets/v3/monitor-smartphone.svg" alt=""><span>设备</span></button><button id="focusEditor" class="icon-btn" type="button" aria-label="专注编辑" aria-pressed="false"><img class="v3-icon" src="assets/v3/maximize.svg" alt=""></button><button id="appSettings" class="icon-btn" type="button" aria-label="应用设置" aria-haspopup="dialog"><img class="v3-icon" src="assets/v3/settings.svg" alt=""></button></div>
         <button id="mobileDocMore" class="icon-btn mobile-only" type="button" aria-label="稿件更多"><img class="v3-icon" src="assets/v3/ellipsis.svg" alt=""></button>
       </div>
     </header>
@@ -409,7 +409,7 @@ details.more > div { display: grid; gap: 8px; }
     </section>
     <footer class="document-footer"><div class="stats" aria-live="polite"><span><b id="stUnits">0</b> 字</span><span><b id="stSecs">0</b> 节</span><span>预计 <b id="stDur">00:00</b></span><span class="vh"><b id="stParas">0</b> 段</span></div><button id="mobileStart" class="btn primary" type="button">开始提词</button></footer>
   </main>
-  <button id="toggleSettings" class="icon-btn settings-toggle" type="button" aria-label="提词参数" aria-controls="settingsPanel" aria-expanded="true" title="提词参数"><img class="v3-icon" src="assets/v3/panel-right-close.svg" alt=""></button>
+  <button id="toggleSettings" class="icon-btn settings-toggle" type="button" aria-label="提词参数" aria-controls="settingsPanel" aria-expanded="true"><img class="v3-icon" src="assets/v3/panel-right-close.svg" alt=""></button>
   <aside id="settingsPanel" class="settings" aria-label="提词参数">
     <div class="settings-heading">提词</div>
     <div class="parameter-tabs" role="tablist" aria-label="提词参数分类">
@@ -419,7 +419,7 @@ details.more > div { display: grid; gap: 8px; }
       <section id="panePlay" role="tabpanel" aria-labelledby="tabPlay">
         <div class="group"><h3>速度与时长</h3><div class="row"><label for="cpm">语速</label><output id="cpmOut" for="cpm"></output></div><input id="cpm" type="range" min="30" max="900" step="10"><div class="row"><label for="dur">目标时长</label><input id="dur" inputmode="numeric" autocomplete="off" placeholder="03:00" aria-describedby="durHint"></div><p class="tip" id="durHint">改目标时长会按字数自动换算语速。</p><div class="row"><label for="cdSel">开始前倒数</label><select id="cdSel"><option value="0">不倒数</option><option value="3">3 秒</option><option value="5">5 秒</option><option value="10">10 秒</option></select></div></div>
         <div class="group"><h3>分段录制</h3><label class="check switch-row">每节读完暂停<input id="secStop" type="checkbox" role="switch"></label><label class="check switch-row">语音跟随<input id="editorVoice" type="checkbox" role="switch"></label><p class="tip" id="voiceNote">提词时跟随语音，需要浏览器支持并允许麦克风。</p></div>
-        <div id="mirrorControls" class="group"><div class="row"><span>镜像</span><div class="pair"><button id="mx" class="icon-btn" type="button" aria-label="水平镜像" aria-pressed="false" title="水平镜像"><img class="v3-icon" src="assets/v3/flip-horizontal2.svg" alt=""></button><button id="my" class="icon-btn" type="button" aria-label="垂直镜像" aria-pressed="false" title="垂直镜像"><img class="v3-icon" src="assets/v3/flip-vertical2.svg" alt=""></button></div></div><p class="tip">按反射玻璃的方向选择镜像。</p></div>
+        <div id="mirrorControls" class="group"><div class="row"><span>镜像</span><div class="pair"><button id="mx" class="icon-btn" type="button" aria-label="水平镜像" aria-pressed="false"><img class="v3-icon" src="assets/v3/flip-horizontal2.svg" alt=""></button><button id="my" class="icon-btn" type="button" aria-label="垂直镜像" aria-pressed="false"><img class="v3-icon" src="assets/v3/flip-vertical2.svg" alt=""></button></div></div><p class="tip">按反射玻璃的方向选择镜像。</p></div>
       </section>
       <section id="paneText" role="tabpanel" aria-labelledby="tabText" hidden><p class="tip">以下参数仅影响提词画面，不改变编辑文字大小。</p>
         <div class="group"><h3>文字</h3><div class="row"><label for="fs">字号</label><output id="fsVal" for="fs"></output></div><input id="fs" type="range" min="20" max="200" step="2"><div class="row"><label for="lh">行距</label><output id="lhVal" for="lh"></output></div><input id="lh" type="range" min="1.1" max="2.4" step="0.05"><div class="row"><label for="mg">左右留白</label><output id="mgVal" for="mg"></output></div><input id="mg" type="range" min="0" max="30" step="1">
@@ -455,17 +455,17 @@ details.more > div { display: grid; gap: 8px; }
   <div id="cam" hidden title="点一下切换大小"><video id="camVideo" muted playsinline autoplay></video></div>
 
   <div class="bar topbar">
-    <button class="ib" id="pBack" type="button" title="返回编辑 (Esc)"><svg class="i"><use href="#i-back"/></svg><span class="lbl-t">编辑</span></button>
+    <button class="ib" id="pBack" type="button"><svg class="i"><use href="#i-back"/></svg><span class="lbl-t">编辑</span></button>
     <span class="sep"></span>
     <div class="grp">
-      <button class="ib" id="pStop" type="button" title="停止并回到开头 (Home)" aria-label="停止"><svg class="i"><use href="#i-stop"/></svg></button>
-      <button class="ib play" id="pPlay" type="button" title="播放 / 暂停 (空格)" aria-label="播放"><svg class="i"><use href="#i-play"/></svg></button>
-      <button class="ib" id="pRetake" type="button" title="重录本节 (R)"><svg class="i"><use href="#i-rotate-ccw"/></svg><span class="lbl-t">重录本节</span></button>
+      <button class="ib" id="pStop" type="button" aria-label="停止"><svg class="i"><use href="#i-stop"/></svg></button>
+      <button class="ib play" id="pPlay" type="button" aria-label="播放"><svg class="i"><use href="#i-play"/></svg></button>
+      <button class="ib" id="pRetake" type="button"><svg class="i"><use href="#i-rotate-ccw"/></svg><span class="lbl-t">重录本节</span></button>
     </div>
     <span class="sep"></span>
     <div class="grp">
-      <button class="ib" id="pVoice" type="button" title="语音跟随 (G)" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg><span class="lbl-t">语音跟随</span></button>
-      <button class="ib" id="pCam" type="button" title="录像 (C)" aria-pressed="false"><svg class="i"><use href="#i-cam"/></svg><span class="lbl-t">录像</span></button>
+      <button class="ib" id="pVoice" type="button" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg><span class="lbl-t">语音跟随</span></button>
+      <button class="ib" id="pCam" type="button" aria-pressed="false"><svg class="i"><use href="#i-cam"/></svg><span class="lbl-t">录像</span></button>
     </div>
     <span class="sep"></span>
     <div class="grp stepper">
@@ -487,8 +487,8 @@ details.more > div { display: grid; gap: 8px; }
     </div>
     <span class="sep"></span>
     <div class="grp">
-      <button class="ib" id="pMark" type="button" title="在当前句加书签 (B)"><svg class="i"><use href="#i-mark"/></svg><span class="lbl-t opt">书签</span></button>
-      <button class="ib" id="pList" type="button" title="目录与书签 (L)"><svg class="i"><use href="#i-list"/></svg><span class="lbl-t opt">目录</span></button>
+      <button class="ib" id="pMark" type="button"><svg class="i"><use href="#i-mark"/></svg><span class="lbl-t opt">书签</span></button>
+      <button class="ib" id="pList" type="button"><svg class="i"><use href="#i-list"/></svg><span class="lbl-t opt">目录</span></button>
       <button class="ib" id="pEdit" type="button" title="改字：点句子直接修改（也可以双击句子）" aria-pressed="false"><svg class="i"><use href="#i-edit"/></svg><span class="lbl-t opt">改字</span></button>
       <button class="ib" id="pPip" type="button" title="置顶小窗" hidden><svg class="i"><use href="#i-pip"/></svg><span class="lbl-t opt">小窗</span></button>
       <button class="ib" id="pRemote" type="button" title="手机遥控"><svg class="i"><use href="#i-remote"/></svg><span class="lbl-t opt">遥控</span></button>
@@ -498,9 +498,9 @@ details.more > div { display: grid; gap: 8px; }
 
   <div class="bar bottombar">
     <div class="nav">
-      <button class="ib" id="nSecUp" type="button" title="上一节 (Q)" aria-label="上一节"><svg class="i"><use href="#i-secup"/></svg></button>
-      <button class="ib" id="nParaUp" type="button" title="上一段 (A)" aria-label="上一段"><svg class="i"><use href="#i-up1"/></svg></button>
-      <button class="ib" id="nPageUp" type="button" title="上一页 (← / PgUp)" aria-label="上一页"><svg class="i"><use href="#i-up2"/></svg><span class="lbl-t">上一页</span></button>
+      <button class="ib" id="nSecUp" type="button" aria-label="上一节"><svg class="i"><use href="#i-secup"/></svg></button>
+      <button class="ib" id="nParaUp" type="button" aria-label="上一段"><svg class="i"><use href="#i-up1"/></svg></button>
+      <button class="ib" id="nPageUp" type="button" aria-label="上一页"><svg class="i"><use href="#i-up2"/></svg><span class="lbl-t">上一页</span></button>
     </div>
     <div class="track" id="track" role="slider" aria-label="提词进度" tabindex="-1">
       <div class="fill" id="fill"></div>
@@ -508,9 +508,9 @@ details.more > div { display: grid; gap: 8px; }
       <div class="knob" id="knob"></div>
     </div>
     <div class="nav">
-      <button class="ib" id="nPageDn" type="button" title="下一页 (→ / PgDn)" aria-label="下一页"><span class="lbl-t">下一页</span><svg class="i"><use href="#i-down2"/></svg></button>
-      <button class="ib" id="nParaDn" type="button" title="下一段 (D)" aria-label="下一段"><svg class="i"><use href="#i-down1"/></svg></button>
-      <button class="ib" id="nSecDn" type="button" title="下一节 (E)" aria-label="下一节"><svg class="i"><use href="#i-secdown"/></svg></button>
+      <button class="ib" id="nPageDn" type="button" aria-label="下一页"><span class="lbl-t">下一页</span><svg class="i"><use href="#i-down2"/></svg></button>
+      <button class="ib" id="nParaDn" type="button" aria-label="下一段"><svg class="i"><use href="#i-down1"/></svg></button>
+      <button class="ib" id="nSecDn" type="button" aria-label="下一节"><svg class="i"><use href="#i-secdown"/></svg></button>
     </div>
     <div class="times">
       <span class="tally"></span>
@@ -671,26 +671,27 @@ details.more > div { display: grid; gap: 8px; }
   <p class="tip">这台手机只当遥控器用。保持这个页面开着，别锁屏。</p>
 </div>
 
-<script src="src/boot/guard.js?v=d45a761c73"></script>
-<script src="ui-v3.js?v=d45a761c73"></script>
-<script src="src/engine/00-core.js?v=d45a761c73"></script>
-<script src="src/engine/01-script.js?v=d45a761c73"></script>
-<script src="src/engine/02-editor.js?v=d45a761c73"></script>
-<script src="src/engine/03-reader.js?v=d45a761c73"></script>
-<script src="src/engine/04-playback.js?v=d45a761c73"></script>
-<script src="src/engine/05-voice.js?v=d45a761c73"></script>
-<script src="src/engine/06-recorder.js?v=d45a761c73"></script>
-<script src="src/engine/07-controls.js?v=d45a761c73"></script>
-<script src="src/engine/08-marks.js?v=d45a761c73"></script>
-<script src="src/engine/09-loop.js?v=d45a761c73"></script>
-<script src="src/engine/10-inline-edit.js?v=d45a761c73"></script>
-<script src="src/engine/11-session.js?v=d45a761c73"></script>
-<script src="src/engine/12-reader-input.js?v=d45a761c73"></script>
-<script src="src/engine/13-pip.js?v=d45a761c73"></script>
-<script src="src/engine/14-remote.js?v=d45a761c73"></script>
-<script src="src/engine/15-remote-lan.js?v=d45a761c73"></script>
-<script src="src/engine/16-nearby.js?v=d45a761c73"></script>
-<script src="src/engine/17-install.js?v=d45a761c73"></script>
-<script src="src/boot/ready.js?v=d45a761c73"></script>
+<script src="src/boot/guard.js?v=366391f17c"></script>
+<script src="ui-v3.js?v=366391f17c"></script>
+<script src="src/engine/00-core.js?v=366391f17c"></script>
+<script src="src/engine/01-script.js?v=366391f17c"></script>
+<script src="src/engine/02-editor.js?v=366391f17c"></script>
+<script src="src/engine/03-reader.js?v=366391f17c"></script>
+<script src="src/engine/04-playback.js?v=366391f17c"></script>
+<script src="src/engine/05-voice.js?v=366391f17c"></script>
+<script src="src/engine/06-recorder.js?v=366391f17c"></script>
+<script src="src/engine/07-controls.js?v=366391f17c"></script>
+<script src="src/engine/08-marks.js?v=366391f17c"></script>
+<script src="src/engine/09-loop.js?v=366391f17c"></script>
+<script src="src/engine/10-inline-edit.js?v=366391f17c"></script>
+<script src="src/engine/11-session.js?v=366391f17c"></script>
+<script src="src/engine/12-reader-input.js?v=366391f17c"></script>
+<script src="src/engine/13-pip.js?v=366391f17c"></script>
+<script src="src/engine/14-remote.js?v=366391f17c"></script>
+<script src="src/engine/15-remote-lan.js?v=366391f17c"></script>
+<script src="src/engine/16-nearby.js?v=366391f17c"></script>
+<script src="src/engine/17-install.js?v=366391f17c"></script>
+<script src="src/ui/tooltips.js?v=366391f17c"></script>
+<script src="src/boot/ready.js?v=366391f17c"></script>
 </body>
 </html>

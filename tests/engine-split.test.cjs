@@ -13,7 +13,7 @@ test('index.html loads the input guard, ui-v3.js, every engine file in order, th
   const scripts = pageScripts();
   assert.equal(scripts.filter((s) => s === null).length, 0, 'inline scripts remain');
   const local = scripts.map((s) => s.replace(/\?.*$/, ''));
-  assert.deepEqual(local, ['src/boot/guard.js', 'ui-v3.js', ...engineFiles().map((f) => 'src/engine/' + f), 'src/boot/ready.js']);
+  assert.deepEqual(local, ['src/boot/guard.js', 'ui-v3.js', ...engineFiles().map((f) => 'src/engine/' + f), 'src/ui/tooltips.js', 'src/boot/ready.js']);
 });
 
 test('boots in the browser without errors', async () => {

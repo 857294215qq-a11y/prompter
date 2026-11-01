@@ -17,6 +17,11 @@ window.initPrompterV3 = function initPrompterV3(api) {
   const text = (el, value) => { if (el.textContent !== value) el.textContent = value; };
   const motionJobs = new WeakMap();
   let previousLayout = null, toolbarMotion = null;
+  // Focus arriving on a control outside a popover (Tab, or focus moved elsewhere) closes it. A mouse press that
+  // moves no focus (Safari, Firefox) or lands on the popover's own toggle leaves the click to decide.
+  function closeOnFocusElsewhere(box, toggle, close) {
+    document.addEventListener('focusin', (e) => { if (!box.hidden && !box.contains(e.target) && e.target !== toggle) close(); });
+  }
   function animateSurface(el, show, display = 'block') {
     motionJobs.get(el)?.cancel();
     if (typeof el.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -95,7 +100,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const label = sheet ? '提词参数' : (open ? '收起' : '展开') + (side === 'left' ? '稿件栏' : '提词参数');
     const name = sheet && small.matches ? 'settings2' : 'panel-' + side + '-' + (open ? 'close' : 'open');
     button.querySelector('img').src = 'assets/v3/' + name + '.svg';
-    button.setAttribute('aria-label', label); button.title = label;
+    button.setAttribute('aria-label', label);
   }
   function closeSheets() { mobileLeft = mobileRight = false; closeMenu(); closeReaderOptions(); layout(); }
   function returnSettings() {
@@ -105,7 +110,6 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const finish = () => { if (move !== settingsMove) return; editor.append(settings); settings.classList.remove('reader-parameters'); layout(); };
     const animation = animateSurface(settings, false, 'flex');
     if (animation) animation.then(finish); else finish();
-    $('#readerParameters').setAttribute('aria-pressed', 'false');
     $('#readerMore').setAttribute('aria-pressed', 'false'); $('#readerMore').setAttribute('aria-expanded', 'false'); $('#readerMore').setAttribute('aria-controls', 'readerOptions'); layout();
   }
   on('#toggleLibrary', () => {
@@ -127,7 +131,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     else { Object.assign(ui, focusRestore); focusRestore = null; }
     $('#focusEditor').setAttribute('aria-pressed', String(!!focusRestore));
     $('#focusEditor').setAttribute('aria-label', focusRestore ? '退出专注编辑' : '专注编辑');
-    $('#focusEditor').title = focusRestore ? '退出专注编辑，恢复原侧栏' : '专注编辑，隐藏两侧栏（不进入系统全屏）'; layout();
+    layout();
   });
 
   function tab(name) {
@@ -412,6 +416,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
   on('#cueDelete', () => { if (editing) rewriteCue(''); });
   cueInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeCueEditor(editing.end); } });
   document.addEventListener('click', (e) => { if (!e.target.closest('#cueEditor, .editor-cue')) closeCueEditor(); });
+  closeOnFocusElsewhere(cueMenu, cueTool, () => closeCueMenu(false));
+  closeOnFocusElsewhere(cueEditor, null, () => closeCueEditor());
 
   function closeMenu() { $('#docMenu').hidden = true; $('#docMore').setAttribute('aria-expanded', 'false'); }
   function menu() {
@@ -500,12 +506,12 @@ window.initPrompterV3 = function initPrompterV3(api) {
   const options = document.createElement('div'); options.id = 'readerOptions'; options.className = 'popover reader-options'; options.hidden = true;
   const more = document.createElement('button'); more.id = 'readerMore'; more.type = 'button'; more.className = 'ib'; more.setAttribute('aria-label', '更多阅读操作'); more.setAttribute('aria-expanded', 'false'); more.append(icon('ellipsis'));
   more.setAttribute('aria-controls', 'readerOptions');
-  const parameters = document.createElement('button'); parameters.id = 'readerParameters'; parameters.type = 'button'; parameters.className = 'text-btn'; parameters.append(icon('settings2'), document.createTextNode('阅读参数')); parameters.setAttribute('aria-pressed', 'false');
+  const parameters = document.createElement('button'); parameters.id = 'readerParameters'; parameters.type = 'button'; parameters.className = 'text-btn'; parameters.append(icon('settings2'), document.createTextNode('阅读参数'));
   const closeParameters = document.createElement('button'); closeParameters.id = 'readerSettingsClose'; closeParameters.type = 'button'; closeParameters.className = 'icon-btn'; closeParameters.setAttribute('aria-label', '关闭阅读参数'); closeParameters.append(icon('x')); settings.prepend(closeParameters);
   closeParameters.addEventListener('click', () => { returnSettings(); more.focus(); });
   // Menu groups: 画面 (mirrors, checked when on) · 窗口 · 调整. Each item keeps its icon and shows its shortcut.
   options.setAttribute('role', 'menu'); options.setAttribute('aria-label', '更多阅读操作');
-  const menuItems = [['pMx', '水平镜像', 'M', true], ['pMy', '垂直镜像', 'V', true], null, ['pPip', '打开置顶小窗'], ['pRemote', '连接遥控器'], ['pFs', '全屏', 'F'], null, ['readerParameters', '阅读参数'], ['pEdit', '改字', '', true]];
+  const menuItems = [['pMx', '水平镜像', 'M', true], ['pMy', '垂直镜像', 'V', true], null, ['pPip', '打开置顶小窗', '', true], ['pRemote', '连接遥控器', '', true], ['pFs', '全屏', 'F'], null, ['readerParameters', '阅读参数'], ['pEdit', '改字', '', true]];
   for (const item of menuItems) {
     if (!item) { const hr = document.createElement('hr'); hr.setAttribute('role', 'separator'); options.append(hr); continue; }
     const [id, label, key, check] = item, b = id === 'readerParameters' ? parameters : $('#' + id);
@@ -520,12 +526,12 @@ window.initPrompterV3 = function initPrompterV3(api) {
   const readerItems = () => [...options.querySelectorAll('[role^="menuitem"]')].filter((b) => !b.hidden);
   // Checkbox items report state with aria-checked; the engine's aria-pressed would contradict it.
   function syncReaderMenu() {
-    // The engine marks edit mode with aria-pressed each time it changes; until then the last checked state holds.
-    const edit = $('#pEdit'), editOn = edit.hasAttribute('aria-pressed') ? edit.getAttribute('aria-pressed') === 'true' : edit.getAttribute('aria-checked') === 'true';
-    const on = { pMx: api.settings.mirrorX, pMy: api.settings.mirrorY, pEdit: editOn };
+    // The engine marks 改字, PiP and remote state with aria-pressed each time it changes; until then the last checked state holds.
+    const engineState = (b) => (b.hasAttribute('aria-pressed') ? b.getAttribute('aria-pressed') === 'true' : b.getAttribute('aria-checked') === 'true');
+    const on = { pMx: api.settings.mirrorX, pMy: api.settings.mirrorY, pEdit: engineState($('#pEdit')), pPip: engineState($('#pPip')), pRemote: engineState($('#pRemote')) };
     for (const b of readerItems()) {
       if (b.getAttribute('role') === 'menuitemcheckbox') b.setAttribute('aria-checked', String(!!on[b.id]));
-      if (b !== parameters) b.removeAttribute('aria-pressed');
+      b.removeAttribute('aria-pressed');
     }
   }
   function openReaderMenu() {
@@ -535,6 +541,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     options.style.top = Math.round(bar.bottom + 8) + 'px'; options.style.right = Math.round(innerWidth - bar.right) + 'px';
     readerItems()[0]?.focus(); api.poke();
   }
+  closeOnFocusElsewhere(options, more, () => { if (optionsOpen) closeReaderOptions(); });
   // Every key but Tab stays in the menu, so reading shortcuts (Space, arrows, M/V/F) cannot fire behind it.
   options.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') return;
@@ -567,7 +574,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     settingsMove++;
     closeReaderOptions(); parametersInReader = true; $('#prompter').append(settings); settings.classList.add('reader-parameters'); settings.inert = false;
     animateSurface(settings, true, 'flex');
-    parameters.setAttribute('aria-pressed', 'true'); tab('Text'); $('#tabText').focus();
+    tab('Text'); $('#tabText').focus();
     more.setAttribute('aria-pressed', 'true'); more.setAttribute('aria-expanded', 'true'); more.setAttribute('aria-controls', 'settingsPanel');
   });
   $('#pBack').addEventListener('click', () => { returnSettings(); closeReaderOptions(); renderRich(true); });

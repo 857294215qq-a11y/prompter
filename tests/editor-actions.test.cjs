@@ -195,7 +195,7 @@ test('start from the caret is unavailable after switching documents and says why
   app.click('[data-script-id="second"]');
   const b = app.$('#startCaret');
   assert.equal(b.getAttribute('aria-disabled'), 'true');
-  assert.match(app.$('#' + b.getAttribute('aria-describedby')).textContent, /光标/);
+  assert.match(app.$('#' + b.getAttribute('aria-describedby').split(' ')[0]).textContent, /光标/);
   b.click(); assert.deepEqual(calls, []);
   app.close();
 });

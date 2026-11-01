@@ -1,6 +1,9 @@
 /* V3 values follow the selected Figma frames; native window chrome belongs to the OS. */
 :root {
+  /* Motion: one curve, four tiers (surface 240, popover 200 in / 150 out, control 180, text 160), plus scroll, countdown beat and tooltip. */
   --ease: cubic-bezier(.32,.72,0,1);
+  --dur-surface: 240ms; --dur-popover-in: 200ms; --dur-popover-out: 150ms; --dur-control: 180ms; --dur-text: 160ms;
+  --dur-scroll: 320ms; --dur-beat: 240ms; --dur-tip: 120ms; --dur-reduced: 120ms;
   color-scheme: light;
   --bg: #fff; --panel: #f4f4f6; --raise: #e9e9eb; --line: #dadadd;
   --fg: #1d1d1f; --muted: #6e6e73; --accent: #0088ff; --accent-ink: #fff;
@@ -98,7 +101,7 @@ input[type="range"]:focus-visible { outline-offset: 4px; }
 #dur, #cdSel, #lang, #readerTheme, #appearance { height: 28px; min-width: 0; max-width: 146px; width: 106px; background: color-mix(in srgb, var(--fg) 8%, transparent); border: 0; border-radius: 6px; padding: 0 8px; font: 12px var(--ui); }
 .switch-row { justify-content: space-between; width: 100%; gap: 12px; cursor: pointer; }
 input[type="checkbox"][role="switch"] { appearance: none; -webkit-appearance: none; flex: 0 0 44px; width: 44px; height: 24px; position: relative; border-radius: 100px; background: color-mix(in srgb, var(--fg) 14%, transparent); margin: 0; cursor: pointer; }
-input[type="checkbox"][role="switch"]::after { content: ""; position: absolute; height: 20px; width: 28px; left: 2px; top: 2px; background: #fff; border-radius: 100px; box-shadow: 0 1px 4px #0002; transition: transform .15s; }
+input[type="checkbox"][role="switch"]::after { content: ""; position: absolute; height: 20px; width: 28px; left: 2px; top: 2px; background: #fff; border-radius: 100px; box-shadow: 0 1px 4px #0002; transition: transform var(--dur-control) var(--ease); }
 input[type="checkbox"][role="switch"]:checked { background: var(--accent); }
 input[type="checkbox"][role="switch"]:checked::after { transform: translateX(12px); }
 input[type="checkbox"][role="switch"]:disabled { opacity: .5; cursor: default; }
@@ -158,7 +161,7 @@ input[type="checkbox"][role="switch"]:disabled { opacity: .5; cursor: default; }
 #stage.t-light { background: #f5f5f7; --hl: #0069bf; }
 #content { font-weight: 400; }
 #content .sec { font-weight: 400; font-size: .34em; color: inherit; letter-spacing: 0; }
-#content .s { transition: opacity .15s; }
+#content .s { transition: opacity var(--dur-text) var(--ease); }
 #guide::before, #guide::after { border-width: 8px; opacity: .5; }
 .bar { left: 50%; right: auto; width: max-content; max-width: calc(100% - 48px); transform: translateX(-50%); border: 1px solid var(--line); background: #202022f5; border-radius: 100px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); color: var(--fg); gap: 4px; padding-inline: 10px; }
 .bar.topbar { top: max(28px, calc(env(safe-area-inset-top) + 12px)); padding-top: 6px; padding-bottom: 6px; min-height: 60px; overflow-x: visible; }
@@ -369,8 +372,8 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 .bar .times b { font-family: var(--ui); }
 .bar, #toast, input[type="checkbox"][role="switch"]::after { transition-timing-function: var(--ease); }
 /* Bars fade and move 8px: 240ms out when idle, 200ms back on any input. */
-#prompter .bar { transition: opacity 200ms var(--ease), translate 200ms var(--ease); }
-#prompter.idle .bar { transition-duration: 240ms; }
+#prompter .bar { transition: opacity var(--dur-popover-in) var(--ease), translate var(--dur-popover-in) var(--ease); }
+#prompter.idle .bar { transition-duration: var(--dur-surface); }
 #prompter.idle .topbar { translate: 0 -8px; }
 #prompter.idle .bottombar { translate: 0 8px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
@@ -413,7 +416,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 }
 
 /* macOS 27 Tooltip: 18px tall, 11px label, frosted light fill; fades in over 120ms. */
-#tooltip { position: fixed; z-index: 200; height: 18px; padding: 3px 6px; box-sizing: border-box; border-radius: 4px; font: 11px/12px var(--ui); color: #1a1a1a; white-space: pre; pointer-events: none; background: rgb(236 236 236 / .88); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 2px 8px #0002, 0 0 2px #0002; animation: tip-in 120ms var(--ease); }
+#tooltip { position: fixed; z-index: 200; height: 18px; padding: 3px 6px; box-sizing: border-box; border-radius: 4px; font: 11px/12px var(--ui); color: #1a1a1a; white-space: pre; pointer-events: none; background: rgb(236 236 236 / .88); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 2px 8px #0002, 0 0 2px #0002; animation: tip-in var(--dur-tip) var(--ease); }
 #tooltip[hidden] { display: none; }
 [data-appearance="dark"] #tooltip { color: #f5f5f7; background: rgb(51 51 51 / .88); }
 @keyframes tip-in { from { opacity: 0; } }

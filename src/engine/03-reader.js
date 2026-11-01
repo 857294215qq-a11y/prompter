@@ -191,7 +191,7 @@ function jumpTo(target, smooth = true, manual = true) {
   target = clamp(target, 0, maxPos);
   if (manual) relocate(target);
   if (!smooth || reduceMotion) { anim = null; pos = target; return; }
-  anim = { from: pos, to: target, t0: performance.now(), dur: 320 };
+  anim = { from: pos, to: target, t0: performance.now(), dur: v3 ? v3.motion('--dur-scroll') : 320 };
 }
 const pageSize = () => Math.max(lhPx, stage.clientHeight * 0.6);
 const tol = () => lhPx * 0.6;

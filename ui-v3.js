@@ -22,6 +22,15 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function closeOnFocusElsewhere(box, toggle, close) {
     document.addEventListener('focusin', (e) => { if (!box.hidden && !box.contains(e.target) && e.target !== toggle) close(); });
   }
+  // motion fallbacks: the same values as the :root tokens in ui-v3.css, for when stylesheets are not loaded (tests)
+  const MOTION = { '--ease': 'cubic-bezier(.32,.72,0,1)', '--dur-surface': 240, '--dur-popover-in': 200, '--dur-popover-out': 150, '--dur-control': 180, '--dur-text': 160, '--dur-scroll': 320, '--dur-beat': 240, '--dur-tip': 120, '--dur-reduced': 120 };
+  // end motion fallbacks
+  // Motion tokens from CSS: durations as ms numbers, --ease as the curve string.
+  function motion(name) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (!value) return MOTION[name];
+    return name === '--ease' ? value : parseFloat(value);
+  }
   function animateSurface(el, show, display = 'block') {
     motionJobs.get(el)?.cancel();
     if (typeof el.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -29,7 +38,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     if (!show) el.style.setProperty('display', display, 'important');
     const target = el.matches('.modal') ? el.querySelector('.card') : el;
     const animations = [];
-    const options = { duration: 240, easing: 'cubic-bezier(.32,.72,0,1)' };
+    const options = { duration: motion('--dur-surface'), easing: motion('--ease') };
     if (target !== el) animations.push(el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], options));
     const x = target.id === 'hint' ? '-50%' : '0';
     const from = { opacity: 0, translate: x + ' 12px', scale: '.98' }, to = { opacity: 1, translate: x + ' 0', scale: '1' };
@@ -90,7 +99,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     toolbarMotion?.cancel();
     if (previousLayout && typeof toolbar.animate === 'function' && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       const after = toolbar.getBoundingClientRect(), dx = beforeTools.left - after.left;
-      if (dx) toolbarMotion = toolbar.animate([{translate: dx + 'px 0'}, {translate:'0 0'}], {duration:240,easing:'cubic-bezier(.32,.72,0,1)'});
+      if (dx) toolbarMotion = toolbar.animate([{translate: dx + 'px 0'}, {translate:'0 0'}], { duration: motion('--dur-surface'), easing: motion('--ease') });
     }
     updateMeta();
   }
@@ -680,7 +689,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   refresh(); sync();
   return {
     startFromTop, startFromCaret, refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
-    confirmAction: ask, barsBusy,
+    confirmAction: ask, barsBusy, motion,
     emptyDocument: () => { rich.focus(); notify('先写一段正文，再开始提词。小节标题不计入正文。'); },
     saved: (ok) => { text($('#saveState'), ok ? '已保存到本机' : '保存失败，请导出稿件以免丢失'); updateMeta(); },
     saving: () => { text($('#saveState'), '正在保存…'); updateMeta(); },

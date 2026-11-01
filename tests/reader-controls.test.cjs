@@ -183,8 +183,8 @@ test('bars stay while focus is inside, and hide 2.5s after it leaves', () => {
 test('idle bars move 8px on the shared curve: 240ms out, 200ms back', () => {
   assert.match(css, /#prompter\.idle \.topbar \{ translate: 0 -8px; \}/);
   assert.match(css, /#prompter\.idle \.bottombar \{ translate: 0 8px; \}/);
-  assert.match(css, /#prompter \.bar \{ transition: opacity 200ms var\(--ease\), translate 200ms var\(--ease\)/);
-  assert.match(css, /#prompter\.idle \.bar \{ transition-duration: 240ms; \}/);
+  assert.match(css, /#prompter \.bar \{ transition: opacity var\(--dur-popover-in\) var\(--ease\), translate var\(--dur-popover-in\) var\(--ease\)/);
+  assert.match(css, /#prompter\.idle \.bar \{ transition-duration: var\(--dur-surface\); \}/);
 });
 
 // Final review fixes

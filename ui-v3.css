@@ -505,9 +505,9 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 .device-text #deviceStatus { font-size: 11px; color: var(--muted); }
 .device-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: 0 0 8px; }
 .device-dot.ok { background: var(--ok); }
-.device-row { display: flex; align-items: center; gap: 10px; min-height: 40px; width: 100%; padding: 0; border: 0; background: transparent; font-size: 13px; color: inherit; text-align: left; }
-.device-row > span:first-of-type { flex: 1; }
-.device-row[hidden] { display: none; }
+.device-popover .device-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; min-height: 40px; width: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; font-size: 13px; color: inherit; text-align: left; }
+.device-popover .device-row > span:first-of-type { flex: 1; }
+.device-popover .device-row[hidden] { display: none; }
 .device-chevron { margin-left: auto; }
 .device-popover hr { width: 100%; margin: 0; border: 0; border-top: 1px solid #dadadd; }
 [data-appearance="dark"] .device-popover hr { border-top-color: var(--line); }

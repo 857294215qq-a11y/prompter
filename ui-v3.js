@@ -31,6 +31,13 @@ window.initPrompterV3 = function initPrompterV3(api) {
     if (!value) return MOTION[name];
     return name === '--ease' ? value : parseFloat(value);
   }
+  // The point a popover grows from: its trigger's centre on the popover's near edge (top centre without a trigger).
+  function popoverOrigin(el) {
+    const box = el.getBoundingClientRect(), trigger = document.querySelector(`[aria-controls="${el.id}"]`)?.getBoundingClientRect();
+    if (!trigger?.width) return 'top center';
+    const x = Math.round(trigger.left + trigger.width / 2 - box.left), y = trigger.top >= box.bottom ? Math.round(box.height) : 0;
+    return `${x}px ${y}px`;
+  }
   function animateSurface(el, show, display = 'block') {
     motionJobs.get(el)?.cancel();
     if (typeof el.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -38,11 +45,19 @@ window.initPrompterV3 = function initPrompterV3(api) {
     if (!show) el.style.setProperty('display', display, 'important');
     const target = el.matches('.modal') ? el.querySelector('.card') : el;
     const animations = [];
-    const options = { duration: motion('--dur-surface'), easing: motion('--ease') };
-    if (target !== el) animations.push(el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], options));
-    const x = target.id === 'hint' ? '-50%' : '0';
-    const from = { opacity: 0, translate: x + ' 12px', scale: '.98' }, to = { opacity: 1, translate: x + ' 0', scale: '1' };
-    animations.push(target.animate(show ? [from, to] : [to, from], options));
+    if (el.matches('.popover')) {
+      // Popovers grow from their trigger: scale .96 → 1 with opacity, 200ms in, 150ms out.
+      if (show) el.style.transformOrigin = popoverOrigin(el);
+      const options = { duration: motion(show ? '--dur-popover-in' : '--dur-popover-out'), easing: motion('--ease') };
+      const from = { opacity: 0, scale: '.96' }, to = { opacity: 1, scale: '1' };
+      animations.push(el.animate(show ? [from, to] : [to, from], options));
+    } else {
+      const options = { duration: motion('--dur-surface'), easing: motion('--ease') };
+      if (target !== el) animations.push(el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], options));
+      const x = target.id === 'hint' ? '-50%' : '0';
+      const from = { opacity: 0, translate: x + ' 12px', scale: '.98' }, to = { opacity: 1, translate: x + ' 0', scale: '1' };
+      animations.push(target.animate(show ? [from, to] : [to, from], options));
+    }
     let active = true;
     const restore = () => { if (!active) return; active = false; animations.forEach(a => a.cancel()); if (!show) { if (oldDisplay) el.style.setProperty('display', oldDisplay, priority); else el.style.removeProperty('display'); } motionJobs.delete(el); };
     motionJobs.set(el, { cancel: restore });

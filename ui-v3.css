@@ -420,3 +420,20 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 #tooltip[hidden] { display: none; }
 [data-appearance="dark"] #tooltip { color: #f5f5f7; background: rgb(51 51 51 / .88); }
 @keyframes tip-in { from { opacity: 0; } }
+
+/* Segments and tabs: one indicator slides to the chosen option over the control token. */
+.seg, .parameter-tabs { position: relative; isolation: isolate; --seg-i: 0; --seg-n: 2; }
+.seg:has(> label:nth-child(3)), .parameter-tabs:has(> button:nth-child(3)) { --seg-n: 3; }
+.seg:has(> label:nth-child(4)) { --seg-n: 4; }
+.seg:has(> label:nth-child(2) input:checked), .parameter-tabs:has(> button:nth-child(2)[aria-selected="true"]) { --seg-i: 1; }
+.seg:has(> label:nth-child(3) input:checked), .parameter-tabs:has(> button:nth-child(3)[aria-selected="true"]) { --seg-i: 2; }
+.seg:has(> label:nth-child(4) input:checked) { --seg-i: 3; }
+.seg::before, .parameter-tabs::before { content: ""; position: absolute; z-index: -1; top: var(--seg-pad, 0px); bottom: var(--seg-pad, 0px); left: var(--seg-pad, 0px); width: calc((100% - 2 * var(--seg-pad, 0px)) / var(--seg-n)); border-radius: var(--seg-radius, 7px); background: var(--seg-fill, var(--accent)); translate: calc(var(--seg-i) * 100%) 0; transition: translate var(--dur-control) var(--ease); }
+.parameter-tabs { --seg-pad: 2px; --seg-radius: 5px; }
+.parameter-tabs button[aria-selected="true"] { background: transparent; }
+.seg { background: var(--raise); }
+.seg label, .seg label:has(input:checked) { background: transparent; }
+.align-seg { background: transparent; --seg-fill: color-mix(in srgb, var(--fg) 10%, transparent); --seg-radius: 8px; }
+/* Press feedback: buttons dip to .97 while held. */
+.icon-btn, .text-btn, .btn, .ib { transition: scale var(--dur-control) var(--ease); }
+.icon-btn:active:not(:disabled), .text-btn:active:not(:disabled), .btn:active:not(:disabled), .ib:active:not(:disabled) { scale: .97; }

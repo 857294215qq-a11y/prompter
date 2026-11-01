@@ -43,3 +43,57 @@ test('surfaces animate with the tokens', async () => {
   for (const o of calls) { assert.equal(o.duration, 240); assert.equal(o.easing, TOKENS['--ease']); }
   app.close();
 });
+
+// Task 2: popovers from their trigger; tabs, segments and press feedback
+const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top });
+function recordAnimations(app) {
+  const calls = [];
+  app.w.HTMLElement.prototype.animate = function (frames, options) { calls.push({ el: this, frames, options }); return { finished: new Promise(() => {}), cancel() {} }; };
+  return calls;
+}
+const tick = () => new Promise(setImmediate);
+const CUE = { library: [{ id: 'a', text: '大家好欢迎回来', updated: 1 }], current: 'a' };
+
+test('popovers open from their trigger', async () => {
+  const app = boot(CUE), calls = recordAnimations(app);
+  app.$('[data-format="cue"]').getBoundingClientRect = () => rect(500, 20, 104, 32);
+  app.$('#cueMenu').getBoundingClientRect = () => rect(500, 60, 220, 200);
+  app.click('[data-format="cue"]'); await tick();
+  const c = calls.find((x) => x.el.id === 'cueMenu');
+  assert.ok(c, 'cue menu animates');
+  assert.deepEqual(JSON.parse(JSON.stringify(c.frames)), [{ opacity: 0, scale: '.96' }, { opacity: 1, scale: '1' }]);
+  assert.equal(c.options.duration, 200); assert.equal(c.options.easing, TOKENS['--ease']);
+  assert.equal(app.$('#cueMenu').style.transformOrigin, '52px 0px', 'origin at the trigger centre, top edge');
+  app.close();
+});
+
+test('popovers close faster', async () => {
+  const app = boot(CUE), calls = recordAnimations(app);
+  app.click('[data-format="cue"]'); await tick(); calls.length = 0;
+  app.click('#documentTitle'); await tick();
+  const c = calls.find((x) => x.el.id === 'cueMenu');
+  assert.equal(c.options.duration, 150);
+  assert.deepEqual(JSON.parse(JSON.stringify(c.frames)), [{ opacity: 1, scale: '1' }, { opacity: 0, scale: '.96' }]);
+  app.close();
+});
+
+test('rapid toggles settle hidden', async () => {
+  const app = boot({ settings: { countdown: 0 } });
+  app.w.HTMLElement.prototype.animate = () => ({ finished: Promise.resolve(), cancel() {} }); // animations finish, as in a browser
+  app.click('#start');
+  for (let i = 0; i < 5; i++) { app.click('#readerMore'); await tick(); app.click('#readerMore'); await tick(); }
+  const menu = app.$('#readerOptions');
+  assert.equal(menu.hidden, true); assert.equal(menu.style.display, '', 'no leftover display override');
+  app.close();
+});
+
+test('the tab and segment indicators slide on the control token', () => {
+  assert.match(css, /\.parameter-tabs:has\(> button:nth-child\(2\)\[aria-selected="true"\]\)[^{]*\{[^}]*--seg-i:\s*1/);
+  assert.match(css, /\.seg:has\(> label:nth-child\(2\) input:checked\)[^{]*\{[^}]*--seg-i:\s*1/);
+  assert.match(css, /\.seg::before, \.parameter-tabs::before \{[^}]*translate: calc\(var\(--seg-i\) \* 100%\) 0;[^}]*transition: translate var\(--dur-control\) var\(--ease\)/);
+});
+
+test('buttons press to .97', () => {
+  assert.match(css, /\.icon-btn, \.text-btn, \.btn, \.ib \{ transition: scale var\(--dur-control\) var\(--ease\); \}/);
+  assert.match(css, /:active:not\(:disabled\)[^{]*\{ scale: \.97; \}/);
+});

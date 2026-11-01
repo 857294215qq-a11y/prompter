@@ -1,6 +1,9 @@
 /* V3 values follow the selected Figma frames; native window chrome belongs to the OS. */
 :root {
+  /* Motion: one curve, four tiers (surface 240, popover 200 in / 150 out, control 180, text 160), plus scroll, countdown beat and tooltip. */
   --ease: cubic-bezier(.32,.72,0,1);
+  --dur-surface: 240ms; --dur-popover-in: 200ms; --dur-popover-out: 150ms; --dur-control: 180ms; --dur-text: 160ms;
+  --dur-scroll: 320ms; --dur-beat: 240ms; --dur-tip: 120ms; --dur-reduced: 120ms;
   color-scheme: light;
   --bg: #fff; --panel: #f4f4f6; --raise: #e9e9eb; --line: #dadadd;
   --fg: #1d1d1f; --muted: #6e6e73; --accent: #0088ff; --accent-ink: #fff;
@@ -54,9 +57,9 @@ button:disabled { cursor: default; opacity: .35; }
 .tool-pill .icon-btn { width: 32px; }
 .tool-pill .text-btn { padding: 0 6px; font-size: 12px; }
 .tool-pill .v3-icon { width: 18px; height: 18px; flex-basis: 18px; }
-.format-tools [aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.format-tools [aria-pressed="true"], .format-tools [aria-expanded="true"] { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
 /* Tints the black icon export to the accent (#0088ff / #0a85ff). */
-.format-tools [aria-pressed="true"] .v3-icon { filter: brightness(0) invert(37%) sepia(93%) saturate(2747%) hue-rotate(194deg) brightness(102%) contrast(104%); }
+.format-tools [aria-pressed="true"] .v3-icon, .format-tools [aria-expanded="true"] .v3-icon { filter: brightness(0) invert(37%) sepia(93%) saturate(2747%) hue-rotate(194deg) brightness(102%) contrast(104%); }
 .format-tools [aria-disabled="true"] { opacity: .4; cursor: default; }
 .toolbar-trailing { display: flex; align-items: center; gap: 8px; }
 .document-content { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: auto; padding-top: 24px; scrollbar-width: thin; }
@@ -98,7 +101,7 @@ input[type="range"]:focus-visible { outline-offset: 4px; }
 #dur, #cdSel, #lang, #readerTheme, #appearance { height: 28px; min-width: 0; max-width: 146px; width: 106px; background: color-mix(in srgb, var(--fg) 8%, transparent); border: 0; border-radius: 6px; padding: 0 8px; font: 12px var(--ui); }
 .switch-row { justify-content: space-between; width: 100%; gap: 12px; cursor: pointer; }
 input[type="checkbox"][role="switch"] { appearance: none; -webkit-appearance: none; flex: 0 0 44px; width: 44px; height: 24px; position: relative; border-radius: 100px; background: color-mix(in srgb, var(--fg) 14%, transparent); margin: 0; cursor: pointer; }
-input[type="checkbox"][role="switch"]::after { content: ""; position: absolute; height: 20px; width: 28px; left: 2px; top: 2px; background: #fff; border-radius: 100px; box-shadow: 0 1px 4px #0002; transition: transform .15s; }
+input[type="checkbox"][role="switch"]::after { content: ""; position: absolute; height: 20px; width: 28px; left: 2px; top: 2px; background: #fff; border-radius: 100px; box-shadow: 0 1px 4px #0002; transition: transform var(--dur-control) var(--ease); }
 input[type="checkbox"][role="switch"]:checked { background: var(--accent); }
 input[type="checkbox"][role="switch"]:checked::after { transform: translateX(12px); }
 input[type="checkbox"][role="switch"]:disabled { opacity: .5; cursor: default; }
@@ -108,7 +111,7 @@ input[type="checkbox"][role="switch"]:disabled { opacity: .5; cursor: default; }
 .align-seg label:has(input:checked) { background: color-mix(in srgb, var(--fg) 10%, transparent); }
 .align-seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
 .start-actions { display: grid; gap: 8px; flex-shrink: 0; padding-top: 8px; }
-.start-actions .btn { width: 100%; }
+.start-actions .btn { width: 100%; min-height: 32px; }
 .start-actions .primary { min-height: 40px; }
 .start-actions [aria-disabled="true"] { opacity: .45; cursor: default; }
 .settings-collapsed #settingsPanel { display: none; }
@@ -158,7 +161,7 @@ input[type="checkbox"][role="switch"]:disabled { opacity: .5; cursor: default; }
 #stage.t-light { background: #f5f5f7; --hl: #0069bf; }
 #content { font-weight: 400; }
 #content .sec { font-weight: 400; font-size: .34em; color: inherit; letter-spacing: 0; }
-#content .s { transition: opacity .15s; }
+#content .s { transition: opacity var(--dur-text) var(--ease); }
 #guide::before, #guide::after { border-width: 8px; opacity: .5; }
 .bar { left: 50%; right: auto; width: max-content; max-width: calc(100% - 48px); transform: translateX(-50%); border: 1px solid var(--line); background: #202022f5; border-radius: 100px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); color: var(--fg); gap: 4px; padding-inline: 10px; }
 .bar.topbar { top: max(28px, calc(env(safe-area-inset-top) + 12px)); padding-top: 6px; padding-bottom: 6px; min-height: 60px; overflow-x: visible; }
@@ -369,11 +372,15 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 .bar .times b { font-family: var(--ui); }
 .bar, #toast, input[type="checkbox"][role="switch"]::after { transition-timing-function: var(--ease); }
 /* Bars fade and move 8px: 240ms out when idle, 200ms back on any input. */
-#prompter .bar { transition: opacity 200ms var(--ease), translate 200ms var(--ease); }
-#prompter.idle .bar { transition-duration: 240ms; }
+#prompter .bar { transition: opacity var(--dur-popover-in) var(--ease), translate var(--dur-popover-in) var(--ease); }
+#prompter.idle .bar { transition-duration: var(--dur-surface); }
 #prompter.idle .topbar { translate: 0 -8px; }
 #prompter.idle .bottombar { translate: 0 8px; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+/* Reduced motion: every change is at most a 120ms fade; nothing moves or scales, and every state is still reached. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-property: opacity !important; transition-duration: var(--dur-reduced) !important; animation-duration: var(--dur-reduced) !important; scroll-behavior: auto !important; }
+  #prompter.idle .topbar, #prompter.idle .bottombar { translate: none; }
+}
 
 
 /* Adaptive desktop editing: switches stay in viewport space, content reflows once. */
@@ -413,7 +420,109 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 }
 
 /* macOS 27 Tooltip: 18px tall, 11px label, frosted light fill; fades in over 120ms. */
-#tooltip { position: fixed; z-index: 200; height: 18px; padding: 3px 6px; box-sizing: border-box; border-radius: 4px; font: 11px/12px var(--ui); color: #1a1a1a; white-space: pre; pointer-events: none; background: rgb(236 236 236 / .88); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 2px 8px #0002, 0 0 2px #0002; animation: tip-in 120ms var(--ease); }
+#tooltip { position: fixed; z-index: 200; height: 18px; padding: 3px 6px; box-sizing: border-box; border-radius: 4px; font: 11px/12px var(--ui); color: #1a1a1a; white-space: pre; pointer-events: none; background: rgb(236 236 236 / .88); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 2px 8px #0002, 0 0 2px #0002; animation: tip-in var(--dur-tip) var(--ease); }
 #tooltip[hidden] { display: none; }
 [data-appearance="dark"] #tooltip { color: #f5f5f7; background: rgb(51 51 51 / .88); }
 @keyframes tip-in { from { opacity: 0; } }
+
+/* Segments and tabs: one indicator slides to the chosen option over the control token. */
+.seg, .parameter-tabs { position: relative; isolation: isolate; --seg-i: 0; --seg-n: 2; }
+/* Hidden options (附近设备 is app-only) neither take a slot nor shift the indicator. */
+.seg:has(> label:nth-child(3 of :not([hidden]))), .parameter-tabs:has(> button:nth-child(3)) { --seg-n: 3; }
+.seg:has(> label:nth-child(4 of :not([hidden]))) { --seg-n: 4; }
+.seg:has(> label:nth-child(2 of :not([hidden])) input:checked), .parameter-tabs:has(> button:nth-child(2)[aria-selected="true"]) { --seg-i: 1; }
+.seg:has(> label:nth-child(3 of :not([hidden])) input:checked), .parameter-tabs:has(> button:nth-child(3)[aria-selected="true"]) { --seg-i: 2; }
+.seg:has(> label:nth-child(4 of :not([hidden])) input:checked) { --seg-i: 3; }
+.seg::before, .parameter-tabs::before { content: ""; position: absolute; z-index: -1; top: var(--seg-pad, 0px); bottom: var(--seg-pad, 0px); left: var(--seg-pad, 0px); width: calc((100% - 2 * var(--seg-pad, 0px)) / var(--seg-n)); border-radius: var(--seg-radius, 7px); background: var(--seg-fill, var(--accent)); translate: calc(var(--seg-i) * 100%) 0; transition: translate var(--dur-control) var(--ease); }
+.parameter-tabs { --seg-pad: 2px; --seg-radius: 5px; }
+.parameter-tabs button[aria-selected="true"] { background: transparent; }
+.seg { background: var(--raise); }
+.seg label, .seg label:has(input:checked) { background: transparent; }
+.align-seg { background: transparent; --seg-fill: color-mix(in srgb, var(--fg) 10%, transparent); --seg-radius: 8px; }
+/* Press feedback: buttons dip to .97 while held, only when the user has not asked for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .icon-btn, .text-btn, .btn, .ib { transition: scale var(--dur-control) var(--ease); }
+  .icon-btn:active:not(:disabled), .text-btn:active:not(:disabled), .btn:active:not(:disabled), .ib:active:not(:disabled) { scale: .97; }
+}
+
+/* macOS 27 menus (Figma 2164:478 更多, 2173:1241 插入提示): glass material, 24px rows, 12px check column. */
+:root { --menu-fill: linear-gradient(rgb(217 217 217 / .55), rgb(217 217 217 / .55)), rgb(217 217 217 / .4); --menu-shadow: 0 8px 48px rgb(0 0 0 / .25), 0 0 0 1.25px rgb(219 219 219); --menu-sep: rgb(0 0 0 / .1); --menu-ink: #1d1d1f; }
+#prompter .popover[role="menu"], [data-appearance="dark"] .popover[role="menu"] { --menu-fill: linear-gradient(rgb(255 255 255 / .2), rgb(255 255 255 / .2)), rgb(64 64 64 / .8); --menu-shadow: 0 8px 48px rgb(0 0 0 / .45), 0 0 0 1.25px rgb(166 166 166); --menu-sep: rgb(255 255 255 / .12); --menu-ink: #f5f5f7; }
+.popover[role="menu"] { width: 244px; padding: 5px 12px; border: 0; border-radius: 12px; color: var(--menu-ink); background: var(--menu-fill); -webkit-backdrop-filter: blur(25px); backdrop-filter: blur(25px); box-shadow: var(--menu-shadow); }
+.popover[role="menu"] > [role^="menuitem"] { height: 24px; min-height: 24px; padding: 0 0 0 12px; gap: 8px; font-size: 13px; border-radius: 8px; color: inherit; mix-blend-mode: normal; }
+.popover[role="menu"] > [role^="menuitem"]:hover, .popover[role="menu"] > [role^="menuitem"]:focus-visible { background: var(--accent); color: #fff; outline: 0; }
+.popover[role="menu"] > hr { height: 11px; margin: 0; border: 0; background: linear-gradient(var(--menu-sep), var(--menu-sep)) center / 100% 1px no-repeat; }
+.popover[role="menu"] .menu-heading { height: 25px; padding: 5px 0 4px 12px; margin: 0; box-sizing: border-box; font-size: 12px; color: var(--muted); }
+.popover[role="menu"] .v3-icon { width: 16px; height: 16px; flex-basis: 16px; }
+/* No glass where it cannot render or is not wanted: opaque fills keep text at 4.5:1 or better. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --menu-fill: #f2f2f4; }
+  #prompter .popover[role="menu"], [data-appearance="dark"] .popover[role="menu"] { --menu-fill: #2c2c2e; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --menu-fill: #f2f2f4; }
+  #prompter .popover[role="menu"], [data-appearance="dark"] .popover[role="menu"] { --menu-fill: #2c2c2e; }
+  .popover[role="menu"] { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (pointer: coarse) {
+  .popover[role="menu"] > [role^="menuitem"] { height: auto; min-height: 44px; }
+}
+
+/* macOS 27 popovers (Figma 2176:2467): radius 20, light glass, layered shadow. The cue editor is a small panel of the same glass. */
+:root { --pop-fill: rgb(255 255 255 / .7); --pop-shadow: 0 8px 48px rgb(0 0 0 / .25), 0 0 0 .5px rgb(219 219 219); --pop-ink-2: #54545a; --route-track: rgb(0 0 0 / .08); }
+[data-appearance="dark"] { --pop-fill: rgb(44 44 46 / .72); --pop-shadow: 0 8px 48px rgb(0 0 0 / .45), 0 0 0 .5px rgb(90 90 94); --pop-ink-2: #c7c7cc; --route-track: rgb(255 255 255 / .1); }
+.popover:not([role="menu"]):not(.cue-editor) { border: 0; border-radius: 20px; padding: 18px 20px 16px; background: var(--pop-fill); -webkit-backdrop-filter: blur(26px); backdrop-filter: blur(26px); box-shadow: var(--pop-shadow); }
+.popover.cue-editor { border: 0; border-radius: 12px; background: var(--pop-fill); -webkit-backdrop-filter: blur(26px); backdrop-filter: blur(26px); box-shadow: var(--pop-shadow); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --pop-fill: #f2f2f4; }
+  [data-appearance="dark"] { --pop-fill: #2c2c2e; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --pop-fill: #f2f2f4; }
+  [data-appearance="dark"] { --pop-fill: #2c2c2e; }
+  .popover:not([role="menu"]), .popover.cue-editor { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+/* macOS 27 control sizes on fine pointers; touch keeps 44px targets. */
+@media (pointer: fine) {
+  input[type="checkbox"][role="switch"] { flex: 0 0 54px; width: 54px; height: 24px; }
+  input[type="checkbox"][role="switch"]::after { width: 32px; height: 20px; }
+  input[type="checkbox"][role="switch"]:checked::after { transform: translateX(18px); }
+  .seg { height: 24px; border-radius: 6px; --seg-radius: 5px; }
+  .seg label { display: flex; align-items: center; justify-content: center; padding: 0 8px; }
+  .btn { height: 24px; min-height: 24px; border-radius: 6px; padding: 0 16px; }
+  .cue-editor input, .cue-custom input, #dialogInput, #dur, #cdSel, #lang, #readerTheme, #appearance { height: 24px; border-radius: 6px; font-size: 13px; }
+}
+@media (pointer: coarse) {
+  .btn, .device-popover #deviceSend { min-height: 44px; }
+}
+
+/* Device popover (Figma 2176:2467): 340 wide, 40px rows, live dot and a read-only route display. */
+.device-popover { width: 340px; display: flex; flex-direction: column; gap: 6px; }
+.device-popover[hidden] { display: none; }
+.device-title { margin: 0; height: 32px; display: flex; align-items: center; font-size: 15px; font-weight: 600; }
+.device-status { display: flex; align-items: center; gap: 10px; min-height: 52px; }
+.device-text { display: flex; flex-direction: column; font-size: 13px; }
+.device-text #deviceStatus { font-size: 11px; color: var(--pop-ink-2); }
+.device-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: 0 0 8px; }
+.device-dot.ok { background: var(--ok); }
+.device-popover .device-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; min-height: 40px; width: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; font-size: 13px; color: inherit; text-align: left; }
+.device-popover .device-row > span:first-of-type { flex: 1; }
+.device-popover .device-row[hidden] { display: none; }
+.device-chevron { margin-left: auto; }
+.device-popover hr { width: 100%; margin: 0; border: 0; border-top: 1px solid #dadadd; }
+[data-appearance="dark"] .device-popover hr { border-top-color: var(--line); }
+.device-group { margin: 6px 0 0; font-size: 12px; font-weight: 500; color: var(--pop-ink-2); }
+.route { display: flex; height: 24px; border-radius: 6px; background: var(--route-track); padding: 0; overflow: hidden; }
+.route > span { display: flex; align-items: center; padding: 0 12px; font-size: 13px; color: var(--pop-ink-2); }
+.route > span[hidden] { display: none; }
+.route > span[aria-current="true"] { background: var(--accent); color: #fff; border-radius: 6px; }
+/* The send action is a real button (Figma Buttons 300×24), not one of the plain popover rows. */
+.device-popover #deviceSend { width: 100%; height: 24px; min-height: 24px; justify-content: center; padding: 0 16px; border-radius: 6px; background: var(--route-track); color: inherit; font-size: 13px; }
+.device-popover .device-row:hover { background: transparent; }
+/* Destructive menu items stay red over the menu-item colour. */
+.popover[role="menu"] > [role^="menuitem"].danger { color: #d9363e; }
+#deviceSend[aria-disabled="true"] { opacity: .45; cursor: default; }
+.device-note { margin: 0; font-size: 11px; color: var(--pop-ink-2); }
+
+/* macOS focus ring on text fields (Figma Text Field · Focused, 2173:1462). */
+.cue-editor input:focus, .cue-custom input:focus, #dialogInput:focus { outline: 3px solid color-mix(in srgb, var(--accent) 50%, transparent); outline-offset: 0; border-color: var(--accent); }

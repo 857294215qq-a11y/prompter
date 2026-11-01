@@ -29,6 +29,7 @@ v3 = window.initPrompterV3({
   isNative: IS_NATIVE, voice, cam, voiceToggle, camToggle, enter, exit, applyStyle, layout,
   isReading: () => !prompter.hidden, openPanel, closePanel, renderPanel, togglePip,
   saveSettings: save, stop: stopPlayback, poke, saveTakeManually,
+  openPairing: (fresh) => openRemoteDlg(fresh), controllerOn: () => ctrlOpen(), controllerOff: () => ctrlLeave(), controllerActive: () => !!(ctrl.want && ctrl.ws), sendScript: () => sendState(true),
 });
 syncControls();
 if (location.hash.startsWith('#d=')) directRemote(location.hash.slice(3));

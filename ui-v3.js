@@ -22,18 +22,47 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function closeOnFocusElsewhere(box, toggle, close) {
     document.addEventListener('focusin', (e) => { if (!box.hidden && !box.contains(e.target) && e.target !== toggle) close(); });
   }
+  // motion fallbacks: the same values as the :root tokens in ui-v3.css, for when stylesheets are not loaded (tests)
+  const MOTION = { '--ease': 'cubic-bezier(.32,.72,0,1)', '--dur-surface': 240, '--dur-popover-in': 200, '--dur-popover-out': 150, '--dur-control': 180, '--dur-text': 160, '--dur-scroll': 320, '--dur-beat': 240, '--dur-tip': 120, '--dur-reduced': 120 };
+  // end motion fallbacks
+  // Motion tokens from CSS: durations as ms numbers, --ease as the curve string.
+  function motion(name) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (!value) return MOTION[name];
+    return name === '--ease' ? value : parseFloat(value);
+  }
+  // The point a popover grows from: its trigger's centre on the popover's near edge (top centre without a trigger).
+  function popoverOrigin(el) {
+    const box = el.getBoundingClientRect(), trigger = document.querySelector(`[aria-controls="${el.id}"]`)?.getBoundingClientRect();
+    if (!trigger?.width) return 'top center';
+    const x = Math.round(trigger.left + trigger.width / 2 - box.left), y = trigger.top >= box.bottom ? Math.round(box.height) : 0;
+    return `${x}px ${y}px`;
+  }
+  // Live system preference: reduced motion keeps only a short opacity fade.
+  const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fadeOnly = (show) => (show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }]);
   function animateSurface(el, show, display = 'block') {
     motionJobs.get(el)?.cancel();
-    if (typeof el.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (typeof el.animate !== 'function') return;
     const oldDisplay = el.style.getPropertyValue('display'), priority = el.style.getPropertyPriority('display');
     if (!show) el.style.setProperty('display', display, 'important');
     const target = el.matches('.modal') ? el.querySelector('.card') : el;
     const animations = [];
-    const options = { duration: 240, easing: 'cubic-bezier(.32,.72,0,1)' };
-    if (target !== el) animations.push(el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], options));
-    const x = target.id === 'hint' ? '-50%' : '0';
-    const from = { opacity: 0, translate: x + ' 12px', scale: '.98' }, to = { opacity: 1, translate: x + ' 0', scale: '1' };
-    animations.push(target.animate(show ? [from, to] : [to, from], options));
+    if (reducedMotion()) {
+      animations.push(el.animate(fadeOnly(show), { duration: motion('--dur-reduced'), easing: 'linear' }));
+    } else if (el.matches('.popover')) {
+      // Popovers grow from their trigger: scale .96 → 1 with opacity, 200ms in, 150ms out.
+      if (show) el.style.transformOrigin = popoverOrigin(el);
+      const options = { duration: motion(show ? '--dur-popover-in' : '--dur-popover-out'), easing: motion('--ease') };
+      const from = { opacity: 0, scale: '.96' }, to = { opacity: 1, scale: '1' };
+      animations.push(el.animate(show ? [from, to] : [to, from], options));
+    } else {
+      const options = { duration: motion('--dur-surface'), easing: motion('--ease') };
+      if (target !== el) animations.push(el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], options));
+      const x = target.id === 'hint' ? '-50%' : '0';
+      const from = { opacity: 0, translate: x + ' 12px', scale: '.98' }, to = { opacity: 1, translate: x + ' 0', scale: '1' };
+      animations.push(target.animate(show ? [from, to] : [to, from], options));
+    }
     let active = true;
     const restore = () => { if (!active) return; active = false; animations.forEach(a => a.cancel()); if (!show) { if (oldDisplay) el.style.setProperty('display', oldDisplay, priority); else el.style.removeProperty('display'); } motionJobs.delete(el); };
     motionJobs.set(el, { cancel: restore });
@@ -88,9 +117,9 @@ window.initPrompterV3 = function initPrompterV3(api) {
     previousLayout = { left, right };
     restoreEditorAnchor(anchor);
     toolbarMotion?.cancel();
-    if (previousLayout && typeof toolbar.animate === 'function' && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (previousLayout && typeof toolbar.animate === 'function' && !reducedMotion()) {
       const after = toolbar.getBoundingClientRect(), dx = beforeTools.left - after.left;
-      if (dx) toolbarMotion = toolbar.animate([{translate: dx + 'px 0'}, {translate:'0 0'}], {duration:240,easing:'cubic-bezier(.32,.72,0,1)'});
+      if (dx) toolbarMotion = toolbar.animate([{translate: dx + 'px 0'}, {translate:'0 0'}], { duration: motion('--dur-surface'), easing: motion('--ease') });
     }
     updateMeta();
   }
@@ -317,8 +346,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
     } else if (button.dataset.format === 'emphasis') {
       if (button.getAttribute('aria-disabled') === 'true') return;
       const range = emphasisRange(start, end);
-      if (range) { api.ta.setSelectionRange(range.start, range.end); replaceSelectionAtBuffer(range.inner); }
-      else replaceSelectionAtBuffer('**' + selected + '**');
+      if (range) { api.ta.setSelectionRange(range.start, range.end); replaceSelectionAtBuffer(range.inner); flashLineAt(range.start); }
+      else { replaceSelectionAtBuffer('**' + selected + '**'); flashRunEndingAt(start + selected.length + 4); }
     } else if (cueMenu.hidden) openCueMenu(); else closeCueMenu(true);
   }));
   const lineStart = (index) => (index ? api.ta.value.lastIndexOf('\n', index - 1) + 1 : 0);
@@ -332,6 +361,20 @@ window.initPrompterV3 = function initPrompterV3(api) {
     return null;
   }
   // Section shows the current line's state; emphasis only acts on a selection.
+  // A cue or bold run just added fades up from .4 so the eye finds it; nothing else in the editor moves.
+  // Callers pass where the run ends in the source; the caret cannot tell inside-the-run from after-it.
+  function flashRunEndingAt(index) {
+    for (const el of rich.querySelectorAll('.editor-cue, strong')) {
+      const t = el.firstChild; if (!t || typeof el.animate !== 'function') continue;
+      const inner = readRich(t, 0, t, t.length), end = inner.end + (el.tagName === 'STRONG' ? 2 : 1);
+      if (end === index) { el.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: motion(reducedMotion() ? '--dur-reduced' : '--dur-text'), easing: motion('--ease') }); return; }
+    }
+  }
+  // Removed emphasis leaves plain text that cannot animate on its own: its line fades up from .6 instead.
+  function flashLineAt(index) {
+    const n = api.ta.value.slice(0, index).split('\n').length - 1, line = rich.children[n];
+    if (line && typeof line.animate === 'function') line.animate([{ opacity: 0.6 }, { opacity: 1 }], { duration: motion(reducedMotion() ? '--dur-reduced' : '--dur-text'), easing: motion('--ease') });
+  }
   function syncFormatState() {
     const start = api.ta.selectionStart, end = api.ta.selectionEnd;
     const section = /^#/.test(api.ta.value.slice(lineStart(start)));
@@ -359,7 +402,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     cueAt = Math.max(api.ta.selectionStart, api.ta.selectionEnd);
     cueForm.hidden = true; cueMenu.hidden = false; cueTool.setAttribute('aria-expanded', 'true');
     const rect = cueTool.getBoundingClientRect();
-    cueMenu.style.left = Math.max(12, Math.min(innerWidth - 232, rect.left)) + 'px';
+    cueMenu.style.left = Math.max(12, Math.min(innerWidth - cueMenu.offsetWidth - 12, rect.left)) + 'px';
     cueMenu.style.top = Math.max(12, rect.bottom + 8) + 'px';
     cueItems()[0].focus();
   }
@@ -371,7 +414,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function insertCue(value) {
     const cue = cleanCue(value); closeCueMenu(false);
     if (!cue) { sourceCaret(cueAt); return false; }
-    api.ta.setSelectionRange(cueAt, cueAt); replaceSelectionAtBuffer('[' + cue + ']'); return true;
+    api.ta.setSelectionRange(cueAt, cueAt); replaceSelectionAtBuffer('[' + cue + ']'); flashRunEndingAt(cueAt + cue.length + 2); return true;
   }
   cueMenu.querySelectorAll('[data-cue]').forEach((b) => b.addEventListener('click', () => insertCue(b.dataset.cue)));
   on('#cueCustom', () => { cueForm.hidden = false; $('#cueCustomInput').value = ''; $('#cueCustomInput').focus(); });
@@ -397,7 +440,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     editing = cueRange(cue);
     const rect = cue.getBoundingClientRect();
     cueEditor.hidden = false;
-    cueEditor.style.left = Math.max(12, Math.min(innerWidth - 232, rect.left)) + 'px';
+    cueEditor.style.left = Math.max(12, Math.min(innerWidth - cueEditor.offsetWidth - 12, rect.left)) + 'px';
     cueEditor.style.top = Math.max(12, rect.bottom + 8) + 'px';
     cueInput.value = cue.textContent; cueInput.focus(); cueInput.select();
   }
@@ -410,6 +453,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const range = editing, cue = cleanCue(value); closeCueEditor();
     api.ta.setSelectionRange(range.start, range.end);
     replaceSelectionAtBuffer(cue ? range.open + cue + (range.open === '【' ? '】' : ']') : '');
+    if (cue) flashRunEndingAt(range.start + cue.length + 2);
   }
   rich.addEventListener('click', (e) => { const cue = e.target.closest?.('.editor-cue'); if (cue?.firstChild) openCueEditor(cue); });
   cueEditor.addEventListener('submit', (e) => { e.preventDefault(); if (editing) rewriteCue(cueInput.value); });
@@ -422,7 +466,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function closeMenu() { $('#docMenu').hidden = true; $('#docMore').setAttribute('aria-expanded', 'false'); }
   function menu() {
     const el = $('#docMenu'); el.hidden = !el.hidden; $('#docMore').setAttribute('aria-expanded', String(!el.hidden));
-    if (!el.hidden) { const rect = ($('#docMore').getBoundingClientRect().width ? $('#docMore') : $('#mobileDocMore')).getBoundingClientRect(); el.style.left = Math.max(12, Math.min(innerWidth - 212, rect.right - 190)) + 'px'; el.style.top = Math.max(12, Math.min(innerHeight - 280, rect.bottom + 8)) + 'px'; el.querySelector('button').focus(); }
+    if (!el.hidden) { const rect = ($('#docMore').getBoundingClientRect().width ? $('#docMore') : $('#mobileDocMore')).getBoundingClientRect(); el.style.left = Math.max(12, Math.min(innerWidth - el.offsetWidth - 12, rect.right - el.offsetWidth)) + 'px'; el.style.top = Math.max(12, Math.min(innerHeight - 280, rect.bottom + 8)) + 'px'; el.querySelector('button').focus(); }
   }
   on('#docMore', menu); on('#mobileDocMore', menu); on('#importScript', () => $('#file').click());
   for (const [id, label, target] of [['menuDevices', '设备与遥控', '#remoteBtn'], ['menuSettings', '应用设置', '#appSettings']]) {
@@ -430,7 +474,51 @@ window.initPrompterV3 = function initPrompterV3(api) {
     button.addEventListener('click', () => { closeMenu(); $(target).click(); }); $('#docMenu').append(button);
   }
   document.addEventListener('click', (e) => { if (!e.target.closest('#docMenu, #docMore, #mobileDocMore')) closeMenu(); });
+  $('#docMenu').setAttribute('role', 'menu'); $('#docMenu').setAttribute('aria-label', '稿件操作');
+  for (const b of $('#docMenu').querySelectorAll(':scope > button')) b.setAttribute('role', 'menuitem');
 
+  // Device popover under 设备: the live connection summary; pairing itself stays in the 手机遥控 dialog.
+  const devices = $('#devicePopover'), deviceBtn = $('#remoteBtn');
+  let deviceCount = 0, deviceRoute = null;
+  function renderDevices() {
+    const on = deviceCount > 0;
+    devices.querySelector('.device-dot').classList.toggle('ok', on);
+    text($('#deviceStatus'), on ? `已连接 ${deviceCount} 台遥控设备` : '未连接遥控设备');
+    for (const part of devices.querySelectorAll('[data-route]')) {
+      if (part.dataset.route === deviceRoute) part.setAttribute('aria-current', 'true'); else part.removeAttribute('aria-current');
+    }
+    text($('#routeText'), '当前线路：' + ({ near: '附近', lan: '局域网', net: '中转' }[deviceRoute] || '未连接'));
+    $('#deviceSend').setAttribute('aria-disabled', String(!on));
+  }
+  function closeDevices(returnFocus = false) {
+    if (devices.hidden) return;
+    devices.hidden = true; deviceBtn.setAttribute('aria-expanded', 'false');
+    if (returnFocus) deviceBtn.focus();
+  }
+  function toggleDevices() {
+    if (!devices.hidden) { closeDevices(); return; }
+    const b = deviceBtn.getBoundingClientRect();
+    if (!b.width) { api.openPairing(false); return; } // 设备 is not on screen (phone menu): go straight to pairing
+    closeMenu(); renderDevices(); devices.hidden = false; deviceBtn.setAttribute('aria-expanded', 'true');
+    // The switch shows whether this device is acting as a remote right now, read from the engine each time.
+    $('#deviceController').checked = !!api.controllerActive?.();
+    // From 2164:733: 189px left of the button, 20px below it; never over the parameter card.
+    let left = b.left - 189;
+    const card = settings.inert ? null : settings.getBoundingClientRect();
+    if (card?.width) left = Math.min(left, card.left - 8 - devices.offsetWidth);
+    devices.style.left = Math.max(8, Math.round(left)) + 'px'; devices.style.top = Math.round(b.bottom + 20) + 'px';
+    devices.querySelector('button')?.focus();
+  }
+  on('#deviceManage', () => { closeDevices(); api.openPairing(false); });
+  on('#devicePair', () => { closeDevices(); api.openPairing(true); });
+  // Turning it on opens the search dialog, which takes over; the switch is re-read from the engine next time.
+  $('#deviceController').addEventListener('change', (e) => { if (e.target.checked) { closeDevices(); api.controllerOn(); } else api.controllerOff(); });
+  on('#deviceSend', () => {
+    if ($('#deviceSend').getAttribute('aria-disabled') === 'true') return notify('还没有连接遥控设备');
+    api.sendScript(); notify('已发送当前稿件');
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#devicePopover, #remoteBtn')) closeDevices(); });
+  closeOnFocusElsewhere(devices, deviceBtn, () => closeDevices());
   function showDialog(id) { const el = $('#' + id); el._opener = document.activeElement; el.hidden = false; el.querySelector('input, select, button')?.focus(); }
   function hideDialog(id) { const el = $('#' + id); const video = el.querySelector('video'); if (video && !video.paused) video.pause(); el.hidden = true; el._opener?.focus?.(); }
   function ask(title, message, confirm, fn, value) {
@@ -651,6 +739,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
       if (parametersInReader) { e.preventDefault(); e.stopImmediatePropagation(); returnSettings(); more.focus(); }
       else if (optionsOpen) { e.preventDefault(); e.stopImmediatePropagation(); closeReaderOptions(); more.focus(); }
       else if (!$('#docMenu').hidden) { e.preventDefault(); closeMenu(); $('#docMore').focus(); }
+      else if (!devices.hidden) { e.preventDefault(); closeDevices(true); }
       else if (mobileLeft || mobileRight) { e.preventDefault(); closeSheets(); }
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !api.isReading()) {
@@ -663,6 +752,15 @@ window.initPrompterV3 = function initPrompterV3(api) {
     }
   }, true);
 
+  // Countdown: every beat scales in from 1.15 with a fade; hiding the countdown cancels the running beat.
+  const countdownEl = $('#cd'); let beat = null;
+  new MutationObserver(() => {
+    beat?.cancel(); beat = null;
+    if (countdownEl.hidden || typeof countdownEl.animate !== 'function') return;
+    beat = reducedMotion()
+      ? countdownEl.animate(fadeOnly(true), { duration: motion('--dur-reduced'), easing: 'linear' })
+      : countdownEl.animate([{ scale: 1.15, opacity: 0 }, { scale: 1, opacity: 1 }], { duration: motion('--dur-beat'), easing: motion('--ease') });
+  }).observe(countdownEl, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
   const motionSelector = '.modal, .popover, #panel, #hint, #cam, #uiToast, #prompter';
   const visibility = new WeakMap();
   document.querySelectorAll(motionSelector).forEach(el => visibility.set(el, !el.hidden));
@@ -680,11 +778,12 @@ window.initPrompterV3 = function initPrompterV3(api) {
   refresh(); sync();
   return {
     startFromTop, startFromCaret, refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
-    confirmAction: ask, barsBusy,
+    confirmAction: ask, barsBusy, motion, reducedMotion,
     emptyDocument: () => { rich.focus(); notify('先写一段正文，再开始提词。小节标题不计入正文。'); },
     saved: (ok) => { text($('#saveState'), ok ? '已保存到本机' : '保存失败，请导出稿件以免丢失'); updateMeta(); },
     saving: () => { text($('#saveState'), '正在保存…'); updateMeta(); },
-    connection: (count) => { text($('#deviceState'), count ? `已连接 ${count} 台遥控设备` : '未连接遥控设备'); updateMeta(); },
+    connection: (count, route = null) => { text($('#deviceState'), count ? `已连接 ${count} 台遥控设备` : '未连接遥控设备'); updateMeta(); deviceCount = count; deviceRoute = count ? route : null; renderDevices(); },
+    toggleDevices,
     confirmReset: (fn) => ask('回到开头？', '当前提词将停止，并回到稿件开头。', '回到开头', fn),
     remote: (m) => { latestRemote = m; text(speedValue, String(m.cpm)); text(fontValue, String(m.fs)); text(remoteTitle, m.title || '提词设备'); renderRemoteContext(m); remoteAvailability(); },
     get remoteLocked() { return remoteLocked; },

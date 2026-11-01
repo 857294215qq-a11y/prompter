@@ -38,11 +38,13 @@ test('user margin wins when wider than the pill inset', () => {
   app.close();
 });
 
-test('below 1200px the column keeps the user margin', () => {
+test('below 768px (phones) the column keeps the user margin', () => {
   const app = boot({ settings: { countdown: 0 } });
-  Object.defineProperty(app.w, 'innerWidth', { value: 1000, configurable: true });
+  Object.defineProperty(app.w, 'innerWidth', { value: 700, configurable: true });
+  Object.defineProperty(app.$('#stage'), 'clientWidth', { value: 700 });
+  Object.defineProperty(app.$('.topbar'), 'offsetWidth', { value: 500 }); // would give a 100px inset if it applied
   app.click('#start');
-  assert.deepEqual(padding(app), ['100px', '100px']);
+  assert.deepEqual(padding(app), ['70px', '70px'], '10vw of 700');
   app.close();
 });
 
@@ -183,8 +185,8 @@ test('bars stay while focus is inside, and hide 2.5s after it leaves', () => {
 test('idle bars move 8px on the shared curve: 240ms out, 200ms back', () => {
   assert.match(css, /#prompter\.idle \.topbar \{ translate: 0 -8px; \}/);
   assert.match(css, /#prompter\.idle \.bottombar \{ translate: 0 8px; \}/);
-  assert.match(css, /#prompter \.bar \{ transition: opacity 200ms var\(--ease\), translate 200ms var\(--ease\)/);
-  assert.match(css, /#prompter\.idle \.bar \{ transition-duration: 240ms; \}/);
+  assert.match(css, /#prompter \.bar \{ transition: opacity var\(--dur-popover-in\) var\(--ease\), translate var\(--dur-popover-in\) var\(--ease\)/);
+  assert.match(css, /#prompter\.idle \.bar \{ transition-duration: var\(--dur-surface\); \}/);
 });
 
 // Final review fixes

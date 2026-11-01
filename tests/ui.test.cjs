@@ -283,7 +283,9 @@ test('dialogs animate both directions with the specified ease and respect reduce
     calls.length = 0;
     app.w.matchMedia = q => ({ matches: q.includes('prefers-reduced-motion'), addEventListener() {} });
     app.click('#appSettings'); await new Promise(setImmediate);
-    assert.equal(calls.length, 0);
+    // reduced motion keeps a 120ms fade (motion-system spec): opacity only, nothing moves or scales
+    assert.ok(calls.length > 0);
+    for (const c of calls) { assert.equal(c.options.duration, 120); for (const f of c.frames) assert.deepEqual(Object.keys(f), ['opacity']); }
     assert.equal(app.$('#appDialog').hidden, false);
   } finally { app.close(); }
 });
@@ -355,12 +357,13 @@ test('format tools explain their scope to keyboard users and focus has an explic
   }finally{app.close();}
 });
 
-test('reduced motion skips sidebar and tool animations while changing accessible state', () => {
+test('reduced motion only fades sidebars, never moves the tools, and still changes accessible state', () => {
  const app=boot();try {
    app.w.matchMedia=q=>({matches:q.includes('prefers-reduced-motion'),addEventListener(){}});
-   let animations=0;app.w.HTMLElement.prototype.animate=()=>{animations++;return {cancel(){},finished:Promise.resolve()};};
+   const frames=[];app.w.HTMLElement.prototype.animate=(f)=>{frames.push(...f);return {cancel(){},finished:Promise.resolve()};};
    app.click('#toggleLibrary');app.click('#toggleSettings');
-   assert.equal(animations,0);assert.equal(app.$('#libraryPanel').inert,true);assert.equal(app.$('#settingsPanel').inert,true);
+   for(const f of frames)assert.deepEqual(Object.keys(f),['opacity']);
+   assert.equal(app.$('#libraryPanel').inert,true);assert.equal(app.$('#settingsPanel').inert,true);
  }finally{app.close();}
 });
 

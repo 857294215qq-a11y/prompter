@@ -95,7 +95,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const label = sheet ? '提词参数' : (open ? '收起' : '展开') + (side === 'left' ? '稿件栏' : '提词参数');
     const name = sheet && small.matches ? 'settings2' : 'panel-' + side + '-' + (open ? 'close' : 'open');
     button.querySelector('img').src = 'assets/v3/' + name + '.svg';
-    button.setAttribute('aria-label', label); button.title = label;
+    button.setAttribute('aria-label', label);
   }
   function closeSheets() { mobileLeft = mobileRight = false; closeMenu(); closeReaderOptions(); layout(); }
   function returnSettings() {
@@ -127,7 +127,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     else { Object.assign(ui, focusRestore); focusRestore = null; }
     $('#focusEditor').setAttribute('aria-pressed', String(!!focusRestore));
     $('#focusEditor').setAttribute('aria-label', focusRestore ? '退出专注编辑' : '专注编辑');
-    $('#focusEditor').title = focusRestore ? '退出专注编辑，恢复原侧栏' : '专注编辑，隐藏两侧栏（不进入系统全屏）'; layout();
+    layout();
   });
 
   function tab(name) {

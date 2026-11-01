@@ -80,3 +80,92 @@ test('Windows shows Ctrl shortcuts', () => {
   assert.equal(tips(app).label('startCaret').key, 'Ctrl+回车');
   app.close();
 });
+
+// Tooltip controller. setTimeout is captured so the 500ms hover delay runs on demand.
+function withTimers(app) {
+  const timers = [];
+  app.w.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
+  app.w.clearTimeout = (id) => { if (timers[id - 1]) timers[id - 1].fn = () => {}; };
+  app.runTimers = () => { const due = timers.splice(0); for (const t of due) t.fn(); };
+  return app;
+}
+const tip = (app) => app.$('#tooltip');
+const shown = (app) => !tip(app).hidden;
+const hover = (app, el) => el.dispatchEvent(new app.w.MouseEvent('pointerover', { bubbles: true }));
+const leave = (app, el) => el.dispatchEvent(new app.w.MouseEvent('pointerout', { bubbles: true }));
+
+test('hover shows name and shortcut after 500ms and hides on leave', () => {
+  const app = withTimers(boot(DOC)); mac(app);
+  const undo = app.$('#undoEdit');
+  hover(app, undo); assert.equal(shown(app), false, 'not before the delay');
+  app.runTimers(); assert.equal(shown(app), true);
+  assert.equal(tip(app).textContent, '撤销  ⌘Z');
+  leave(app, undo); assert.equal(shown(app), false);
+  app.close();
+});
+
+test('keyboard focus shows at once; blur hides', () => {
+  const app = withTimers(boot(DOC)); app.click('#start');
+  const next = app.$('#nParaDn'); next.focus();
+  assert.equal(shown(app), true); assert.equal(tip(app).textContent, '下一段  D');
+  next.blur(); assert.equal(shown(app), false);
+  app.close();
+});
+
+test('a click cancels a pending hover tooltip', () => {
+  const app = withTimers(boot(DOC));
+  const undo = app.$('#undoEdit');
+  hover(app, undo); undo.dispatchEvent(new app.w.MouseEvent('pointerdown', { bubbles: true })); undo.click();
+  app.runTimers(); assert.equal(shown(app), false);
+  app.close();
+});
+
+test('Escape hides the tooltip and still reaches the app', () => {
+  const app = withTimers(boot(DOC)); app.click('#start');
+  app.$('#pRetake').focus(); assert.equal(shown(app), true);
+  app.w.document.body.dispatchEvent(new app.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+  assert.equal(shown(app), false); assert.equal(app.$('#prompter').hidden, true, 'Escape still returns to the editor');
+  app.close();
+});
+
+test('no tooltip on touch-only devices', () => {
+  const app = withTimers(boot(DOC, { media: (q) => q.includes('hover: none') }));
+  hover(app, app.$('#undoEdit')); app.runTimers(); assert.equal(shown(app), false);
+  app.$('#undoEdit').focus(); assert.equal(shown(app), false);
+  app.close();
+});
+
+test('screen readers get the name once and the shortcut as a description', () => {
+  const app = boot(DOC);
+  const undo = app.$('#undoEdit');
+  assert.equal(undo.getAttribute('aria-label'), '撤销');
+  const desc = app.$('#' + undo.getAttribute('aria-describedby').split(' ').find((i) => i.startsWith('tip-key-')));
+  assert.equal(desc.textContent, '快捷键 ' + tips(app).label('undoEdit').key);
+  app.click('#toggleLibrary'); app.click('#focusEditor'); // labels rewritten by ui-v3
+  for (const row of tips(app).copy) assert.equal(app.$('#' + row.id).hasAttribute('title'), false, row.id + ' still has a native title');
+  app.close();
+});
+
+test('existing descriptions are kept', () => {
+  const app = boot(DOC);
+  const ids = app.$('#startCaret').getAttribute('aria-describedby').split(' ');
+  assert.ok(ids.includes('startCaretHelp')); assert.ok(ids.includes('tip-key-startCaret'));
+  app.close();
+});
+
+test("tooltip follows the toggle's new name", () => {
+  const app = withTimers(boot(DOC));
+  const t = app.$('#toggleLibrary');
+  t.focus(); assert.equal(tip(app).textContent, '收起稿件栏');
+  t.click(); assert.equal(shown(app), false, 'a click hides it');
+  t.blur(); t.focus(); assert.equal(tip(app).textContent, '展开稿件栏');
+  app.close();
+});
+
+test('hidden buttons never show a tooltip', () => {
+  const app = withTimers(boot(DOC));
+  const next = app.$('#nParaDn'); // the reader is hidden in the editor
+  hover(app, next); app.runTimers(); assert.equal(shown(app), false);
+  app.$('#newScript').hidden = true; app.$('#newScript').focus(); assert.equal(shown(app), false);
+  app.close();
+});

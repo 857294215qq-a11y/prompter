@@ -41,6 +41,21 @@ async () => {
   if (fonts.section !== 20) failures.push(`section heading is ${fonts.section}px, expected 20px`);
   if (fonts.body !== 17) failures.push(`body text is ${fonts.body}px, expected 17px`);
   if (empty && Math.abs(fonts.emptyLine - 16) > 0.5) failures.push(`empty line is ${fonts.emptyLine}px tall, expected 16px`);
+  // Tooltips: 4px below editor buttons, 8px above bottom-bar buttons, 18px tall, inside the viewport, never over the button.
+  const tooltips = {};
+  const tipCheck = (id, below) => {
+    // show() directly: a background browser pane fires no focus events (triggers are covered by jsdom tests)
+    const el = $('#' + id); window.prompterTooltips.show(el); const t = $('#tooltip');
+    if (!t || t.hidden) { failures.push(`no tooltip for #${id}`); return; }
+    const a = box(el), b = box(t); tooltips[id] = { text: t.textContent, box: b };
+    if (hit(a, b)) failures.push(`tooltip covers #${id}`);
+    if (Math.abs(b.h - 18) > 1) failures.push(`tooltip for #${id} is ${b.h}px tall`);
+    const gap = below ? b.y - (a.y + a.h) : a.y - (b.y + b.h);
+    if (Math.abs(gap - (below ? 4 : 8)) > 1) failures.push(`tooltip for #${id} sits ${gap}px from it`);
+    if (b.x < 7 || b.x + b.w > innerWidth - 7) failures.push(`tooltip for #${id} leaves the viewport`);
+    window.prompterTooltips.hide();
+  };
+  tipCheck('appSettings', true);
   // Reader: column edge on the top pill, hint and menu clear of both bars.
   $('#start').click(); await frame(); await frame();
   const pill = box($('.topbar')), bottom = box($('.bottombar'));
@@ -51,6 +66,7 @@ async () => {
   if (!line || Math.abs(line.x - pillX) > 1) failures.push(`reader column starts at ${line?.x}, pill at ${pillX}`);
   const hint = $('#hint');
   if (hint && !hint.hidden) { reader.hint = box(hint); for (const [n, b] of [['top pill', pill], ['bottom bar', bottom]]) if (hit(reader.hint, b)) failures.push(`start hint overlaps the ${n}`); }
+  tipCheck('nParaDn', false); reader.tooltips = tooltips;
   $('#readerMore').click(); await frame();
   const menu = $('#readerOptions');
   if (menu && !menu.hidden) { reader.menu = box(menu); if (hit(reader.menu, pill)) failures.push('more menu covers the top pill'); if (reader.menu.y < pill.y + pill.h + 7) failures.push('more menu is not below the pill'); }

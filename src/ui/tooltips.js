@@ -56,7 +56,47 @@
     if (!r) return null;
     return { name: r.name || el?.getAttribute('aria-label') || '', key: glyph(r.key) };
   }
-  // 按钮的可访问名称就是说明里的名称
-  for (const r of copy) if (r.name) document.getElementById(r.id)?.setAttribute('aria-label', r.name);
-  window.prompterTooltips = { copy, label };
+  // 按钮的可访问名称就是说明里的名称；快捷键单独作为补充描述，读屏不会把名称读两遍
+  for (const r of copy) {
+    const el = document.getElementById(r.id); if (!el) continue;
+    if (r.name) el.setAttribute('aria-label', r.name);
+    el.removeAttribute('title');
+    if (!r.key) continue;
+    const desc = document.createElement('span'); desc.id = 'tip-key-' + r.id; desc.className = 'vh'; desc.textContent = '快捷键 ' + glyph(r.key);
+    document.body.append(desc);
+    el.setAttribute('aria-describedby', [el.getAttribute('aria-describedby'), desc.id].filter(Boolean).join(' '));
+  }
+
+  // 悬停 500ms 出现，键盘聚焦立即出现；移开、点击、Esc、失焦时立即消失；触屏不显示
+  const tip = document.createElement('div'); tip.id = 'tooltip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true;
+  document.body.append(tip);
+  let timer = 0, owner = null, pending = null, lastPointerDown = 0;
+  const touchOnly = () => matchMedia('(hover: none)').matches;
+  const target = (node) => { const el = node?.closest?.('button'); return el && row(el.id) ? el : null; };
+  const visible = (el) => !el.hidden && !el.closest('[hidden]');
+  function hide() { clearTimeout(timer); timer = 0; owner = pending = null; tip.hidden = true; }
+  function show(el) {
+    if (touchOnly() || !visible(el)) return;
+    const { name, key } = label(el.id);
+    owner = el; tip.textContent = key ? name + '  ' + key : name; tip.hidden = false;
+    // 底栏的按钮说明放在上方 8px，其余放在下方 4px；始终留在窗口内 8px
+    const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    const top = el.closest('.bottombar') ? r.top - 8 - h : r.bottom + 4;
+    tip.style.top = Math.max(8, Math.min(innerHeight - h - 8, top)) + 'px';
+    tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+  }
+  document.addEventListener('pointerover', (e) => {
+    // pointerover also fires moving between a button's own icon and label: keep the running delay
+    const el = target(e.target); if (!el || el === owner || el === pending || touchOnly()) return;
+    hide(); pending = el; timer = setTimeout(() => { pending = null; show(el); }, 500);
+  });
+  document.addEventListener('pointerout', (e) => { const el = target(e.target); if (el && !el.contains(e.relatedTarget)) hide(); });
+  document.addEventListener('pointerdown', () => { lastPointerDown = Date.now(); hide(); }, true);
+  document.addEventListener('click', hide, true);
+  document.addEventListener('focusin', (e) => { const el = target(e.target); if (el && Date.now() - lastPointerDown > 300) { hide(); show(el); } });
+  document.addEventListener('focusout', (e) => { if (target(e.target) === owner) hide(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); }, true);
+  addEventListener('scroll', hide, true); addEventListener('resize', hide);
+
+  window.prompterTooltips = { copy, label, show, hide };
 })();

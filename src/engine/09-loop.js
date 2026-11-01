@@ -3,6 +3,9 @@
 const hud = { el: $('#tEl'), rem: $('#tRem'), pct: $('#tPct'), where: $('#where'), fill: $('#fill'), knob: $('#knob') };
 const setText = (el, v) => { if (el.textContent !== v) el.textContent = v; };
 let last = performance.now();
+// 跳转滚动用全局曲线（--ease），界面初始化后读取一次
+let easeJump = null;
+const jumpEase = () => easeJump ??= cubicBezier(...((v3?.motion?.('--ease') || '').match(/[\d.]+/g)?.map(Number) || [0.32, 0.72, 0, 1]));
 function frame() {
   const now = performance.now();
   const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
@@ -10,7 +13,7 @@ function frame() {
   if (!prompter.hidden) {
     if (anim) {
       const k = Math.min(1, (now - anim.t0) / anim.dur);
-      pos = anim.from + (anim.to - anim.from) * (1 - Math.pow(1 - k, 3));
+      pos = anim.from + (anim.to - anim.from) * jumpEase()(k);
       if (k >= 1) anim = null;
     } else if (state === 'playing' && !(drag && drag.moved)) {
       elapsed += dt;

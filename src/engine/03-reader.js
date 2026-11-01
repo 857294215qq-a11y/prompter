@@ -190,8 +190,8 @@ const posOf = (i) => clamp(sents[clamp(i, 0, sents.length - 1)]?.top ?? 0, 0, ma
 function jumpTo(target, smooth = true, manual = true) {
   target = clamp(target, 0, maxPos);
   if (manual) relocate(target);
-  if (!smooth || reduceMotion) { anim = null; pos = target; return; }
-  anim = { from: pos, to: target, t0: performance.now(), dur: 320 };
+  if (!smooth || (v3?.reducedMotion?.() ?? reduceMotion)) { anim = null; pos = target; return; }
+  anim = { from: pos, to: target, t0: performance.now(), dur: v3 ? v3.motion('--dur-scroll') : 320 };
 }
 const pageSize = () => Math.max(lhPx, stage.clientHeight * 0.6);
 const tol = () => lhPx * 0.6;

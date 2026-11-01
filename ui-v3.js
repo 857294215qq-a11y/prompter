@@ -22,18 +22,47 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function closeOnFocusElsewhere(box, toggle, close) {
     document.addEventListener('focusin', (e) => { if (!box.hidden && !box.contains(e.target) && e.target !== toggle) close(); });
   }
+  // motion fallbacks: the same values as the :root tokens in ui-v3.css, for when stylesheets are not loaded (tests)
+  const MOTION = { '--ease': 'cubic-bezier(.32,.72,0,1)', '--dur-surface': 240, '--dur-popover-in': 200, '--dur-popover-out': 150, '--dur-control': 180, '--dur-text': 160, '--dur-scroll': 320, '--dur-beat': 240, '--dur-tip': 120, '--dur-reduced': 120 };
+  // end motion fallbacks
+  // Motion tokens from CSS: durations as ms numbers, --ease as the curve string.
+  function motion(name) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (!value) return MOTION[name];
+    return name === '--ease' ? value : parseFloat(value);
+  }
+  // The point a popover grows from: its trigger's centre on the popover's near edge (top centre without a trigger).
+  function popoverOrigin(el) {
+    const box = el.getBoundingClientRect(), trigger = document.querySelector(`[aria-controls="${el.id}"]`)?.getBoundingClientRect();
+    if (!trigger?.width) return 'top center';
+    const x = Math.round(trigger.left + trigger.width / 2 - box.left), y = trigger.top >= box.bottom ? Math.round(box.height) : 0;
+    return `${x}px ${y}px`;
+  }
+  // Live system preference: reduced motion keeps only a short opacity fade.
+  const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fadeOnly = (show) => (show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }]);
   function animateSurface(el, show, display = 'block') {
     motionJobs.get(el)?.cancel();
-    if (typeof el.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (typeof el.animate !== 'function') return;
     const oldDisplay = el.style.getPropertyValue('display'), priority = el.style.getPropertyPriority('display');
     if (!show) el.style.setProperty('display', display, 'important');
     const target = el.matches('.modal') ? el.querySelector('.card') : el;
     const animations = [];
-    const options = { duration: 240, easing: 'cubic-bezier(.32,.72,0,1)' };
-    if (target !== el) animations.push(el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], options));
-    const x = target.id === 'hint' ? '-50%' : '0';
-    const from = { opacity: 0, translate: x + ' 12px', scale: '.98' }, to = { opacity: 1, translate: x + ' 0', scale: '1' };
-    animations.push(target.animate(show ? [from, to] : [to, from], options));
+    if (reducedMotion()) {
+      animations.push(el.animate(fadeOnly(show), { duration: motion('--dur-reduced'), easing: 'linear' }));
+    } else if (el.matches('.popover')) {
+      // Popovers grow from their trigger: scale .96 → 1 with opacity, 200ms in, 150ms out.
+      if (show) el.style.transformOrigin = popoverOrigin(el);
+      const options = { duration: motion(show ? '--dur-popover-in' : '--dur-popover-out'), easing: motion('--ease') };
+      const from = { opacity: 0, scale: '.96' }, to = { opacity: 1, scale: '1' };
+      animations.push(el.animate(show ? [from, to] : [to, from], options));
+    } else {
+      const options = { duration: motion('--dur-surface'), easing: motion('--ease') };
+      if (target !== el) animations.push(el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], options));
+      const x = target.id === 'hint' ? '-50%' : '0';
+      const from = { opacity: 0, translate: x + ' 12px', scale: '.98' }, to = { opacity: 1, translate: x + ' 0', scale: '1' };
+      animations.push(target.animate(show ? [from, to] : [to, from], options));
+    }
     let active = true;
     const restore = () => { if (!active) return; active = false; animations.forEach(a => a.cancel()); if (!show) { if (oldDisplay) el.style.setProperty('display', oldDisplay, priority); else el.style.removeProperty('display'); } motionJobs.delete(el); };
     motionJobs.set(el, { cancel: restore });
@@ -88,9 +117,9 @@ window.initPrompterV3 = function initPrompterV3(api) {
     previousLayout = { left, right };
     restoreEditorAnchor(anchor);
     toolbarMotion?.cancel();
-    if (previousLayout && typeof toolbar.animate === 'function' && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (previousLayout && typeof toolbar.animate === 'function' && !reducedMotion()) {
       const after = toolbar.getBoundingClientRect(), dx = beforeTools.left - after.left;
-      if (dx) toolbarMotion = toolbar.animate([{translate: dx + 'px 0'}, {translate:'0 0'}], {duration:240,easing:'cubic-bezier(.32,.72,0,1)'});
+      if (dx) toolbarMotion = toolbar.animate([{translate: dx + 'px 0'}, {translate:'0 0'}], { duration: motion('--dur-surface'), easing: motion('--ease') });
     }
     updateMeta();
   }
@@ -317,8 +346,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
     } else if (button.dataset.format === 'emphasis') {
       if (button.getAttribute('aria-disabled') === 'true') return;
       const range = emphasisRange(start, end);
-      if (range) { api.ta.setSelectionRange(range.start, range.end); replaceSelectionAtBuffer(range.inner); }
-      else replaceSelectionAtBuffer('**' + selected + '**');
+      if (range) { api.ta.setSelectionRange(range.start, range.end); replaceSelectionAtBuffer(range.inner); flashLineAt(range.start); }
+      else { replaceSelectionAtBuffer('**' + selected + '**'); flashRunEndingAt(start + selected.length + 4); }
     } else if (cueMenu.hidden) openCueMenu(); else closeCueMenu(true);
   }));
   const lineStart = (index) => (index ? api.ta.value.lastIndexOf('\n', index - 1) + 1 : 0);
@@ -332,6 +361,20 @@ window.initPrompterV3 = function initPrompterV3(api) {
     return null;
   }
   // Section shows the current line's state; emphasis only acts on a selection.
+  // A cue or bold run just added fades up from .4 so the eye finds it; nothing else in the editor moves.
+  // Callers pass where the run ends in the source; the caret cannot tell inside-the-run from after-it.
+  function flashRunEndingAt(index) {
+    for (const el of rich.querySelectorAll('.editor-cue, strong')) {
+      const t = el.firstChild; if (!t || typeof el.animate !== 'function') continue;
+      const inner = readRich(t, 0, t, t.length), end = inner.end + (el.tagName === 'STRONG' ? 2 : 1);
+      if (end === index) { el.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: motion(reducedMotion() ? '--dur-reduced' : '--dur-text'), easing: motion('--ease') }); return; }
+    }
+  }
+  // Removed emphasis leaves plain text that cannot animate on its own: its line fades up from .6 instead.
+  function flashLineAt(index) {
+    const n = api.ta.value.slice(0, index).split('\n').length - 1, line = rich.children[n];
+    if (line && typeof line.animate === 'function') line.animate([{ opacity: 0.6 }, { opacity: 1 }], { duration: motion(reducedMotion() ? '--dur-reduced' : '--dur-text'), easing: motion('--ease') });
+  }
   function syncFormatState() {
     const start = api.ta.selectionStart, end = api.ta.selectionEnd;
     const section = /^#/.test(api.ta.value.slice(lineStart(start)));
@@ -371,7 +414,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function insertCue(value) {
     const cue = cleanCue(value); closeCueMenu(false);
     if (!cue) { sourceCaret(cueAt); return false; }
-    api.ta.setSelectionRange(cueAt, cueAt); replaceSelectionAtBuffer('[' + cue + ']'); return true;
+    api.ta.setSelectionRange(cueAt, cueAt); replaceSelectionAtBuffer('[' + cue + ']'); flashRunEndingAt(cueAt + cue.length + 2); return true;
   }
   cueMenu.querySelectorAll('[data-cue]').forEach((b) => b.addEventListener('click', () => insertCue(b.dataset.cue)));
   on('#cueCustom', () => { cueForm.hidden = false; $('#cueCustomInput').value = ''; $('#cueCustomInput').focus(); });
@@ -410,6 +453,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const range = editing, cue = cleanCue(value); closeCueEditor();
     api.ta.setSelectionRange(range.start, range.end);
     replaceSelectionAtBuffer(cue ? range.open + cue + (range.open === '【' ? '】' : ']') : '');
+    if (cue) flashRunEndingAt(range.start + cue.length + 2);
   }
   rich.addEventListener('click', (e) => { const cue = e.target.closest?.('.editor-cue'); if (cue?.firstChild) openCueEditor(cue); });
   cueEditor.addEventListener('submit', (e) => { e.preventDefault(); if (editing) rewriteCue(cueInput.value); });
@@ -663,6 +707,15 @@ window.initPrompterV3 = function initPrompterV3(api) {
     }
   }, true);
 
+  // Countdown: every beat scales in from 1.15 with a fade; hiding the countdown cancels the running beat.
+  const countdownEl = $('#cd'); let beat = null;
+  new MutationObserver(() => {
+    beat?.cancel(); beat = null;
+    if (countdownEl.hidden || typeof countdownEl.animate !== 'function') return;
+    beat = reducedMotion()
+      ? countdownEl.animate(fadeOnly(true), { duration: motion('--dur-reduced'), easing: 'linear' })
+      : countdownEl.animate([{ scale: 1.15, opacity: 0 }, { scale: 1, opacity: 1 }], { duration: motion('--dur-beat'), easing: motion('--ease') });
+  }).observe(countdownEl, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
   const motionSelector = '.modal, .popover, #panel, #hint, #cam, #uiToast, #prompter';
   const visibility = new WeakMap();
   document.querySelectorAll(motionSelector).forEach(el => visibility.set(el, !el.hidden));
@@ -680,7 +733,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   refresh(); sync();
   return {
     startFromTop, startFromCaret, refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
-    confirmAction: ask, barsBusy,
+    confirmAction: ask, barsBusy, motion, reducedMotion,
     emptyDocument: () => { rich.focus(); notify('先写一段正文，再开始提词。小节标题不计入正文。'); },
     saved: (ok) => { text($('#saveState'), ok ? '已保存到本机' : '保存失败，请导出稿件以免丢失'); updateMeta(); },
     saving: () => { text($('#saveState'), '正在保存…'); updateMeta(); },

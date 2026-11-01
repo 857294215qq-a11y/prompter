@@ -188,7 +188,8 @@ input[type="checkbox"][role="switch"]:disabled { opacity: .5; cursor: default; }
 .reader-options .ib .lbl-t { display: inline; }
 .reader-options [role^="menuitem"] { justify-content: flex-start; gap: 8px; width: 100%; }
 .reader-options .menu-key { margin-left: auto; font: 12px var(--ui); color: var(--muted); }
-.reader-options [role="menuitemcheckbox"]::before { content: ""; width: 12px; flex: 0 0 12px; }
+/* Every item keeps the 12px check gutter so icons line up across groups. */
+.reader-options [role^="menuitem"]::before { content: ""; width: 12px; flex: 0 0 12px; }
 .reader-options [role="menuitemcheckbox"][aria-checked="true"]::before { content: "✓"; }
 #readerSettingsClose { display: none; }
 .reader-parameters #readerSettingsClose { display: inline-flex; position: absolute; top: 8px; right: 12px; }

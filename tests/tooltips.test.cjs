@@ -169,3 +169,44 @@ test('hidden buttons never show a tooltip', () => {
   app.$('#newScript').hidden = true; app.$('#newScript').focus(); assert.equal(shown(app), false);
   app.close();
 });
+
+// Menu hygiene left over from group 3
+// Tab moves focus to the next control outside the popover; jsdom has no Tab navigation, so focus moves directly.
+const tabAway = (app, to) => app.$(to).focus();
+
+test('Tab closes the reader menu', () => {
+  const app = boot(DOC); app.click('#start');
+  const more = app.$('#readerMore'); more.focus(); more.click();
+  tabAway(app, '#pPlay');
+  assert.equal(app.$('#readerOptions').hidden, true);
+  assert.equal(more.getAttribute('aria-expanded'), 'false');
+  app.close();
+});
+
+test('Tab closes the cue menu and the cue editor', () => {
+  const app = boot({ library: [{ id: 'c', text: '开场[停顿]正文', updated: 1 }], current: 'c' });
+  app.click('[data-format="cue"]'); tabAway(app, '#appSettings');
+  assert.equal(app.$('#cueMenu').hidden, true);
+  app.$('#richEditor .editor-cue').click();
+  app.$('#cueDelete').focus(); assert.equal(app.$('#cueEditor').hidden, false, 'moving to its own delete button keeps it open');
+  tabAway(app, '#appSettings');
+  assert.equal(app.$('#cueEditor').hidden, true);
+  app.close();
+});
+
+test('PiP and remote items report their state with aria-checked', () => {
+  const app = boot(DOC); app.click('#start');
+  app.$('#pPip').hidden = false;
+  app.$('#pPip').setAttribute('aria-pressed', 'true'); app.$('#pRemote').setAttribute('aria-pressed', 'false'); // as the engine sets them
+  app.click('#readerMore');
+  assert.equal(app.$('#pPip').getAttribute('role'), 'menuitemcheckbox'); assert.equal(app.$('#pPip').getAttribute('aria-checked'), 'true');
+  assert.equal(app.$('#pRemote').getAttribute('role'), 'menuitemcheckbox'); assert.equal(app.$('#pRemote').getAttribute('aria-checked'), 'false');
+  app.close();
+});
+
+test('no menu item carries aria-pressed', () => {
+  const app = boot(DOC); app.click('#start'); app.click('#readerMore');
+  for (const item of app.$('#readerOptions').querySelectorAll('[role^="menuitem"]')) assert.equal(item.hasAttribute('aria-pressed'), false, item.id);
+  app.click('#readerParameters'); assert.equal(app.$('#readerParameters').hasAttribute('aria-pressed'), false);
+  app.close();
+});

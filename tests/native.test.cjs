@@ -55,3 +55,34 @@ test('#docMenu is a menu of menu items', () => {
   assert.ok(items.length >= 4); for (const b of items) assert.equal(b.getAttribute('role'), 'menuitem', b.id || b.textContent);
   app.close();
 });
+
+// Task 2: popover material and controls
+const block = (head) => css.match(new RegExp(head.replace(/[().]/g, '\\$&') + '\\s*\\{(?:[^{}]|\\{[^{}]*\\})*\\}', 'g'))?.join('\n') || '';
+
+test('popovers use radius 20 and the light glass; the cue editor is a small glass panel', () => {
+  const pop = rule('.popover:not([role="menu"]):not(.cue-editor)');
+  has(pop, 'border-radius', '20px'); has(pop, 'padding', '18px 20px 16px'); has(pop, 'backdrop-filter', 'blur(26px)');
+  assert.match(pop, /background:\s*var\(--pop-fill\)/);
+  assert.match(css, /--pop-fill:\s*rgb\(255 255 255 \/ \.7\)/);
+  const cue = rule('.popover.cue-editor');
+  has(cue, 'border-radius', '12px'); assert.match(cue, /background:\s*var\(--pop-fill\)/);
+});
+
+test('controls take macOS sizes on fine pointers', () => {
+  const fine = block('@media (pointer: fine)');
+  assert.match(fine, /input\[type="checkbox"\]\[role="switch"\]\s*\{[^}]*width:\s*54px;[^}]*height:\s*24px/);
+  assert.match(fine, /input\[type="checkbox"\]\[role="switch"\]::after\s*\{[^}]*width:\s*32px;[^}]*height:\s*20px/);
+  assert.match(fine, /input\[type="checkbox"\]\[role="switch"\]:checked::after\s*\{[^}]*translateX\(18px\)/);
+  assert.match(fine, /\.seg\s*\{[^}]*height:\s*24px;[^}]*border-radius:\s*6px/);
+  assert.match(fine, /\.btn\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*border-radius:\s*6px;[^}]*padding:\s*0 16px/);
+  assert.match(fine, /\.cue-editor input, \.cue-custom input, #dialogInput, #dur, #cdSel, #lang, #readerTheme, #appearance\s*\{[^}]*height:\s*24px;[^}]*border-radius:\s*6px;[^}]*font-size:\s*13px/);
+});
+
+test('touch keeps 44px button targets', () => {
+  assert.match(block('@media (pointer: coarse)'), /\.btn\s*\{[^}]*min-height:\s*44px/);
+});
+
+test('start buttons keep their Figma heights', () => {
+  has(rule('.start-actions .btn'), 'min-height', '32px');
+  has(rule('.start-actions .primary'), 'min-height', '40px');
+});

@@ -444,3 +444,26 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
   .icon-btn, .text-btn, .btn, .ib { transition: scale var(--dur-control) var(--ease); }
   .icon-btn:active:not(:disabled), .text-btn:active:not(:disabled), .btn:active:not(:disabled), .ib:active:not(:disabled) { scale: .97; }
 }
+
+/* macOS 27 menus (Figma 2164:478 更多, 2173:1241 插入提示): glass material, 24px rows, 12px check column. */
+:root { --menu-fill: linear-gradient(rgb(217 217 217 / .55), rgb(217 217 217 / .55)), rgb(217 217 217 / .4); --menu-shadow: 0 8px 48px rgb(0 0 0 / .25), 0 0 0 1.25px rgb(219 219 219); --menu-sep: rgb(0 0 0 / .1); --menu-ink: #1d1d1f; }
+#prompter .popover[role="menu"], [data-appearance="dark"] .popover[role="menu"] { --menu-fill: linear-gradient(rgb(255 255 255 / .2), rgb(255 255 255 / .2)), rgb(64 64 64 / .8); --menu-shadow: 0 8px 48px rgb(0 0 0 / .45), 0 0 0 1.25px rgb(166 166 166); --menu-sep: rgb(255 255 255 / .12); --menu-ink: #f5f5f7; }
+.popover[role="menu"] { width: 244px; padding: 5px 12px; border: 0; border-radius: 12px; color: var(--menu-ink); background: var(--menu-fill); -webkit-backdrop-filter: blur(25px); backdrop-filter: blur(25px); box-shadow: var(--menu-shadow); }
+.popover[role="menu"] > [role^="menuitem"] { height: 24px; min-height: 24px; padding: 0 0 0 12px; gap: 8px; font-size: 13px; border-radius: 8px; color: inherit; mix-blend-mode: normal; }
+.popover[role="menu"] > [role^="menuitem"]:hover, .popover[role="menu"] > [role^="menuitem"]:focus-visible { background: var(--accent); color: #fff; outline: 0; }
+.popover[role="menu"] > hr { height: 11px; margin: 0; border: 0; background: linear-gradient(var(--menu-sep), var(--menu-sep)) center / 100% 1px no-repeat; }
+.popover[role="menu"] .menu-heading { height: 25px; padding: 5px 0 4px 12px; margin: 0; box-sizing: border-box; font-size: 12px; color: var(--muted); }
+.popover[role="menu"] .v3-icon { width: 16px; height: 16px; flex-basis: 16px; }
+/* No glass where it cannot render or is not wanted: opaque fills keep text at 4.5:1 or better. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --menu-fill: #f2f2f4; }
+  #prompter .popover[role="menu"], [data-appearance="dark"] .popover[role="menu"] { --menu-fill: #2c2c2e; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --menu-fill: #f2f2f4; }
+  #prompter .popover[role="menu"], [data-appearance="dark"] .popover[role="menu"] { --menu-fill: #2c2c2e; }
+  .popover[role="menu"] { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (pointer: coarse) {
+  .popover[role="menu"] > [role^="menuitem"] { height: auto; min-height: 44px; }
+}

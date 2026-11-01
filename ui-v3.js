@@ -474,6 +474,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
     button.addEventListener('click', () => { closeMenu(); $(target).click(); }); $('#docMenu').append(button);
   }
   document.addEventListener('click', (e) => { if (!e.target.closest('#docMenu, #docMore, #mobileDocMore')) closeMenu(); });
+  $('#docMenu').setAttribute('role', 'menu'); $('#docMenu').setAttribute('aria-label', '稿件操作');
+  for (const b of $('#docMenu').querySelectorAll(':scope > button')) b.setAttribute('role', 'menuitem');
 
   function showDialog(id) { const el = $('#' + id); el._opener = document.activeElement; el.hidden = false; el.querySelector('input, select, button')?.focus(); }
   function hideDialog(id) { const el = $('#' + id); const video = el.querySelector('video'); if (video && !video.paused) video.pause(); el.hidden = true; el._opener?.focus?.(); }

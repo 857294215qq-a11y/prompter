@@ -89,13 +89,18 @@ test('rapid toggles settle hidden', async () => {
 
 test('the tab and segment indicators slide on the control token', () => {
   assert.match(css, /\.parameter-tabs:has\(> button:nth-child\(2\)\[aria-selected="true"\]\)[^{]*\{[^}]*--seg-i:\s*1/);
-  assert.match(css, /\.seg:has\(> label:nth-child\(2\) input:checked\)[^{]*\{[^}]*--seg-i:\s*1/);
+  // Options can be hidden (附近设备 is app-only): count and index visible labels only.
+  assert.match(css, /\.seg:has\(> label:nth-child\(2 of :not\(\[hidden\]\)\) input:checked\)[^{]*\{[^}]*--seg-i:\s*1/);
+  assert.match(css, /\.seg:has\(> label:nth-child\(3 of :not\(\[hidden\]\)\)\)[^{]*\{[^}]*--seg-n:\s*3/);
+  assert.doesNotMatch(css, /\.seg:has\(> label:nth-child\(\d\)/, 'no index that counts hidden options');
   assert.match(css, /\.seg::before, \.parameter-tabs::before \{[^}]*translate: calc\(var\(--seg-i\) \* 100%\) 0;[^}]*transition: translate var\(--dur-control\) var\(--ease\)/);
 });
 
-test('buttons press to .97', () => {
-  assert.match(css, /\.icon-btn, \.text-btn, \.btn, \.ib \{ transition: scale var\(--dur-control\) var\(--ease\); \}/);
-  assert.match(css, /:active:not\(:disabled\)[^{]*\{ scale: \.97; \}/);
+test('buttons press to .97, and only when motion is welcome', () => {
+  const block = css.match(/@media \(prefers-reduced-motion: no-preference\)\s*\{(?:[^{}]|\{[^{}]*\})*\}/)?.[0] || '';
+  assert.match(block, /\.icon-btn, \.text-btn, \.btn, \.ib \{ transition: scale var\(--dur-control\) var\(--ease\); \}/);
+  assert.match(block, /:active:not\(:disabled\)[^{]*\{ scale: \.97; \}/);
+  assert.doesNotMatch(css.replace(block, ''), /scale: \.97/, 'no press scale outside the no-preference block');
 });
 
 // Task 3: scroll curve, countdown beat, text flashes
@@ -219,4 +224,17 @@ test('reduced-motion CSS keeps a 120ms opacity fade instead of switching motion 
   assert.match(block, /transition-duration:\s*var\(--dur-reduced\) !important/);
   assert.doesNotMatch(block, /transition:\s*none/);
   assert.doesNotMatch(read('index.html'), /prefers-reduced-motion: reduce\)\s*\{\s*\.bar, #content \.s, #toast \{ transition: none; \}/);
+});
+
+test('removing emphasis fades its line in', () => {
+  const app = boot({ library: [{ id: 'a', text: '开场\n**大家好**欢迎回来', updated: 1 }], current: 'a' });
+  const flashes = [];
+  app.w.HTMLElement.prototype.animate = function (frames, options) { if (this.closest('#richEditor')) flashes.push({ el: this, frames, options }); return { finished: Promise.resolve(), cancel() {} }; };
+  const rich = app.$('#richEditor'), t = rich.children[1].querySelector('strong').firstChild;
+  app.w.getSelection().setBaseAndExtent(t, 0, t, 3); rich.dispatchEvent(new app.w.MouseEvent('mouseup'));
+  app.click('[data-format="emphasis"]');
+  assert.equal(app.$('#ta').value, '开场\n大家好欢迎回来');
+  assert.equal(flashes.length, 1); assert.equal(flashes[0].el, rich.children[1], 'the changed line, not the whole editor');
+  assert.equal(flashes[0].options.duration, 160);
+  app.close();
 });

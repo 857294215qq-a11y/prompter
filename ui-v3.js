@@ -346,7 +346,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     } else if (button.dataset.format === 'emphasis') {
       if (button.getAttribute('aria-disabled') === 'true') return;
       const range = emphasisRange(start, end);
-      if (range) { api.ta.setSelectionRange(range.start, range.end); replaceSelectionAtBuffer(range.inner); }
+      if (range) { api.ta.setSelectionRange(range.start, range.end); replaceSelectionAtBuffer(range.inner); flashLineAt(range.start); }
       else { replaceSelectionAtBuffer('**' + selected + '**'); flashRunEndingAt(start + selected.length + 4); }
     } else if (cueMenu.hidden) openCueMenu(); else closeCueMenu(true);
   }));
@@ -369,6 +369,11 @@ window.initPrompterV3 = function initPrompterV3(api) {
       const inner = readRich(t, 0, t, t.length), end = inner.end + (el.tagName === 'STRONG' ? 2 : 1);
       if (end === index) { el.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: motion(reducedMotion() ? '--dur-reduced' : '--dur-text'), easing: motion('--ease') }); return; }
     }
+  }
+  // Removed emphasis leaves plain text that cannot animate on its own: its line fades up from .6 instead.
+  function flashLineAt(index) {
+    const n = api.ta.value.slice(0, index).split('\n').length - 1, line = rich.children[n];
+    if (line && typeof line.animate === 'function') line.animate([{ opacity: 0.6 }, { opacity: 1 }], { duration: motion(reducedMotion() ? '--dur-reduced' : '--dur-text'), easing: motion('--ease') });
   }
   function syncFormatState() {
     const start = api.ta.selectionStart, end = api.ta.selectionEnd;

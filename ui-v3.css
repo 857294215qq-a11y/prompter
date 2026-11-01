@@ -469,8 +469,8 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 }
 
 /* macOS 27 popovers (Figma 2176:2467): radius 20, light glass, layered shadow. The cue editor is a small panel of the same glass. */
-:root { --pop-fill: rgb(255 255 255 / .7); --pop-shadow: 0 8px 48px rgb(0 0 0 / .25), 0 0 0 .5px rgb(219 219 219); }
-[data-appearance="dark"] { --pop-fill: rgb(44 44 46 / .72); --pop-shadow: 0 8px 48px rgb(0 0 0 / .45), 0 0 0 .5px rgb(90 90 94); }
+:root { --pop-fill: rgb(255 255 255 / .7); --pop-shadow: 0 8px 48px rgb(0 0 0 / .25), 0 0 0 .5px rgb(219 219 219); --pop-ink-2: #54545a; --route-track: rgb(0 0 0 / .08); }
+[data-appearance="dark"] { --pop-fill: rgb(44 44 46 / .72); --pop-shadow: 0 8px 48px rgb(0 0 0 / .45), 0 0 0 .5px rgb(90 90 94); --pop-ink-2: #c7c7cc; --route-track: rgb(255 255 255 / .1); }
 .popover:not([role="menu"]):not(.cue-editor) { border: 0; border-radius: 20px; padding: 18px 20px 16px; background: var(--pop-fill); -webkit-backdrop-filter: blur(26px); backdrop-filter: blur(26px); box-shadow: var(--pop-shadow); }
 .popover.cue-editor { border: 0; border-radius: 12px; background: var(--pop-fill); -webkit-backdrop-filter: blur(26px); backdrop-filter: blur(26px); box-shadow: var(--pop-shadow); }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -493,7 +493,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
   .cue-editor input, .cue-custom input, #dialogInput, #dur, #cdSel, #lang, #readerTheme, #appearance { height: 24px; border-radius: 6px; font-size: 13px; }
 }
 @media (pointer: coarse) {
-  .btn { min-height: 44px; }
+  .btn, .device-popover #deviceSend { min-height: 44px; }
 }
 
 /* Device popover (Figma 2176:2467): 340 wide, 40px rows, live dot and a read-only route display. */
@@ -502,7 +502,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 .device-title { margin: 0; height: 32px; display: flex; align-items: center; font-size: 15px; font-weight: 600; }
 .device-status { display: flex; align-items: center; gap: 10px; min-height: 52px; }
 .device-text { display: flex; flex-direction: column; font-size: 13px; }
-.device-text #deviceStatus { font-size: 11px; color: var(--muted); }
+.device-text #deviceStatus { font-size: 11px; color: var(--pop-ink-2); }
 .device-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: 0 0 8px; }
 .device-dot.ok { background: var(--ok); }
 .device-popover .device-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; min-height: 40px; width: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; font-size: 13px; color: inherit; text-align: left; }
@@ -511,11 +511,15 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; bo
 .device-chevron { margin-left: auto; }
 .device-popover hr { width: 100%; margin: 0; border: 0; border-top: 1px solid #dadadd; }
 [data-appearance="dark"] .device-popover hr { border-top-color: var(--line); }
-.device-group { margin: 6px 0 0; font-size: 12px; font-weight: 500; color: var(--muted); }
-.route { display: flex; height: 24px; border-radius: 6px; background: rgb(0 0 0 / .08); padding: 0; overflow: hidden; }
-.route > span { display: flex; align-items: center; padding: 0 12px; font-size: 13px; color: var(--muted); }
+.device-group { margin: 6px 0 0; font-size: 12px; font-weight: 500; color: var(--pop-ink-2); }
+.route { display: flex; height: 24px; border-radius: 6px; background: var(--route-track); padding: 0; overflow: hidden; }
+.route > span { display: flex; align-items: center; padding: 0 12px; font-size: 13px; color: var(--pop-ink-2); }
 .route > span[hidden] { display: none; }
 .route > span[aria-current="true"] { background: var(--accent); color: #fff; border-radius: 6px; }
-#deviceSend { width: 100%; }
+/* The send action is a real button (Figma Buttons 300×24), not one of the plain popover rows. */
+.device-popover #deviceSend { width: 100%; height: 24px; min-height: 24px; justify-content: center; padding: 0 16px; border-radius: 6px; background: var(--route-track); color: inherit; font-size: 13px; }
+.device-popover .device-row:hover { background: transparent; }
+/* Destructive menu items stay red over the menu-item colour. */
+.popover[role="menu"] > [role^="menuitem"].danger { color: #d9363e; }
 #deviceSend[aria-disabled="true"] { opacity: .45; cursor: default; }
-.device-note { margin: 0; font-size: 11px; }
+.device-note { margin: 0; font-size: 11px; color: var(--pop-ink-2); }

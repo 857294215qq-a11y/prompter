@@ -402,7 +402,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     cueAt = Math.max(api.ta.selectionStart, api.ta.selectionEnd);
     cueForm.hidden = true; cueMenu.hidden = false; cueTool.setAttribute('aria-expanded', 'true');
     const rect = cueTool.getBoundingClientRect();
-    cueMenu.style.left = Math.max(12, Math.min(innerWidth - 232, rect.left)) + 'px';
+    cueMenu.style.left = Math.max(12, Math.min(innerWidth - cueMenu.offsetWidth - 12, rect.left)) + 'px';
     cueMenu.style.top = Math.max(12, rect.bottom + 8) + 'px';
     cueItems()[0].focus();
   }
@@ -440,7 +440,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     editing = cueRange(cue);
     const rect = cue.getBoundingClientRect();
     cueEditor.hidden = false;
-    cueEditor.style.left = Math.max(12, Math.min(innerWidth - 232, rect.left)) + 'px';
+    cueEditor.style.left = Math.max(12, Math.min(innerWidth - cueEditor.offsetWidth - 12, rect.left)) + 'px';
     cueEditor.style.top = Math.max(12, rect.bottom + 8) + 'px';
     cueInput.value = cue.textContent; cueInput.focus(); cueInput.select();
   }
@@ -466,7 +466,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function closeMenu() { $('#docMenu').hidden = true; $('#docMore').setAttribute('aria-expanded', 'false'); }
   function menu() {
     const el = $('#docMenu'); el.hidden = !el.hidden; $('#docMore').setAttribute('aria-expanded', String(!el.hidden));
-    if (!el.hidden) { const rect = ($('#docMore').getBoundingClientRect().width ? $('#docMore') : $('#mobileDocMore')).getBoundingClientRect(); el.style.left = Math.max(12, Math.min(innerWidth - 212, rect.right - 190)) + 'px'; el.style.top = Math.max(12, Math.min(innerHeight - 280, rect.bottom + 8)) + 'px'; el.querySelector('button').focus(); }
+    if (!el.hidden) { const rect = ($('#docMore').getBoundingClientRect().width ? $('#docMore') : $('#mobileDocMore')).getBoundingClientRect(); el.style.left = Math.max(12, Math.min(innerWidth - el.offsetWidth - 12, rect.right - el.offsetWidth)) + 'px'; el.style.top = Math.max(12, Math.min(innerHeight - 280, rect.bottom + 8)) + 'px'; el.querySelector('button').focus(); }
   }
   on('#docMore', menu); on('#mobileDocMore', menu); on('#importScript', () => $('#file').click());
   for (const [id, label, target] of [['menuDevices', '设备与遥控', '#remoteBtn'], ['menuSettings', '应用设置', '#appSettings']]) {
@@ -500,6 +500,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const b = deviceBtn.getBoundingClientRect();
     if (!b.width) { api.openPairing(false); return; } // 设备 is not on screen (phone menu): go straight to pairing
     closeMenu(); renderDevices(); devices.hidden = false; deviceBtn.setAttribute('aria-expanded', 'true');
+    // The switch shows whether this device is acting as a remote right now, read from the engine each time.
+    $('#deviceController').checked = !!api.controllerActive?.();
     // From 2164:733: 189px left of the button, 20px below it; never over the parameter card.
     let left = b.left - 189;
     const card = settings.inert ? null : settings.getBoundingClientRect();
@@ -509,7 +511,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
   }
   on('#deviceManage', () => { closeDevices(); api.openPairing(false); });
   on('#devicePair', () => { closeDevices(); api.openPairing(true); });
-  $('#deviceController').addEventListener('change', (e) => (e.target.checked ? api.controllerOn() : api.controllerOff()));
+  // Turning it on opens the search dialog, which takes over; the switch is re-read from the engine next time.
+  $('#deviceController').addEventListener('change', (e) => { if (e.target.checked) { closeDevices(); api.controllerOn(); } else api.controllerOff(); });
   on('#deviceSend', () => {
     if ($('#deviceSend').getAttribute('aria-disabled') === 'true') return notify('还没有连接遥控设备');
     api.sendScript(); notify('已发送当前稿件');

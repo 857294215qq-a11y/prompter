@@ -79,7 +79,7 @@ test('controls take macOS sizes on fine pointers', () => {
 });
 
 test('touch keeps 44px button targets', () => {
-  assert.match(block('@media (pointer: coarse)'), /\.btn\s*\{[^}]*min-height:\s*44px/);
+  assert.match(block('@media (pointer: coarse)'), /\.btn(, [^{]*)?\s*\{[^}]*min-height:\s*44px/);
 });
 
 test('start buttons keep their Figma heights', () => {
@@ -167,4 +167,48 @@ test('send calls sendScript once and says so; unavailable without a connection',
   app.w.testView.connection(1, 'lan'); app.click('#deviceSend');
   assert.equal(sent, 1); assert.match(app.$('#uiToast').textContent, /已发送/);
   app.close();
+});
+
+// Final review fixes
+const mixHex = (bg, ov, a) => '#' + bg.slice(1).match(/\w\w/g).map((x, i) => Math.round(parseInt(x, 16) * (1 - a) + parseInt(ov.slice(1).match(/\w\w/g)[i], 16) * a).toString(16).padStart(2, '0')).join('');
+
+test('popover secondary text keeps 4.5:1 on the opaque fallback, including the route track', () => {
+  const light = css.match(/--pop-ink-2:\s*(#[0-9a-f]{6})/i)[1];
+  const dark = css.match(/\[data-appearance="dark"\]\s*\{[^}]*--pop-ink-2:\s*(#[0-9a-f]{6})/i)[1];
+  assert.match(css, /--route-track:\s*rgb\(0 0 0 \/ \.08\)/); assert.match(css, /\[data-appearance="dark"\]\s*\{[^}]*--route-track:\s*rgb\(255 255 255 \/ \.1\)/);
+  assert.ok(contrast(light, mixHex('#f2f2f4', '#000000', .08)) >= 4.5, 'light route labels');
+  assert.ok(contrast(light, '#f2f2f4') >= 4.5, 'light status');
+  assert.ok(contrast(dark, mixHex('#2c2c2e', '#ffffff', .1)) >= 4.5, 'dark route labels');
+  for (const sel of ['.route > span', '.device-text #deviceStatus', '.device-group', '.device-note'])
+    assert.match(rule(sel.startsWith('.route') ? '.route > span' : sel), /color:\s*var\(--pop-ink-2\)/, sel);
+});
+
+test('the controller switch shows the engine\'s real state each time the popover opens', () => {
+  const app = desktop({ native: true }); let active = false, opened = 0;
+  app.w.testEngine.controllerActive = () => active;
+  app.w.testEngine.controllerOn = () => { opened++; };
+  app.click('#remoteBtn');
+  const sw = app.$('#deviceController'); assert.equal(sw.checked, false);
+  sw.checked = true; sw.dispatchEvent(new app.w.Event('change', { bubbles: true }));
+  assert.equal(opened, 1); assert.equal(pop(app).hidden, true, 'the search dialog takes over');
+  app.click('#remoteBtn'); assert.equal(sw.checked, false, 'search closed without connecting: off');
+  active = true; app.click('#remoteBtn'); app.click('#remoteBtn'); assert.equal(sw.checked, true, 'connected as a controller: on');
+  app.close();
+});
+
+test('menus stay inside a phone screen', () => {
+  const app = boot({}, { media: (q) => /max-width/.test(q) });
+  Object.defineProperty(app.w, 'innerWidth', { value: 375, configurable: true });
+  app.$('#mobileDocMore').getBoundingClientRect = () => rect(319, 12, 44, 44);
+  Object.defineProperty(app.$('#docMenu'), 'offsetWidth', { value: 244, configurable: true });
+  app.click('#mobileDocMore');
+  assert.ok(parseFloat(app.$('#docMenu').style.left) + 244 <= 375 - 12, 'docMenu left ' + app.$('#docMenu').style.left);
+  app.close();
+  const ed = boot({ library: [{ id: 'a', text: '大家好', updated: 1 }], current: 'a' });
+  Object.defineProperty(ed.w, 'innerWidth', { value: 375, configurable: true });
+  ed.$('[data-format="cue"]').getBoundingClientRect = () => rect(300, 600, 60, 36);
+  Object.defineProperty(ed.$('#cueMenu'), 'offsetWidth', { value: 244, configurable: true });
+  ed.click('[data-format="cue"]');
+  assert.ok(parseFloat(ed.$('#cueMenu').style.left) + 244 <= 375 - 12, 'cueMenu left ' + ed.$('#cueMenu').style.left);
+  ed.close();
 });

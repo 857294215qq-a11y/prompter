@@ -65,8 +65,10 @@ function readerInset() {
 function applyStyle() {
   content.style.fontSize = fsEff() + 'px';
   content.style.lineHeight = S.lineHeight;
-  // 边距按阅读画面所在的窗口算：置顶小窗里用小窗的宽度
-  const pad = Math.max(S.margin * (pipWin || window).innerWidth / 100, readerInset()) + 'px';
+  // 边距按阅读画面所在的窗口算：置顶小窗里用小窗的宽度。
+  // 左右留白保持默认值时阅读列对齐顶部胶囊；用户调过就完全按用户的值，可以比胶囊更宽
+  const userPad = S.margin * (pipWin || window).innerWidth / 100;
+  const pad = (S.margin === DEFAULTS.margin ? Math.max(userPad, readerInset()) : userPad) + 'px';
   content.style.paddingLeft = pad; content.style.paddingRight = pad;
   content.style.textAlign = S.align;
   content.classList.toggle('dim', S.dimRead);

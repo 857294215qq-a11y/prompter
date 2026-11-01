@@ -32,6 +32,12 @@ test('column padding is symmetric when mirrored', () => {
   app.close();
 });
 
+test('a margin the user chose wins over the pill alignment, even when narrower', () => {
+  const app = desktopReader({ margin: 3 }); // 3% of 1440 = 43.2px: wider text than the pill
+  assert.deepEqual(padding(app), ['43.2px', '43.2px']);
+  app.close();
+});
+
 test('user margin wins when wider than the pill inset', () => {
   const app = desktopReader({ margin: 30 }); // 30vw of 1440 = 432px
   assert.deepEqual(padding(app), ['432px', '432px']);

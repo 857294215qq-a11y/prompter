@@ -8,6 +8,7 @@ on:
       - 'index.html'
       - 'ui-v3.css'
       - 'ui-v3.js'
+      - 'src/**'
       - 'assets/**'
       - 'android/**'
       - 'scripts/**'

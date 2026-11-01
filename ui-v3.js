@@ -74,7 +74,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     settings.inert = !right && !parametersInReader;
     $('#toggleLibrary').setAttribute('aria-expanded', String(left));
     $('#toggleSettings').setAttribute('aria-expanded', String(right || parametersInReader));
-    $('#toggleSettings img').src = 'assets/v3/' + (small.matches ? 'settings2' : 'panel-right-close') + '.svg';
+    toggleState('left', left); toggleState('right', right);
     $('#sheetBackdrop').hidden = !(small.matches && left || tablet.matches && right);
     if (previousLayout) {
       if (left !== previousLayout.left) animateSurface(library, left, 'flex');
@@ -88,6 +88,14 @@ window.initPrompterV3 = function initPrompterV3(api) {
       if (dx) toolbarMotion = toolbar.animate([{translate: dx + 'px 0'}, {translate:'0 0'}], {duration:240,easing:'cubic-bezier(.32,.72,0,1)'});
     }
     updateMeta();
+  }
+  // Desktop toggles say what they will do; below 1200px the right one opens the reader parameters sheet.
+  function toggleState(side, open) {
+    const button = $(side === 'left' ? '#toggleLibrary' : '#toggleSettings'), sheet = side === 'right' && tablet.matches;
+    const label = sheet ? '提词参数' : (open ? '收起' : '展开') + (side === 'left' ? '稿件栏' : '提词参数');
+    const name = sheet && small.matches ? 'settings2' : 'panel-' + side + '-' + (open ? 'close' : 'open');
+    button.querySelector('img').src = 'assets/v3/' + name + '.svg';
+    button.setAttribute('aria-label', label); button.title = label;
   }
   function closeSheets() { mobileLeft = mobileRight = false; closeMenu(); closeReaderOptions(); layout(); }
   function returnSettings() {
@@ -202,6 +210,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     caretDocument = api.current().id;
     const result = readRich(sel.anchorNode, sel.anchorOffset, sel.focusNode, sel.focusOffset);
     api.ta.setSelectionRange(Math.min(result.start, result.end), Math.max(result.start, result.end));
+    syncFormatState(); syncStartActions();
   }
   function richInput() {
     caretDocument = api.current().id;
@@ -210,6 +219,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     api.ta.value = result.source; renderedSource = result.source;
     api.ta.setSelectionRange(Math.min(result.start, result.end), Math.max(result.start, result.end));
     api.ta.dispatchEvent(new Event('input', { bubbles: true }));
+    syncFormatState(); syncStartActions();
   }
   function sourceCaret(index) {
     // Build source offsets from the rendered tree, including hidden markdown syntax.
@@ -274,10 +284,15 @@ window.initPrompterV3 = function initPrompterV3(api) {
       b.append(title, meta); b.addEventListener('click', () => { api.openScript(doc.id); resetHistory(); mobileLeft = false; layout(); }); list.append(b);
     }
     if (!list.children.length) { const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = '没有找到稿件'; list.append(empty); }
-    renderRich();
+    renderRich(); syncFormatState(); syncStartActions();
   }
   $('#scriptSearch').addEventListener('input', refresh);
-  function resetHistory() { caretDocument = null; history = [api.ta.value]; historyIndex = 0; renderRich(true); }
+  function resetHistory() {
+    caretDocument = null; history = [api.ta.value]; historyIndex = 0; renderRich(true);
+    // Re-rendering collapses the old selection onto the editor itself; drop it so it is not read as a new caret.
+    const sel = window.getSelection(); if (sel?.anchorNode && rich.contains(sel.anchorNode)) sel.removeAllRanges();
+    syncStartActions();
+  }
   api.ta.addEventListener('input', () => {
     if (!historyBusy) { history = history.slice(0, historyIndex + 1); history.push(api.ta.value); if (history.length > 100) history.shift(); historyIndex = history.length - 1; }
     syncHistory();
@@ -295,13 +310,108 @@ window.initPrompterV3 = function initPrompterV3(api) {
       const line = api.ta.value.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
       const prefix = api.ta.value.slice(line).match(/^#+[ \t]*/)?.[0] || '';
       api.ta.setSelectionRange(line, line + prefix.length); replaceSelectionAtBuffer(prefix ? '' : '# ');
-    } else replaceSelectionAtBuffer(button.dataset.format === 'emphasis' ? '**' + (selected || '重点') + '**' : '[' + (selected || '停顿') + ']');
+    } else if (button.dataset.format === 'emphasis') {
+      if (button.getAttribute('aria-disabled') === 'true') return;
+      const range = emphasisRange(start, end);
+      if (range) { api.ta.setSelectionRange(range.start, range.end); replaceSelectionAtBuffer(range.inner); }
+      else replaceSelectionAtBuffer('**' + selected + '**');
+    } else if (cueMenu.hidden) openCueMenu(); else closeCueMenu(true);
   }));
+  const lineStart = (index) => (index ? api.ta.value.lastIndexOf('\n', index - 1) + 1 : 0);
+  // The **…** run on the selection's line that holds the whole selection (markers included), or null.
+  function emphasisRange(start, end) {
+    const value = api.ta.value, from = lineStart(start), stop = value.indexOf('\n', from);
+    for (const m of value.slice(from, stop < 0 ? value.length : stop).matchAll(/\*\*([^\n]*?)\*\*/g)) {
+      const s = from + m.index, e = s + m[0].length;
+      if (start >= s && end <= e) return { start: s, end: e, inner: m[1] };
+    }
+    return null;
+  }
+  // Section shows the current line's state; emphasis only acts on a selection.
+  function syncFormatState() {
+    const start = api.ta.selectionStart, end = api.ta.selectionEnd;
+    const section = /^#/.test(api.ta.value.slice(lineStart(start)));
+    $('[data-format="section"]').setAttribute('aria-pressed', String(section));
+    const emphasis = $('[data-format="emphasis"]');
+    const inside = start !== end && emphasisRange(start, end);
+    // Wrapping across a line or half over another **…** run would leave stray markers.
+    const unsafe = api.ta.value.slice(start, end).includes('\n') || (!inside && [...api.ta.value.matchAll(/\*\*[^\n]*?\*\*/g)]
+      .some((m) => m.index < end && start < m.index + m[0].length));
+    emphasis.setAttribute('aria-disabled', String(start === end || unsafe));
+    emphasis.setAttribute('aria-pressed', String(!!inside));
+  }
   function replaceSelectionAtBuffer(value) {
     const start = api.ta.selectionStart, end = api.ta.selectionEnd;
     api.ta.value = api.ta.value.slice(0, start) + value + api.ta.value.slice(end);
     api.ta.dispatchEvent(new Event('input', { bubbles: true })); renderRich(true); sourceCaret(start + value.length); caret();
   }
+
+  // Cue menu: a preset or custom cue goes in at the caret, or after the selection, which stays unchanged.
+  const cueTool = $('[data-format="cue"]'), cueMenu = $('#cueMenu'), cueForm = $('#cueCustomForm');
+  const cueItems = () => [...cueMenu.querySelectorAll('[role="menuitem"]')];
+  let cueAt = 0;
+  const cleanCue = (value) => [...value.replace(/[[\]【】\r\n]/g, '').trim()].slice(0, 12).join('');
+  function openCueMenu() {
+    cueAt = Math.max(api.ta.selectionStart, api.ta.selectionEnd);
+    cueForm.hidden = true; cueMenu.hidden = false; cueTool.setAttribute('aria-expanded', 'true');
+    const rect = cueTool.getBoundingClientRect();
+    cueMenu.style.left = Math.max(12, Math.min(innerWidth - 232, rect.left)) + 'px';
+    cueMenu.style.top = Math.max(12, rect.bottom + 8) + 'px';
+    cueItems()[0].focus();
+  }
+  function closeCueMenu(returnFocus) {
+    if (cueMenu.hidden) return;
+    cueMenu.hidden = true; cueTool.setAttribute('aria-expanded', 'false');
+    if (returnFocus) cueTool.focus();
+  }
+  function insertCue(value) {
+    const cue = cleanCue(value); closeCueMenu(false);
+    if (!cue) { sourceCaret(cueAt); return false; }
+    api.ta.setSelectionRange(cueAt, cueAt); replaceSelectionAtBuffer('[' + cue + ']'); return true;
+  }
+  cueMenu.querySelectorAll('[data-cue]').forEach((b) => b.addEventListener('click', () => insertCue(b.dataset.cue)));
+  on('#cueCustom', () => { cueForm.hidden = false; $('#cueCustomInput').value = ''; $('#cueCustomInput').focus(); });
+  cueForm.addEventListener('submit', (e) => { e.preventDefault(); insertCue($('#cueCustomInput').value); });
+  cueMenu.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeCueMenu(true); return; }
+    if (e.target.id === 'cueCustomInput') return;
+    const items = cueItems(), i = items.indexOf(document.activeElement);
+    const next = { ArrowDown: (i + 1) % items.length, ArrowUp: (i - 1 + items.length) % items.length, Home: 0, End: items.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault(); e.stopPropagation(); items[next].focus();
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#cueMenu, [data-format="cue"]')) closeCueMenu(false); });
+
+  // Editing an existing cue: change its words (brackets kept), or delete it; Escape leaves it alone.
+  const cueEditor = $('#cueEditor'), cueInput = $('#cueEditInput');
+  let editing = null;
+  function cueRange(cue) {
+    const t = cue.firstChild, inner = readRich(t, 0, t, t.length);
+    return { start: inner.start - 1, end: inner.end + 1, open: cue.dataset.cue === '【' ? '【' : '[' };
+  }
+  function openCueEditor(cue) {
+    editing = cueRange(cue);
+    const rect = cue.getBoundingClientRect();
+    cueEditor.hidden = false;
+    cueEditor.style.left = Math.max(12, Math.min(innerWidth - 232, rect.left)) + 'px';
+    cueEditor.style.top = Math.max(12, rect.bottom + 8) + 'px';
+    cueInput.value = cue.textContent; cueInput.focus(); cueInput.select();
+  }
+  function closeCueEditor(caretAt) {
+    if (cueEditor.hidden) return;
+    cueEditor.hidden = true; editing = null;
+    if (caretAt !== undefined) sourceCaret(caretAt);
+  }
+  function rewriteCue(value) {
+    const range = editing, cue = cleanCue(value); closeCueEditor();
+    api.ta.setSelectionRange(range.start, range.end);
+    replaceSelectionAtBuffer(cue ? range.open + cue + (range.open === '【' ? '】' : ']') : '');
+  }
+  rich.addEventListener('click', (e) => { const cue = e.target.closest?.('.editor-cue'); if (cue?.firstChild) openCueEditor(cue); });
+  cueEditor.addEventListener('submit', (e) => { e.preventDefault(); if (editing) rewriteCue(cueInput.value); });
+  on('#cueDelete', () => { if (editing) rewriteCue(''); });
+  cueInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeCueEditor(editing.end); } });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#cueEditor, .editor-cue')) closeCueEditor(); });
 
   function closeMenu() { $('#docMenu').hidden = true; $('#docMore').setAttribute('aria-expanded', 'false'); }
   function menu() {
@@ -360,20 +470,21 @@ window.initPrompterV3 = function initPrompterV3(api) {
     container.append(video, save); showDialog('helpDialog');
   }
   on('#aboutBtn', () => help('关于提词器', [['Prompter · V3', '分段录制、语音跟随与手机遥控。'], ['本机保存', '稿件和设置保存在当前浏览器或 App 中。'], ['平台', 'Web / PWA 与 Android；桌面客户端将另行开发。'], ['语音与录像', '取决于浏览器能力与设备授权。']]));
-  on('#shortcutsBtn', () => help('快捷键与翻页笔', [['空格', '播放 / 暂停'], ['← → / PgUp PgDn', '上一页 / 下一页'], ['A / D', '上一段 / 下一段'], ['Q / E', '上一节 / 下一节'], ['R', '重录本节'], ['B / 1–9', '添加书签 / 跳到书签'], ['G / C', '语音跟随 / 录像'], ['M / V', '水平 / 垂直镜像'], ['+ − / [ ]', '语速 / 字号'], ['L / F / Esc', '目录 / 全屏 / 返回编辑'], ['Ctrl / ⌘ + Enter', '开始提词']]));
+  on('#shortcutsBtn', () => help('快捷键与翻页笔', [['空格', '播放 / 暂停'], ['← → / PgUp PgDn', '上一页 / 下一页'], ['A / D', '上一段 / 下一段'], ['Q / E', '上一节 / 下一节'], ['R', '重录本节'], ['B / 1–9', '添加书签 / 跳到书签'], ['G / C', '语音跟随 / 录像'], ['M / V', '水平 / 垂直镜像'], ['+ − / [ ]', '语速 / 字号'], ['L / F / Esc', '目录 / 全屏 / 返回编辑'], ['Ctrl / ⌘ + Enter', '从光标处开始提词']]));
 
   $('#readerTheme').addEventListener('change', (e) => { api.settings.theme = e.target.value; api.saveSettings(); if (api.isReading()) api.layout(true); });
   $('#editorVoice').addEventListener('change', () => { api.voiceToggle(); sync(); });
   $('#editorCamera').addEventListener('change', async () => { await api.camToggle(); sync(); });
   on('#editorClips', () => { api.enter(false); api.openPanel(); });
-  function startFromSelection() {
-    const useCaret = $('#startPosition').value === 'caret';
-    if (useCaret && caretDocument !== api.current().id) {
-      notify('当前稿件没有有效光标位置，已从开头开始。'); api.enter(false); return;
-    }
-    api.enter(useCaret);
+  // Two start actions: from the top always works; from the caret needs a caret placed in this document.
+  const caretReady = () => caretDocument === api.current().id;
+  function startFromTop() { api.enter(false); }
+  function startFromCaret() {
+    if (!caretReady()) { notify('当前稿件还没有光标位置，请先在正文里点一下。'); return false; }
+    api.enter(true); return true;
   }
-  on('#mobileStart', startFromSelection);
+  function syncStartActions() { $('#startCaret').setAttribute('aria-disabled', String(!caretReady())); }
+  on('#startCaret', startFromCaret); on('#mobileStart', startFromTop);
   settings.addEventListener('input', () => { if (api.isReading()) api.layout(true); });
   settings.addEventListener('change', () => { if (api.isReading()) api.layout(true); });
   function sync() {
@@ -392,19 +503,49 @@ window.initPrompterV3 = function initPrompterV3(api) {
   const parameters = document.createElement('button'); parameters.id = 'readerParameters'; parameters.type = 'button'; parameters.className = 'text-btn'; parameters.append(icon('settings2'), document.createTextNode('阅读参数')); parameters.setAttribute('aria-pressed', 'false');
   const closeParameters = document.createElement('button'); closeParameters.id = 'readerSettingsClose'; closeParameters.type = 'button'; closeParameters.className = 'icon-btn'; closeParameters.setAttribute('aria-label', '关闭阅读参数'); closeParameters.append(icon('x')); settings.prepend(closeParameters);
   closeParameters.addEventListener('click', () => { returnSettings(); more.focus(); });
-  options.append(parameters);
-  for (const id of ['pMx', 'pMy', 'pEdit', 'pPip', 'pRemote', 'pFs']) { const b = $('#' + id); b.setAttribute('aria-label', b.title); options.append(b); }
+  // Menu groups: 画面 (mirrors, checked when on) · 窗口 · 调整. Each item keeps its icon and shows its shortcut.
+  options.setAttribute('role', 'menu'); options.setAttribute('aria-label', '更多阅读操作');
+  const menuItems = [['pMx', '水平镜像', 'M', true], ['pMy', '垂直镜像', 'V', true], null, ['pPip', '打开置顶小窗'], ['pRemote', '连接遥控器'], ['pFs', '全屏', 'F'], null, ['readerParameters', '阅读参数'], ['pEdit', '改字', '', true]];
+  for (const item of menuItems) {
+    if (!item) { const hr = document.createElement('hr'); hr.setAttribute('role', 'separator'); options.append(hr); continue; }
+    const [id, label, key, check] = item, b = id === 'readerParameters' ? parameters : $('#' + id);
+    b.setAttribute('role', check ? 'menuitemcheckbox' : 'menuitem'); b.setAttribute('aria-label', label); b.removeAttribute('title');
+    const text = b.querySelector('.lbl-t'); if (text) text.textContent = label;
+    if (key) { const k = document.createElement('kbd'); k.className = 'menu-key'; k.textContent = key; b.append(k); b.setAttribute('aria-keyshortcuts', key); }
+    options.append(b);
+    // Keyboard activation (detail 0) returns focus to 更多; a mouse click leaves focus off the bars so they can hide.
+    if (id !== 'readerParameters') b.addEventListener('click', (e) => { syncReaderMenu(); closeReaderOptions(!e.detail); });
+  }
   $('#prompter .topbar').append(more); $('#prompter').append(options);
-  const compactControls = ['pVoice', 'pCam'].map((id) => {
-    const button = $('#' + id), marker = document.createComment(id + ' desktop position'); button.before(marker); return { button, marker };
-  });
-  function compactReader() {
-    for (const { button, marker } of compactControls) {
-      if (tablet.matches) options.insertBefore(button, parameters);
-      else marker.after(button);
+  const readerItems = () => [...options.querySelectorAll('[role^="menuitem"]')].filter((b) => !b.hidden);
+  // Checkbox items report state with aria-checked; the engine's aria-pressed would contradict it.
+  function syncReaderMenu() {
+    // The engine marks edit mode with aria-pressed each time it changes; until then the last checked state holds.
+    const edit = $('#pEdit'), editOn = edit.hasAttribute('aria-pressed') ? edit.getAttribute('aria-pressed') === 'true' : edit.getAttribute('aria-checked') === 'true';
+    const on = { pMx: api.settings.mirrorX, pMy: api.settings.mirrorY, pEdit: editOn };
+    for (const b of readerItems()) {
+      if (b.getAttribute('role') === 'menuitemcheckbox') b.setAttribute('aria-checked', String(!!on[b.id]));
+      if (b !== parameters) b.removeAttribute('aria-pressed');
     }
   }
-  compactReader(); tablet.addEventListener('change', compactReader);
+  function openReaderMenu() {
+    returnSettings(); syncReaderMenu();
+    optionsOpen = true; options.hidden = false; more.setAttribute('aria-expanded', 'true');
+    const bar = $('#prompter .topbar').getBoundingClientRect();
+    options.style.top = Math.round(bar.bottom + 8) + 'px'; options.style.right = Math.round(innerWidth - bar.right) + 'px';
+    readerItems()[0]?.focus(); api.poke();
+  }
+  // Every key but Tab stays in the menu, so reading shortcuts (Space, arrows, M/V/F) cannot fire behind it.
+  options.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') return;
+    e.stopPropagation();
+    if (e.key === 'Escape') { e.preventDefault(); closeReaderOptions(true); return; }
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); document.activeElement?.closest('#readerOptions [role^="menuitem"]')?.click(); return; }
+    const items = readerItems(), i = items.indexOf(document.activeElement);
+    const next = { ArrowDown: (i + 1) % items.length, ArrowUp: (i - 1 + items.length) % items.length, Home: 0, End: items.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault(); items[next].focus();
+  });
   const startMarker = document.createComment('phone start action'); $('#mobileStart').before(startMarker);
   const settingsMarker = document.createComment('sidebar toggle position'); $('#toggleSettings').before(settingsMarker);
   const parameterLabel = document.createElement('span'); parameterLabel.className = 'tablet-param-label'; parameterLabel.textContent = '提词参数'; $('#toggleSettings').append(parameterLabel);
@@ -413,8 +554,15 @@ window.initPrompterV3 = function initPrompterV3(api) {
     else { settingsMarker.after($('#toggleSettings')); startMarker.after($('#mobileStart')); }
   }
   tabletActions(); tablet.addEventListener('change', tabletActions); small.addEventListener('change', tabletActions);
-  function closeReaderOptions() { options.hidden = true; optionsOpen = false; more.setAttribute('aria-expanded', 'false'); }
-  more.addEventListener('click', () => { returnSettings(); optionsOpen = !optionsOpen; options.hidden = !optionsOpen; more.setAttribute('aria-expanded', String(optionsOpen)); api.poke(); });
+  function closeReaderOptions(returnFocus = false) {
+    const was = optionsOpen; options.hidden = true; optionsOpen = false; more.setAttribute('aria-expanded', 'false');
+    if (was && returnFocus) more.focus();
+    if (was) api.poke();
+  }
+  // The bars stay while someone is using them: the menu is open or keyboard focus is on a bar control.
+  const barsBusy = () => optionsOpen || !!document.activeElement?.closest?.('#prompter .bar');
+  $('#prompter').addEventListener('focusout', (e) => { if (e.target.closest('.bar')) api.poke(); });
+  more.addEventListener('click', () => { if (optionsOpen) closeReaderOptions(); else openReaderMenu(); });
   parameters.addEventListener('click', () => {
     settingsMove++;
     closeReaderOptions(); parametersInReader = true; $('#prompter').append(settings); settings.classList.add('reader-parameters'); settings.inert = false;
@@ -433,7 +581,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const b = cmd(c), label = b.textContent; b.setAttribute('aria-label', label); b.textContent = '';
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'i');
     const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-    use.setAttribute('href', '#i-' + ({ pageUp: 'up2', pageDown: 'down2', paraUp: 'up1', paraDown: 'down1', secUp: 'secup', secDown: 'secdown', mark: 'mark', home: 'retake', retake: 'retake' }[c]));
+    use.setAttribute('href', '#i-' + ({ pageUp: 'up2', pageDown: 'down2', paraUp: 'up1', paraDown: 'down1', secUp: 'secup', secDown: 'secdown', mark: 'mark', home: 'retake', retake: 'rotate-ccw' }[c]));
     svg.append(use); const span = document.createElement('span'); span.textContent = label; b.append(svg, span);
   }
   const speed = document.createElement('div'); speed.className = 'remote-stepper';
@@ -498,7 +646,14 @@ window.initPrompterV3 = function initPrompterV3(api) {
       else if (!$('#docMenu').hidden) { e.preventDefault(); closeMenu(); $('#docMore').focus(); }
       else if (mobileLeft || mobileRight) { e.preventDefault(); closeSheets(); }
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.activeElement === rich) { e.preventDefault(); e.stopImmediatePropagation(); caret(); startFromSelection(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !api.isReading()) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      // In a text field the shortcut belongs to that field; the engine's own handler is stopped too.
+      if (e.target.closest?.('input, select, textarea')) return;
+      closeCueMenu(false); closeCueEditor();
+      if (document.activeElement === rich) caret();
+      startFromCaret();
+    }
   }, true);
 
   const motionSelector = '.modal, .popover, #panel, #hint, #cam, #uiToast, #prompter';
@@ -517,8 +672,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
   }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
   refresh(); sync();
   return {
-    startFromSelection, refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
-    confirmAction: ask,
+    startFromTop, startFromCaret, refresh, resetHistory, sync, newDocument, deleteDocument, closeSheets, notify, previewClip,
+    confirmAction: ask, barsBusy,
     emptyDocument: () => { rich.focus(); notify('先写一段正文，再开始提词。小节标题不计入正文。'); },
     saved: (ok) => { text($('#saveState'), ok ? '已保存到本机' : '保存失败，请导出稿件以免丢失'); updateMeta(); },
     saving: () => { text($('#saveState'), '正在保存…'); updateMeta(); },

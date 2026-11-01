@@ -3,39 +3,7 @@ const assert = require('node:assert/strict');
 const { readFileSync, existsSync } = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
-const root = path.resolve(__dirname, '..');
-const legacy = [
-  { id: 'first', text: '# 开场\n第一份已有稿件。\n\n# 第二节\n需要保留的内容。', updated: 1000 },
-  { id: 'second', text: '# 另一份稿件\n不应丢失的正文。', updated: 2000 },
-];
-
-function boot(saved = {}) {
-  const dom = new JSDOM(readFileSync(path.join(root, 'index.html'), 'utf8'), {
-    url: 'https://prompter.test/', runScripts: 'outside-only', pretendToBeVisual: true,
-  });
-  const w = dom.window;
-  w.matchMedia = (q) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} });
-  w.requestAnimationFrame = (callback) => { w.runFrame = callback; return 1; };
-  w.cancelAnimationFrame = () => {};
-  // jsdom has no layout engine; provide a nonzero reading surface for playback.
-  Object.defineProperty(w.HTMLElement.prototype, 'clientHeight', { get() { return 800; } });
-  Object.defineProperty(w.HTMLElement.prototype, 'offsetHeight', { get() { return this.id === 'content' ? 1800 : 40; } });
-  Object.defineProperty(w.HTMLElement.prototype, 'offsetTop', { get() { return +(this.dataset.i || 0) * 120; } });
-  for (const [key, value] of Object.entries({ library: legacy, current: 'first', ...saved }))
-    w.localStorage.setItem('prompter:' + key, JSON.stringify(value));
-  for (const script of w.document.scripts) {
-    const src = script.getAttribute('src');
-    if (!src || !src.includes('://')) w.eval(src ? readFileSync(path.join(root, src), 'utf8') : script.textContent);
-    if (src === 'ui-v3.js') {
-      const init = w.initPrompterV3;
-      w.initPrompterV3 = (api) => { w.testEngine = api; w.testView = init(api); return w.testView; };
-    }
-  }
-  const $ = (s) => w.document.querySelector(s);
-  const click = (s) => { const el = $(s); assert.ok(el, 'Missing control ' + s); el.click(); };
-  const input = (s, value) => { $(s).value = value; $(s).dispatchEvent(new w.Event('input', { bubbles: true })); };
-  return { w, $, click, input, close: () => w.close(), stored: (k) => JSON.parse(w.localStorage.getItem('prompter:' + k)) };
-}
+const { boot, legacy, root } = require('./helpers/boot.cjs');
 
 test('legacy documents load unchanged and the V3 library can switch documents', () => {
   const app = boot();
@@ -295,7 +263,7 @@ test('picture-in-picture carries external V3 styles into the reading window', as
     app.click('#start'); await app.w.testEngine.togglePip();
     const style = pip.window.document.querySelector('link[rel="stylesheet"]');
     assert.ok(style, 'PiP must include the new external stylesheet');
-    assert.equal(style.href, 'https://prompter.test/ui-v3.css');
+    assert.match(style.href, /^https:\/\/prompter\.test\/ui-v3\.css\?v=[0-9a-f]+$/);
     assert.ok(pip.window.document.querySelector('#stage'));
   } finally { pip.window.close(); app.close(); }
 });
@@ -358,20 +326,19 @@ test('layout motion animates tools rather than scaling editable text and rapid t
   } finally {app.close();}
 });
 
-test('start position routes desktop mobile and shortcut once and rejects a caret from another document', () => {
+test('start actions route from the top or the caret once and reject a caret from another document', () => {
   const app=boot({settings:{countdown:0}});
   try {
     const calls=[]; app.w.testEngine.enter=(fromCaret)=>calls.push(fromCaret);
-    const select=app.$('#startPosition'); assert.ok(select,'a visible start position choice is available');
     const rich=app.$('#richEditor'), node=rich.children[1].firstChild;
     app.w.getSelection().setBaseAndExtent(node,2,node,2); rich.dispatchEvent(new app.w.MouseEvent('mouseup'));
-    select.value='caret'; app.click('#start'); assert.deepEqual(calls,[true]);
-    app.click('#mobileStart'); assert.deepEqual(calls,[true,true]);
+    app.click('#startCaret'); assert.deepEqual(calls,[true]);
+    app.click('#start'); assert.deepEqual(calls,[true,false]);
+    app.click('#mobileStart'); assert.deepEqual(calls,[true,false,false]);
     rich.focus(); rich.dispatchEvent(new app.w.KeyboardEvent('keydown',{key:'Enter',ctrlKey:true,bubbles:true}));
-    assert.deepEqual(calls,[true,true,true]);
-    app.click('[data-script-id="second"]'); select.value='caret'; app.click('#start');
-    assert.equal(calls.at(-1),false); assert.match(app.$('#uiToast').textContent,/光标/);
-    select.value='start'; app.click('#start'); assert.equal(calls.at(-1),false);
+    assert.deepEqual(calls,[true,false,false,true]);
+    app.click('[data-script-id="second"]'); app.click('#startCaret');
+    assert.equal(calls.length,4); assert.equal(app.$('#startCaret').getAttribute('aria-disabled'),'true');
   } finally {app.close();}
 });
 

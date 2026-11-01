@@ -254,7 +254,8 @@ function renderRemoteStatus() {
   el.classList.toggle('ok', host.on && host.net === 'online');
   const nNear = IS_NATIVE ? [...app.clients.values()].filter((c) => c.authed).length : 0;
   $('#pRemote').setAttribute('aria-pressed', String((host.on && n > 0) || nLan > 0 || nNear > 0));
-  v3?.connection(nLan + n + nNear);
+  // 当前线路：附近直连优先，其次局域网直连，再次中转
+  v3?.connection(nLan + n + nNear, nNear ? 'near' : nLan ? 'lan' : n ? 'net' : null);
 }
 function showTab(t) {
   if (t === 'near' && !IS_NATIVE) t = 'lan';
@@ -292,7 +293,7 @@ async function openRemoteDlg(fresh, keepTab) {
   $('#rdlgClose').focus();
 }
 function closeRemoteDlg() { rdlg.hidden = true; lanStopScan(); }
-$('#remoteBtn').addEventListener('click', () => openRemoteDlg(false));
+$('#remoteBtn').addEventListener('click', () => (v3 ? v3.toggleDevices() : openRemoteDlg(false)));
 bind('#pRemote', () => openRemoteDlg(false));
 $('#rdlgClose').addEventListener('click', closeRemoteDlg);
 rdlg.addEventListener('click', (e) => { if (e.target === rdlg) closeRemoteDlg(); });

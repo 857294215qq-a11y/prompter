@@ -320,7 +320,7 @@ details.more > div { display: grid; gap: 8px; }
   .where { max-width: 8em; }
 }
 </style>
-<link rel="stylesheet" href="ui-v3.css?v=4f519b1569">
+<link rel="stylesheet" href="ui-v3.css?v=6fa8c0e9a3">
 </head>
 <body>
 
@@ -377,7 +377,7 @@ details.more > div { display: grid; gap: 8px; }
       </div>
       <div class="toolbar-trailing">
         <div class="tool-pill history-tools"><button id="undoEdit" class="icon-btn" type="button" aria-label="撤销"><img class="v3-icon" src="assets/v3/undo2.svg" alt=""></button><button id="redoEdit" class="icon-btn" type="button" aria-label="重做"><img class="v3-icon" src="assets/v3/redo2.svg" alt=""></button></div>
-        <div class="tool-pill app-tools"><button id="remoteBtn" class="text-btn" type="button" aria-label="设备与遥控" title="设备与遥控"><img class="v3-icon" src="assets/v3/monitor-smartphone.svg" alt=""><span>设备</span></button><button id="focusEditor" class="icon-btn" type="button" aria-label="专注编辑" aria-pressed="false"><img class="v3-icon" src="assets/v3/maximize.svg" alt=""></button><button id="appSettings" class="icon-btn" type="button" aria-label="应用设置" aria-haspopup="dialog"><img class="v3-icon" src="assets/v3/settings.svg" alt=""></button></div>
+        <div class="tool-pill app-tools"><button id="remoteBtn" class="text-btn" type="button" aria-label="设备与遥控" aria-haspopup="dialog" aria-controls="devicePopover" aria-expanded="false"><img class="v3-icon" src="assets/v3/monitor-smartphone.svg" alt=""><span>设备</span></button><button id="focusEditor" class="icon-btn" type="button" aria-label="专注编辑" aria-pressed="false"><img class="v3-icon" src="assets/v3/maximize.svg" alt=""></button><button id="appSettings" class="icon-btn" type="button" aria-label="应用设置" aria-haspopup="dialog"><img class="v3-icon" src="assets/v3/settings.svg" alt=""></button></div>
         <button id="mobileDocMore" class="icon-btn mobile-only" type="button" aria-label="稿件更多"><img class="v3-icon" src="assets/v3/ellipsis.svg" alt=""></button>
       </div>
     </header>
@@ -538,6 +538,18 @@ details.more > div { display: grid; gap: 8px; }
 </div>
 
 <!-- ============ 遥控配对 ============ -->
+<section id="devicePopover" class="popover device-popover" role="dialog" aria-labelledby="deviceTitle" hidden>
+  <h2 id="deviceTitle" class="device-title">设备与遥控</h2>
+  <div class="device-status"><span class="device-dot" aria-hidden="true"></span><span class="device-text"><strong>遥控设备</strong><span id="deviceStatus">未连接遥控设备</span></span></div>
+  <button id="deviceManage" class="device-row" type="button"><img class="v3-icon" src="assets/v3/monitor-smartphone.svg" alt=""><span>管理已配对设备</span><img class="v3-icon device-chevron" src="assets/v3/chevron-right.svg" alt=""></button>
+  <button id="devicePair" class="device-row" type="button"><img class="v3-icon" src="assets/v3/plus.svg" alt=""><span>配对另一台设备</span></button>
+  <hr>
+  <p class="device-group">这台电脑</p>
+  <label class="device-row app-only" hidden><span>当作遥控器使用</span><input id="deviceController" type="checkbox" role="switch"></label>
+  <div class="device-row"><span id="routeLabel">连接方式</span><span class="route" aria-hidden="true"><span class="app-only" data-route="near" hidden>附近</span><span data-route="lan">局域网</span><span data-route="net">中转</span></span><span class="vh" id="routeText" role="status">当前线路：未连接</span></div>
+  <button id="deviceSend" class="btn" type="button" aria-disabled="true">发送当前稿件到平板</button>
+  <p class="tip device-note">连接状态与稿件同步分别显示。断线时保留本机内容。</p>
+</section>
 <div id="rdlg" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="rdlgTitle">
   <div class="card">
     <div class="phead">
@@ -668,27 +680,27 @@ details.more > div { display: grid; gap: 8px; }
   <p class="tip">这台手机只当遥控器用。保持这个页面开着，别锁屏。</p>
 </div>
 
-<script src="src/boot/guard.js?v=4f519b1569"></script>
-<script src="ui-v3.js?v=4f519b1569"></script>
-<script src="src/engine/00-core.js?v=4f519b1569"></script>
-<script src="src/engine/01-script.js?v=4f519b1569"></script>
-<script src="src/engine/02-editor.js?v=4f519b1569"></script>
-<script src="src/engine/03-reader.js?v=4f519b1569"></script>
-<script src="src/engine/04-playback.js?v=4f519b1569"></script>
-<script src="src/engine/05-voice.js?v=4f519b1569"></script>
-<script src="src/engine/06-recorder.js?v=4f519b1569"></script>
-<script src="src/engine/07-controls.js?v=4f519b1569"></script>
-<script src="src/engine/08-marks.js?v=4f519b1569"></script>
-<script src="src/engine/09-loop.js?v=4f519b1569"></script>
-<script src="src/engine/10-inline-edit.js?v=4f519b1569"></script>
-<script src="src/engine/11-session.js?v=4f519b1569"></script>
-<script src="src/engine/12-reader-input.js?v=4f519b1569"></script>
-<script src="src/engine/13-pip.js?v=4f519b1569"></script>
-<script src="src/engine/14-remote.js?v=4f519b1569"></script>
-<script src="src/engine/15-remote-lan.js?v=4f519b1569"></script>
-<script src="src/engine/16-nearby.js?v=4f519b1569"></script>
-<script src="src/engine/17-install.js?v=4f519b1569"></script>
-<script src="src/ui/tooltips.js?v=4f519b1569"></script>
-<script src="src/boot/ready.js?v=4f519b1569"></script>
+<script src="src/boot/guard.js?v=6fa8c0e9a3"></script>
+<script src="ui-v3.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/00-core.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/01-script.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/02-editor.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/03-reader.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/04-playback.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/05-voice.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/06-recorder.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/07-controls.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/08-marks.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/09-loop.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/10-inline-edit.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/11-session.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/12-reader-input.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/13-pip.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/14-remote.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/15-remote-lan.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/16-nearby.js?v=6fa8c0e9a3"></script>
+<script src="src/engine/17-install.js?v=6fa8c0e9a3"></script>
+<script src="src/ui/tooltips.js?v=6fa8c0e9a3"></script>
+<script src="src/boot/ready.js?v=6fa8c0e9a3"></script>
 </body>
 </html>

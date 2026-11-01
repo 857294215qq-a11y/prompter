@@ -1,5 +1,5 @@
 // 离线缓存：每个版本整套装进自己的缓存。页面加载的脚本和样式地址带版本号，新旧版本互不顶替
-const VERSION = '4f519b1569';
+const VERSION = '6fa8c0e9a3';
 const CACHE = 'prompter-' + VERSION;
 // 页面加载的本地脚本和样式（地址与 index.html 一致，缓存时加上 ?v=VERSION）
 const VERSIONED = [
@@ -53,6 +53,7 @@ const ASSETS = [
   './assets/v3/align-left.svg',
   './assets/v3/x.svg',
   './assets/v3/trash-2.svg',
+  './assets/v3/chevron-right.svg',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

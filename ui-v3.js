@@ -477,6 +477,45 @@ window.initPrompterV3 = function initPrompterV3(api) {
   $('#docMenu').setAttribute('role', 'menu'); $('#docMenu').setAttribute('aria-label', '稿件操作');
   for (const b of $('#docMenu').querySelectorAll(':scope > button')) b.setAttribute('role', 'menuitem');
 
+  // Device popover under 设备: the live connection summary; pairing itself stays in the 手机遥控 dialog.
+  const devices = $('#devicePopover'), deviceBtn = $('#remoteBtn');
+  let deviceCount = 0, deviceRoute = null;
+  function renderDevices() {
+    const on = deviceCount > 0;
+    devices.querySelector('.device-dot').classList.toggle('ok', on);
+    text($('#deviceStatus'), on ? `已连接 ${deviceCount} 台遥控设备` : '未连接遥控设备');
+    for (const part of devices.querySelectorAll('[data-route]')) {
+      if (part.dataset.route === deviceRoute) part.setAttribute('aria-current', 'true'); else part.removeAttribute('aria-current');
+    }
+    text($('#routeText'), '当前线路：' + ({ near: '附近', lan: '局域网', net: '中转' }[deviceRoute] || '未连接'));
+    $('#deviceSend').setAttribute('aria-disabled', String(!on));
+  }
+  function closeDevices(returnFocus = false) {
+    if (devices.hidden) return;
+    devices.hidden = true; deviceBtn.setAttribute('aria-expanded', 'false');
+    if (returnFocus) deviceBtn.focus();
+  }
+  function toggleDevices() {
+    if (!devices.hidden) { closeDevices(); return; }
+    const b = deviceBtn.getBoundingClientRect();
+    if (!b.width) { api.openPairing(false); return; } // 设备 is not on screen (phone menu): go straight to pairing
+    closeMenu(); renderDevices(); devices.hidden = false; deviceBtn.setAttribute('aria-expanded', 'true');
+    // From 2164:733: 189px left of the button, 20px below it; never over the parameter card.
+    let left = b.left - 189;
+    const card = settings.inert ? null : settings.getBoundingClientRect();
+    if (card?.width) left = Math.min(left, card.left - 8 - devices.offsetWidth);
+    devices.style.left = Math.max(8, Math.round(left)) + 'px'; devices.style.top = Math.round(b.bottom + 20) + 'px';
+    devices.querySelector('button')?.focus();
+  }
+  on('#deviceManage', () => { closeDevices(); api.openPairing(false); });
+  on('#devicePair', () => { closeDevices(); api.openPairing(true); });
+  $('#deviceController').addEventListener('change', (e) => (e.target.checked ? api.controllerOn() : api.controllerOff()));
+  on('#deviceSend', () => {
+    if ($('#deviceSend').getAttribute('aria-disabled') === 'true') return notify('还没有连接遥控设备');
+    api.sendScript(); notify('已发送当前稿件');
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#devicePopover, #remoteBtn')) closeDevices(); });
+  closeOnFocusElsewhere(devices, deviceBtn, () => closeDevices());
   function showDialog(id) { const el = $('#' + id); el._opener = document.activeElement; el.hidden = false; el.querySelector('input, select, button')?.focus(); }
   function hideDialog(id) { const el = $('#' + id); const video = el.querySelector('video'); if (video && !video.paused) video.pause(); el.hidden = true; el._opener?.focus?.(); }
   function ask(title, message, confirm, fn, value) {
@@ -697,6 +736,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
       if (parametersInReader) { e.preventDefault(); e.stopImmediatePropagation(); returnSettings(); more.focus(); }
       else if (optionsOpen) { e.preventDefault(); e.stopImmediatePropagation(); closeReaderOptions(); more.focus(); }
       else if (!$('#docMenu').hidden) { e.preventDefault(); closeMenu(); $('#docMore').focus(); }
+      else if (!devices.hidden) { e.preventDefault(); closeDevices(true); }
       else if (mobileLeft || mobileRight) { e.preventDefault(); closeSheets(); }
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !api.isReading()) {
@@ -739,7 +779,8 @@ window.initPrompterV3 = function initPrompterV3(api) {
     emptyDocument: () => { rich.focus(); notify('先写一段正文，再开始提词。小节标题不计入正文。'); },
     saved: (ok) => { text($('#saveState'), ok ? '已保存到本机' : '保存失败，请导出稿件以免丢失'); updateMeta(); },
     saving: () => { text($('#saveState'), '正在保存…'); updateMeta(); },
-    connection: (count) => { text($('#deviceState'), count ? `已连接 ${count} 台遥控设备` : '未连接遥控设备'); updateMeta(); },
+    connection: (count, route = null) => { text($('#deviceState'), count ? `已连接 ${count} 台遥控设备` : '未连接遥控设备'); updateMeta(); deviceCount = count; deviceRoute = count ? route : null; renderDevices(); },
+    toggleDevices,
     confirmReset: (fn) => ask('回到开头？', '当前提词将停止，并回到稿件开头。', '回到开头', fn),
     remote: (m) => { latestRemote = m; text(speedValue, String(m.cpm)); text(fontValue, String(m.fs)); text(remoteTitle, m.title || '提词设备'); renderRemoteContext(m); remoteAvailability(); },
     get remoteLocked() { return remoteLocked; },

@@ -86,3 +86,85 @@ test('start buttons keep their Figma heights', () => {
   has(rule('.start-actions .btn'), 'min-height', '32px');
   has(rule('.start-actions .primary'), 'min-height', '40px');
 });
+
+// Task 3: device popover
+const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top });
+function desktop(opts) {
+  const app = boot({}, opts);
+  app.$('#remoteBtn').getBoundingClientRect = () => rect(958, 10, 72, 32);
+  return app;
+}
+const pop = (app) => app.$('#devicePopover');
+
+test('设备 opens the popover under its button, not the pairing dialog', () => {
+  const app = desktop();
+  app.click('#remoteBtn');
+  assert.equal(pop(app).hidden, false); assert.equal(app.$('#rdlg').hidden, true);
+  assert.equal(pop(app).style.left, '769px'); assert.equal(pop(app).style.top, '62px');
+  assert.equal(app.$('#remoteBtn').getAttribute('aria-expanded'), 'true');
+  app.click('#remoteBtn'); assert.equal(pop(app).hidden, true, 'the button toggles it');
+  app.close();
+});
+
+test('the popover shows the real route', () => {
+  const app = desktop(); app.click('#remoteBtn');
+  app.w.testView.connection(1, 'net');
+  assert.match(app.$('#deviceStatus').textContent, /已连接 1 台/);
+  assert.ok(pop(app).querySelector('.device-dot').classList.contains('ok'));
+  assert.equal(pop(app).querySelector('[aria-current="true"]')?.dataset.route, 'net');
+  assert.equal(app.$('#routeText').textContent, '当前线路：中转');
+  assert.equal(app.$('#deviceSend').getAttribute('aria-disabled'), 'false');
+  app.close();
+});
+
+test('disconnect updates the open popover', () => {
+  const app = desktop(); app.click('#remoteBtn');
+  app.w.testView.connection(2, 'lan'); app.w.testView.connection(0, null);
+  assert.equal(app.$('#deviceStatus').textContent, '未连接遥控设备');
+  assert.equal(pop(app).querySelector('.device-dot').classList.contains('ok'), false);
+  assert.equal(pop(app).querySelector('[aria-current="true"]'), null);
+  assert.equal(app.$('#routeText').textContent, '当前线路：未连接');
+  assert.equal(app.$('#deviceSend').getAttribute('aria-disabled'), 'true');
+  app.close();
+});
+
+test('web hides app-only rows; the app shows them', () => {
+  let app = desktop(); app.click('#remoteBtn');
+  assert.equal(app.$('#deviceController').closest('.device-row').hidden, true);
+  assert.equal(pop(app).querySelector('[data-route="near"]').hidden, true);
+  app.close();
+  app = desktop({ native: true }); app.click('#remoteBtn');
+  assert.equal(app.$('#deviceController').closest('.device-row').hidden, false);
+  app.close();
+});
+
+test('pairing actions open the pairing dialog', () => {
+  const app = desktop(), calls = [];
+  app.w.testEngine.openPairing = (fresh) => calls.push(fresh);
+  app.click('#remoteBtn'); app.click('#deviceManage');
+  assert.equal(pop(app).hidden, true);
+  app.click('#remoteBtn'); app.click('#devicePair');
+  assert.deepEqual(calls, [false, true]);
+  app.close();
+});
+
+test('Esc and outside click close it; there is no close button', () => {
+  const app = desktop();
+  app.click('#remoteBtn');
+  assert.equal(pop(app).querySelector('button[aria-label="关闭"]'), null);
+  app.w.document.body.dispatchEvent(new app.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+  assert.equal(pop(app).hidden, true);
+  app.click('#remoteBtn'); app.click('#documentTitle');
+  assert.equal(pop(app).hidden, true);
+  app.close();
+});
+
+test('send calls sendScript once and says so; unavailable without a connection', () => {
+  const app = desktop(); let sent = 0;
+  app.w.testEngine.sendScript = () => { sent++; };
+  app.click('#remoteBtn'); app.click('#deviceSend');
+  assert.equal(sent, 0); assert.match(app.$('#uiToast').textContent, /没有连接/);
+  app.w.testView.connection(1, 'lan'); app.click('#deviceSend');
+  assert.equal(sent, 1); assert.match(app.$('#uiToast').textContent, /已发送/);
+  app.close();
+});

@@ -342,7 +342,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
       if (button.getAttribute('aria-disabled') === 'true') return;
       const range = emphasisRange(start, end);
       if (range) { api.ta.setSelectionRange(range.start, range.end); replaceSelectionAtBuffer(range.inner); }
-      else replaceSelectionAtBuffer('**' + selected + '**');
+      else { replaceSelectionAtBuffer('**' + selected + '**'); flashRunEndingAt(start + selected.length + 4); }
     } else if (cueMenu.hidden) openCueMenu(); else closeCueMenu(true);
   }));
   const lineStart = (index) => (index ? api.ta.value.lastIndexOf('\n', index - 1) + 1 : 0);
@@ -356,6 +356,15 @@ window.initPrompterV3 = function initPrompterV3(api) {
     return null;
   }
   // Section shows the current line's state; emphasis only acts on a selection.
+  // A cue or bold run just added fades up from .4 so the eye finds it; nothing else in the editor moves.
+  // Callers pass where the run ends in the source; the caret cannot tell inside-the-run from after-it.
+  function flashRunEndingAt(index) {
+    for (const el of rich.querySelectorAll('.editor-cue, strong')) {
+      const t = el.firstChild; if (!t || typeof el.animate !== 'function') continue;
+      const inner = readRich(t, 0, t, t.length), end = inner.end + (el.tagName === 'STRONG' ? 2 : 1);
+      if (end === index) { el.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: motion('--dur-text'), easing: motion('--ease') }); return; }
+    }
+  }
   function syncFormatState() {
     const start = api.ta.selectionStart, end = api.ta.selectionEnd;
     const section = /^#/.test(api.ta.value.slice(lineStart(start)));
@@ -395,7 +404,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
   function insertCue(value) {
     const cue = cleanCue(value); closeCueMenu(false);
     if (!cue) { sourceCaret(cueAt); return false; }
-    api.ta.setSelectionRange(cueAt, cueAt); replaceSelectionAtBuffer('[' + cue + ']'); return true;
+    api.ta.setSelectionRange(cueAt, cueAt); replaceSelectionAtBuffer('[' + cue + ']'); flashRunEndingAt(cueAt + cue.length + 2); return true;
   }
   cueMenu.querySelectorAll('[data-cue]').forEach((b) => b.addEventListener('click', () => insertCue(b.dataset.cue)));
   on('#cueCustom', () => { cueForm.hidden = false; $('#cueCustomInput').value = ''; $('#cueCustomInput').focus(); });
@@ -434,6 +443,7 @@ window.initPrompterV3 = function initPrompterV3(api) {
     const range = editing, cue = cleanCue(value); closeCueEditor();
     api.ta.setSelectionRange(range.start, range.end);
     replaceSelectionAtBuffer(cue ? range.open + cue + (range.open === '【' ? '】' : ']') : '');
+    if (cue) flashRunEndingAt(range.start + cue.length + 2);
   }
   rich.addEventListener('click', (e) => { const cue = e.target.closest?.('.editor-cue'); if (cue?.firstChild) openCueEditor(cue); });
   cueEditor.addEventListener('submit', (e) => { e.preventDefault(); if (editing) rewriteCue(cueInput.value); });
@@ -687,6 +697,13 @@ window.initPrompterV3 = function initPrompterV3(api) {
     }
   }, true);
 
+  // Countdown: every beat scales in from 1.15 with a fade; hiding the countdown cancels the running beat.
+  const countdownEl = $('#cd'); let beat = null;
+  new MutationObserver(() => {
+    beat?.cancel(); beat = null;
+    if (countdownEl.hidden || typeof countdownEl.animate !== 'function') return;
+    beat = countdownEl.animate([{ scale: 1.15, opacity: 0 }, { scale: 1, opacity: 1 }], { duration: motion('--dur-beat'), easing: motion('--ease') });
+  }).observe(countdownEl, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
   const motionSelector = '.modal, .popover, #panel, #hint, #cam, #uiToast, #prompter';
   const visibility = new WeakMap();
   document.querySelectorAll(motionSelector).forEach(el => visibility.set(el, !el.hidden));

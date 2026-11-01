@@ -97,3 +97,79 @@ test('buttons press to .97', () => {
   assert.match(css, /\.icon-btn, \.text-btn, \.btn, \.ib \{ transition: scale var\(--dur-control\) var\(--ease\); \}/);
   assert.match(css, /:active:not\(:disabled\)[^{]*\{ scale: \.97; \}/);
 });
+
+// Task 3: scroll curve, countdown beat, text flashes
+test('jump scroll follows the shared curve', () => {
+  const app = boot({ settings: { countdown: 0 } }); app.click('#start');
+  const f = app.w.cubicBezier(.32, .72, 0, 1);
+  assert.ok(Math.abs(f(0)) < 1e-3); assert.ok(Math.abs(f(.5) - 0.9548) < 1e-3); assert.ok(Math.abs(f(1) - 1) < 1e-3);
+  app.w.performance.now = () => 160;
+  app.w.eval('anim = { from: 0, to: 1000, t0: 0, dur: 320 }; last = 160;');
+  app.w.frame();
+  assert.ok(Math.abs(app.w.eval('pos') - 954.8) < 1, 'pos ' + app.w.eval('pos'));
+  app.close();
+});
+
+test('voice follow never animates', () => {
+  const app = boot({ settings: { countdown: 0 } }); app.click('#start');
+  app.w.eval('anim = null; state = "playing"; voice.on = true; voice.target = 500; pos = 0;');
+  app.w.frame();
+  assert.equal(app.w.eval('anim'), null);
+  app.close();
+});
+
+function countdown(app) {
+  const beats = [], ticks = [];
+  app.$('#cd').animate = (frames, options) => { const a = { frames, options, cancelled: false, cancel() { a.cancelled = true; }, finished: new Promise(() => {}) }; beats.push(a); return a; };
+  app.w.setInterval = (fn) => { ticks.push(fn); return 1; };
+  return { beats, tick: () => ticks.at(-1)() };
+}
+
+test('each countdown beat scales in', async () => {
+  const app = boot({ settings: { countdown: 3 } }), { beats, tick } = countdown(app);
+  app.click('#start'); app.click('#pPlay'); await tick0(); // the countdown runs when playback starts
+  tick(); await tick0(); tick(); await tick0();
+  assert.equal(beats.length, 3, '3, 2, 1');
+  for (const b of beats) {
+    assert.deepEqual(JSON.parse(JSON.stringify(b.frames)), [{ scale: 1.15, opacity: 0 }, { scale: 1, opacity: 1 }]);
+    assert.equal(b.options.duration, 240); assert.equal(b.options.easing, TOKENS['--ease']);
+  }
+  app.close();
+});
+const tick0 = () => new Promise(setImmediate);
+
+test('pausing during the countdown leaves no running beat', async () => {
+  const app = boot({ settings: { countdown: 3 } }), { beats } = countdown(app);
+  app.click('#start'); app.click('#pPlay'); await tick0();
+  app.click('#pPlay'); await tick0(); // pause while counting down
+  assert.equal(app.$('#cd').hidden, true);
+  assert.ok(beats.length >= 1 && beats.every((b) => b.cancelled), 'beat cancelled when the countdown hides');
+  app.close();
+});
+
+test('only the changed run flashes', async () => {
+  const app = boot({ library: [{ id: 'a', text: '开场[停顿]正文[换气]结尾', updated: 1 }], current: 'a' });
+  const flashes = [];
+  app.w.HTMLElement.prototype.animate = function (frames, options) { if (this.closest('#richEditor')) flashes.push({ el: this, frames, options }); return { finished: Promise.resolve(), cancel() {} }; };
+  const rich = app.$('#richEditor'), last = rich.children[0].lastChild; // text node "结尾"
+  app.w.getSelection().setBaseAndExtent(last, 2, last, 2); rich.dispatchEvent(new app.w.MouseEvent('mouseup'));
+  app.click('[data-format="cue"]'); app.click('#cueMenu [data-cue="加重"]');
+  assert.equal(flashes.length, 1, 'one flash');
+  assert.equal(flashes[0].el.textContent, '加重');
+  assert.deepEqual(JSON.parse(JSON.stringify(flashes[0].frames)), [{ opacity: 0.4 }, { opacity: 1 }]);
+  assert.equal(flashes[0].options.duration, 160);
+  flashes.length = 0; rich.dispatchEvent(new app.w.FocusEvent('blur')); await tick0();
+  assert.equal(flashes.length, 0, 'a re-render flashes nothing');
+  app.close();
+});
+
+test('adding emphasis flashes the new bold run', () => {
+  const app = boot({ library: [{ id: 'a', text: '大家好欢迎回来', updated: 1 }], current: 'a' });
+  const flashes = [];
+  app.w.HTMLElement.prototype.animate = function () { if (this.closest('#richEditor')) flashes.push(this); return { finished: Promise.resolve(), cancel() {} }; };
+  const rich = app.$('#richEditor'), t = rich.children[0].firstChild;
+  app.w.getSelection().setBaseAndExtent(t, 0, t, 3); rich.dispatchEvent(new app.w.MouseEvent('mouseup'));
+  app.click('[data-format="emphasis"]');
+  assert.equal(flashes.length, 1); assert.equal(flashes[0].tagName, 'STRONG'); assert.equal(flashes[0].textContent, '大家好');
+  app.close();
+});

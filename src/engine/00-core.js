@@ -24,6 +24,17 @@ const SAMPLE = `# 开场
 const $ = (s) => document.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// 缓动曲线求值，与 CSS cubic-bezier 相同：先由进度 x 二分解出参数 t，再算出 y
+function cubicBezier(x1, y1, x2, y2) {
+  const at = (a, b, t) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+  return (x) => {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    let lo = 0, hi = 1, t = x;
+    for (let i = 0; i < 30; i++) { const v = at(x1, x2, t); if (Math.abs(v - x) < 1e-6) break; if (v < x) lo = t; else hi = t; t = (lo + hi) / 2; }
+    return at(y1, y2, t);
+  };
+}
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem('prompter:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
